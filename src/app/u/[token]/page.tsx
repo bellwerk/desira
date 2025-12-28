@@ -1,7 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ItemActions } from "@/components/ItemActions";
+import { EnablePayoutsButton } from "@/components/EnablePayoutsButton";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -15,7 +17,6 @@ function cents(n: number | null | undefined) {
 export default async function PublicListPage({ params }: PageProps) {
   const { token } = await params;
 
-  // 1) Load list by share_token
   const { data: list, error: listErr } = await supabaseAdmin
     .from("lists")
     .select(
@@ -27,7 +28,9 @@ export default async function PublicListPage({ params }: PageProps) {
       recipient_type,
       allow_reservations,
       allow_contributions,
-      currency
+      allow_anonymous,
+      currency,
+      visibility
     `
     )
     .eq("share_token", token)
@@ -42,7 +45,6 @@ export default async function PublicListPage({ params }: PageProps) {
     );
   }
 
-  // 2) Load items
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("items")
     .select(
@@ -71,7 +73,6 @@ export default async function PublicListPage({ params }: PageProps) {
     );
   }
 
-  // 3) Load public flags/totals (guard empty IN())
   const itemIds = (items ?? []).map((i) => i.id);
 
   let reservedFlags: Array<{ item_id: string; is_reserved: boolean }> = [];
@@ -93,48 +94,69 @@ export default async function PublicListPage({ params }: PageProps) {
     totals = (r2.data as any) ?? [];
   }
 
-  const reservedMap = new Map(reservedFlags.map((r) => [r.item_id, r.is_reserved]));
-  const fundedMap = new Map(totals.map((t) => [t.item_id, t.funded_amount_cents]));
+  const reservedMap = new Map(
+    reservedFlags.map((r) => [r.item_id, r.is_reserved])
+  );
+  const fundedMap = new Map(
+    totals.map((t) => [t.item_id, t.funded_amount_cents])
+  );
 
   return (
     <main className="mx-auto max-w-3xl p-6">
-      {/* Header */}
       <header className="mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{list.title}</h1>
-          <span className="rounded-full border px-3 py-1 text-sm capitalize">
-            {list.recipient_type}
-          </span>
-        </div>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {list.title}
+            </h1>
 
-        <div className="mt-2 text-sm text-neutral-600">
-          {list.occasion ? <span>{list.occasion}</span> : null}
-          {list.occasion && list.event_date ? <span> · </span> : null}
-          {list.event_date ? <span>{String(list.event_date)}</span> : null}
-        </div>
+            <div className="mt-2 text-sm text-neutral-600">
+              {list.occasion ? <span>{list.occasion}</span> : null}
+              {list.occasion && list.event_date ? <span> · </span> : null}
+              {list.event_date ? <span>{String(list.event_date)}</span> : null}
+            </div>
 
-        <div className="mt-3 text-sm text-neutral-600">
-          Reserved gifts stay anonymous · Contributions go to the recipient
+            <div className="mt-3 text-sm text-neutral-600">
+              Reserved gifts stay anonymous · Contributions go to the recipient
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full border px-3 py-1 text-sm capitalize">
+              {list.recipient_type}
+            </span>
+            <EnablePayoutsButton token={token} />
+          </div>
         </div>
       </header>
 
-      {/* Item grid */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {(items ?? []).map((item) => {
           const isReserved = Boolean(reservedMap.get(item.id));
           const funded = fundedMap.get(item.id) ?? 0;
 
-          const target = item.target_amount_cents ?? item.price_cents ?? undefined;
+          const target =
+            item.target_amount_cents ?? item.price_cents ?? undefined;
 
           const isFunded =
             item.status === "funded" || (target ? funded >= target : false);
 
-          const statusLabel = isFunded ? "Funded" : isReserved ? "Reserved" : "Available";
+          const statusLabel = isFunded
+            ? "Funded"
+            : isReserved
+            ? "Reserved"
+            : "Available";
 
-          const contributeDisabled = !list.allow_contributions || isFunded;
-          const reserveDisabled = !list.allow_reservations || isReserved || isFunded;
+          // ✅ FIX: no contributions when reserved (per your remark)
+          const contributeDisabled =
+            !list.allow_contributions || isFunded || isReserved;
 
-          const left = target && target > funded ? Math.max(target - funded, 0) : 0;
+          const reserveDisabled =
+            !list.allow_reservations || isReserved || isFunded;
+
+          const left =
+            target && target > funded ? Math.max(target - funded, 0) : 0;
+
           const pct =
             target && target > 0
               ? Math.min(100, Math.round((funded / target) * 100))
@@ -148,7 +170,10 @@ export default async function PublicListPage({ params }: PageProps) {
               <div className="aspect-square w-full bg-neutral-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.image_url ?? "https://picsum.photos/seed/fallback/600/600"}
+                  src={
+                    item.image_url ??
+                    "https://picsum.photos/seed/fallback/600/600"
+                  }
                   alt={item.title}
                   className="h-full w-full object-cover"
                 />
@@ -156,7 +181,9 @@ export default async function PublicListPage({ params }: PageProps) {
 
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="line-clamp-2 text-base font-medium">{item.title}</h2>
+                  <h2 className="line-clamp-2 text-base font-medium">
+                    {item.title}
+                  </h2>
                   <span className="shrink-0 rounded-full border px-2 py-1 text-xs">
                     {statusLabel}
                   </span>
@@ -182,7 +209,6 @@ export default async function PublicListPage({ params }: PageProps) {
                   </div>
                 ) : null}
 
-                {/* ✅ Action buttons (client-side so it can read localStorage for Cancel tickets) */}
                 <ItemActions
                   token={token}
                   itemId={item.id}
