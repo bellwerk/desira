@@ -18,9 +18,9 @@ type Draft = {
 type State =
   | { status: "loading" }
   | { status: "missing" }
-  | { status: "ready"; draft: Draft }
   | { status: "error"; message: string }
-  | { status: "submitting" };
+  | { status: "ready"; draft: Draft }
+  | { status: "submitting"; draft: Draft };
 
 function centsToPretty(cents: number, currency: string) {
   const dollars = cents / 100;
@@ -81,12 +81,7 @@ export default function PayPage() {
         return;
       }
 
-      queueMicrotask(() =>
-        setState({
-          status: "ready",
-          draft: parsed as Draft,
-        })
-      );
+      queueMicrotask(() => setState({ status: "ready", draft: parsed as Draft }));
     } catch {
       queueMicrotask(() =>
         setState({ status: "error", message: "Cannot access localStorage." })
@@ -97,20 +92,21 @@ export default function PayPage() {
   async function pay() {
     if (state.status !== "ready") return;
 
-    setState({ status: "submitting" });
+    const draft = state.draft;
+    setState({ status: "submitting", draft });
 
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         token,
-        item_id: state.draft.item_id,
-        contribution_cents: state.draft.amount_cents,
-        fee_cents: state.draft.fee_cents,
-        total_cents: state.draft.total_cents,
-        contributor_name: state.draft.contributor_name,
-        message: state.draft.message,
-        is_anonymous: state.draft.is_anonymous,
+        item_id: draft.item_id,
+        contribution_cents: draft.amount_cents,
+        fee_cents: draft.fee_cents,
+        total_cents: draft.total_cents,
+        contributor_name: draft.contributor_name,
+        message: draft.message,
+        is_anonymous: draft.is_anonymous,
       }),
     });
 
@@ -132,6 +128,9 @@ export default function PayPage() {
     window.location.href = String(json.url);
   }
 
+  const showDraft = state.status === "ready" || state.status === "submitting";
+  const draft = showDraft ? state.draft : null;
+
   return (
     <main className="mx-auto max-w-md p-6">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -151,27 +150,27 @@ export default function PayPage() {
               Back to list
             </button>
           </>
-        ) : (
+        ) : draft ? (
           <>
             <div className="mt-4 rounded-2xl border bg-neutral-50 p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-neutral-700">Contribution</span>
                 <span className="font-medium">
-                  {centsToPretty(state.draft.amount_cents, state.draft.currency)}
+                  {centsToPretty(draft.amount_cents, draft.currency)}
                 </span>
               </div>
 
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span className="text-neutral-700">Desira service fee</span>
                 <span className="font-medium">
-                  {centsToPretty(state.draft.fee_cents, state.draft.currency)}
+                  {centsToPretty(draft.fee_cents, draft.currency)}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center justify-between text-sm">
                 <span className="font-medium text-neutral-900">Total charged</span>
                 <span className="font-semibold text-neutral-900">
-                  {centsToPretty(state.draft.total_cents, state.draft.currency)}
+                  {centsToPretty(draft.total_cents, draft.currency)}
                 </span>
               </div>
 
@@ -190,13 +189,13 @@ export default function PayPage() {
               </button>
               <button
                 className="flex-1 rounded-xl bg-white px-3 py-2 text-sm font-medium text-neutral-900 ring-1 ring-inset ring-neutral-300"
-                onClick={() => router.push(`/u/${token}/contribute?item=${state.draft.item_id}`)}
+                onClick={() => router.push(`/u/${token}/contribute?item=${draft.item_id}`)}
               >
                 Back
               </button>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </main>
   );
