@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       # Install pnpm FIRST (so setup-node cache: pnpm can find it)
       - name: Setup pnpm
