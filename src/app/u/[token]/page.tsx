@@ -9,6 +9,27 @@ type PageProps = {
   params: Promise<{ token: string }>;
 };
 
+type ReservationFlag = {
+  item_id: string;
+  is_reserved: boolean;
+};
+
+type ContributionTotal = {
+  item_id: string;
+  funded_amount_cents: number;
+};
+
+type ItemRow = {
+  id: string;
+  title: string;
+  image_url: string | null;
+  price_cents: number | null;
+  target_amount_cents: number | null;
+  note_public: string | null;
+  status: "active" | "funded" | "archived";
+  sort_order: number | null;
+};
+
 function cents(n: number | null | undefined) {
   if (!n) return "";
   return (n / 100).toFixed(0);
@@ -73,10 +94,11 @@ export default async function PublicListPage({ params }: PageProps) {
     );
   }
 
-  const itemIds = (items ?? []).map((i) => i.id);
+  const typedItems = (items ?? []) as ItemRow[];
+  const itemIds = typedItems.map((i) => i.id);
 
-  let reservedFlags: Array<{ item_id: string; is_reserved: boolean }> = [];
-  let totals: Array<{ item_id: string; funded_amount_cents: number }> = [];
+  let reservedFlags: ReservationFlag[] = [];
+  let totals: ContributionTotal[] = [];
 
   if (itemIds.length > 0) {
     const [r1, r2] = await Promise.all([
@@ -90,25 +112,19 @@ export default async function PublicListPage({ params }: PageProps) {
         .in("item_id", itemIds),
     ]);
 
-    reservedFlags = (r1.data as any) ?? [];
-    totals = (r2.data as any) ?? [];
+    reservedFlags = (r1.data ?? []) as ReservationFlag[];
+    totals = (r2.data ?? []) as ContributionTotal[];
   }
 
-  const reservedMap = new Map(
-    reservedFlags.map((r) => [r.item_id, r.is_reserved])
-  );
-  const fundedMap = new Map(
-    totals.map((t) => [t.item_id, t.funded_amount_cents])
-  );
+  const reservedMap = new Map(reservedFlags.map((r) => [r.item_id, r.is_reserved]));
+  const fundedMap = new Map(totals.map((t) => [t.item_id, t.funded_amount_cents]));
 
   return (
     <main className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {list.title}
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{list.title}</h1>
 
             <div className="mt-2 text-sm text-neutral-600">
               {list.occasion ? <span>{list.occasion}</span> : null}
@@ -131,36 +147,24 @@ export default async function PublicListPage({ params }: PageProps) {
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {(items ?? []).map((item) => {
+        {typedItems.map((item) => {
           const isReserved = Boolean(reservedMap.get(item.id));
           const funded = fundedMap.get(item.id) ?? 0;
 
-          const target =
-            item.target_amount_cents ?? item.price_cents ?? undefined;
+          const target = item.target_amount_cents ?? item.price_cents ?? undefined;
 
           const isFunded =
             item.status === "funded" || (target ? funded >= target : false);
 
-          const statusLabel = isFunded
-            ? "Funded"
-            : isReserved
-            ? "Reserved"
-            : "Available";
+          const statusLabel = isFunded ? "Funded" : isReserved ? "Reserved" : "Available";
 
-          // ✅ FIX: no contributions when reserved (per your remark)
-          const contributeDisabled =
-            !list.allow_contributions || isFunded || isReserved;
+          const contributeDisabled = !list.allow_contributions || isFunded || isReserved;
+          const reserveDisabled = !list.allow_reservations || isReserved || isFunded;
 
-          const reserveDisabled =
-            !list.allow_reservations || isReserved || isFunded;
-
-          const left =
-            target && target > funded ? Math.max(target - funded, 0) : 0;
+          const left = target && target > funded ? Math.max(target - funded, 0) : 0;
 
           const pct =
-            target && target > 0
-              ? Math.min(100, Math.round((funded / target) * 100))
-              : 0;
+            target && target > 0 ? Math.min(100, Math.round((funded / target) * 100)) : 0;
 
           return (
             <article
@@ -170,10 +174,7 @@ export default async function PublicListPage({ params }: PageProps) {
               <div className="aspect-square w-full bg-neutral-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={
-                    item.image_url ??
-                    "https://picsum.photos/seed/fallback/600/600"
-                  }
+                  src={item.image_url ?? "https://picsum.photos/seed/fallback/600/600"}
                   alt={item.title}
                   className="h-full w-full object-cover"
                 />
@@ -181,9 +182,7 @@ export default async function PublicListPage({ params }: PageProps) {
 
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="line-clamp-2 text-base font-medium">
-                    {item.title}
-                  </h2>
+                  <h2 className="line-clamp-2 text-base font-medium">{item.title}</h2>
                   <span className="shrink-0 rounded-full border px-2 py-1 text-xs">
                     {statusLabel}
                   </span>

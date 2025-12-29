@@ -10,6 +10,10 @@ async function rawBody(req: Request) {
   return Buffer.from(ab);
 }
 
+function errorMessage(err: unknown) {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) return new Response("Missing stripe-signature", { status: 400 });
@@ -21,8 +25,8 @@ export async function POST(req: Request) {
   try {
     const body = await rawBody(req);
     event = stripe.webhooks.constructEvent(body, sig, secret);
-  } catch (err: any) {
-    return new Response(`Signature verification failed: ${err?.message}`, {
+  } catch (err: unknown) {
+    return new Response(`Signature verification failed: ${errorMessage(err)}`, {
       status: 400,
     });
   }
@@ -69,14 +73,9 @@ export async function POST(req: Request) {
 
   const { error: insErr } = await supabaseAdmin.from("contributions").insert({
     item_id: itemId,
-
-    // recipient amount (drives progress)
     amount_cents: Math.round(contributionCents),
-
-    // ✅ new columns
     fee_cents: Math.round(feeCents),
     total_cents: Math.round(totalCents),
-
     currency,
     contributor_name: session.metadata?.contributor_name || null,
     message: session.metadata?.message || null,
@@ -87,7 +86,6 @@ export async function POST(req: Request) {
   });
 
   if (insErr) {
-    // unique violation = already processed
     if (insErr.code === "23505") return new Response("ok", { status: 200 });
     return new Response(`DB insert failed: ${insErr.message}`, { status: 500 });
   }

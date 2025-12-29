@@ -12,19 +12,16 @@ function dollarsToCents(input: string) {
 }
 
 function sanitizeMoneyInput(raw: string) {
-  // keep digits and dots only
   let s = raw.replace(/[^\d.]/g, "");
 
-  // only one dot
   const firstDot = s.indexOf(".");
   if (firstDot !== -1) {
     s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, "");
   }
 
-  // limit integer + decimals
   const [intPart, decPart] = s.split(".");
-  const intClean = (intPart ?? "").slice(0, 6); // up to 999999
-  const decClean = (decPart ?? "").slice(0, 2); // 2 decimals max
+  const intClean = (intPart ?? "").slice(0, 6);
+  const decClean = (decPart ?? "").slice(0, 2);
 
   return firstDot !== -1 ? `${intClean}.${decClean}` : intClean;
 }
@@ -43,10 +40,7 @@ function centsToPretty(cents: number, currency: string) {
   }).format(dollars);
 }
 
-// Option 3 (implemented safely): service fee added on top
-// - recipient gets the chosen contribution amount
-// - contributor pays contribution + fee
-// Fee rule: 5% (rounded) with a $1.00 minimum
+// Fee rule: 5% with $1 minimum
 function feeCentsForContribution(contributionCents: number) {
   return Math.max(100, Math.round(contributionCents * 0.05));
 }
@@ -60,7 +54,7 @@ export function ContributeForm(props: {
   targetCents: number | null;
   fundedCents: number;
   allowAnonymous: boolean;
-  closeWhenFunded: boolean; // MVP = true
+  closeWhenFunded: boolean;
 }) {
   const router = useRouter();
 
@@ -81,9 +75,8 @@ export function ContributeForm(props: {
   const [anon, setAnon] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const chipOptions = [10, 25, 50]; // dollars (contribution amount)
+  const chipOptions = [10, 25, 50];
 
-  // contribution amount (to recipient)
   const contributionCents = useMemo(() => {
     if (custom.trim()) return dollarsToCents(custom.trim());
     if (chip == null) return null;
@@ -107,7 +100,6 @@ export function ContributeForm(props: {
     if (!contributionCents || contributionCents <= 0) return "Choose an amount.";
     if (contributionCents < 100) return "Minimum contribution is $1.";
 
-    // Cap contribution to remaining (recipient receives exactly this amount)
     if (
       leftCents != null &&
       props.closeWhenFunded &&
@@ -128,7 +120,6 @@ export function ContributeForm(props: {
   function pickChip(dollars: number) {
     const cents = dollars * 100;
 
-    // Cap to "left" when we have a target
     if (props.closeWhenFunded && leftCents != null && cents > leftCents) {
       setChip(null);
       setCustom(formatCentsInput(leftCents));
@@ -139,13 +130,13 @@ export function ContributeForm(props: {
     setChip(dollars);
   }
 
-  function useCustom(v: string) {
+  // ✅ renamed (so eslint doesn’t think it’s a Hook)
+  function setCustomAmount(v: string) {
     setChip(null);
 
     const cleaned = sanitizeMoneyInput(v);
     const cents = dollarsToCents(cleaned);
 
-    // Cap to "left" when we have a target
     if (
       props.closeWhenFunded &&
       leftCents != null &&
@@ -170,9 +161,7 @@ export function ContributeForm(props: {
     const draft = {
       item_id: props.itemId,
       token: props.token,
-      // contribution (recipient receives this)
       amount_cents: contributionCents!,
-      // fee + total (contributor pays total)
       fee_cents: feeCents!,
       total_cents: totalChargeCents!,
       currency: props.currency,
@@ -241,7 +230,7 @@ export function ContributeForm(props: {
 
             <input
               value={custom}
-              onChange={(e) => useCustom(e.target.value)}
+              onChange={(e) => setCustomAmount(e.target.value)}
               placeholder="Custom"
               className="w-full rounded-xl border px-3 py-2 text-sm"
               inputMode="decimal"
@@ -257,7 +246,6 @@ export function ContributeForm(props: {
           ) : null}
         </div>
 
-        {/* Fee breakdown */}
         {contributionCents && feeCents && totalChargeCents ? (
           <div className="mt-4 rounded-2xl border bg-neutral-50 p-4">
             <div className="flex items-center justify-between text-sm">
@@ -279,7 +267,8 @@ export function ContributeForm(props: {
               </span>
             </div>
             <div className="mt-2 text-xs text-neutral-600">
-              Recipient receives the contribution amount. Fee helps cover payment processing.
+              Recipient receives the contribution amount. Fee helps cover payment
+              processing.
             </div>
           </div>
         ) : null}
