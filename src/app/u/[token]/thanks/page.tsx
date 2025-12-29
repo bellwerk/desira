@@ -12,16 +12,17 @@ function centsToPretty(cents: number, currency: string) {
   }).format(dollars);
 }
 
-type ConfirmOk = {
-  ok: true;
-  already_recorded?: boolean;
-  item_id?: string;
-  currency?: string;
-  contribution_cents?: number;
-  fee_cents?: number;
-  total_cents?: number;
-  payment_intent?: string;
-};
+type State =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "error"; message: string }
+  | {
+      status: "ok" | "already";
+      currency: string;
+      contributionCents: number;
+      feeCents: number;
+      totalCents: number;
+    };
 
 export default function ThanksPage() {
   const { token } = useParams<{ token: string }>();
@@ -31,35 +32,30 @@ export default function ThanksPage() {
   const itemId = search.get("item");
   const sessionId = search.get("session_id");
 
-  const [state, setState] = useState<
-    | { status: "loading" }
-    | {
-        status: "ok" | "already";
-        currency: string;
-        contributionCents: number;
-        feeCents: number;
-        totalCents: number;
-      }
-    | { status: "missing" }
-    | { status: "error"; message: string }
-  >({ status: "loading" });
+  const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
     if (!itemId) {
-      setState({ status: "missing" });
+      queueMicrotask(() => setState({ status: "missing" }));
       return;
     }
 
     // prevent accidental re-pay
-    localStorage.removeItem(`desira_contrib_${itemId}`);
+    try {
+      localStorage.removeItem(`desira_contrib_${itemId}`);
+    } catch {
+      // ignore
+    }
 
     async function run() {
       if (!sessionId) {
-        setState({
-          status: "error",
-          message:
-            "Missing session id. Payment succeeded, but it can’t be recorded automatically.",
-        });
+        queueMicrotask(() =>
+          setState({
+            status: "error",
+            message:
+              "Missing session id. Payment succeeded, but it can’t be recorded automatically.",
+          })
+        );
         return;
       }
 
@@ -69,15 +65,23 @@ export default function ThanksPage() {
         body: JSON.stringify({ session_id: sessionId }),
       });
 
-      const json = (await res.json().catch(() => ({}))) as Partial<ConfirmOk> & {
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        already_recorded?: boolean;
+        currency?: string;
+        contribution_cents?: number;
+        fee_cents?: number;
+        total_cents?: number;
         error?: string;
       };
 
       if (!res.ok) {
-        setState({
-          status: "error",
-          message: json?.error ?? "Failed to confirm payment.",
-        });
+        queueMicrotask(() =>
+          setState({
+            status: "error",
+            message: json?.error ?? "Failed to confirm payment.",
+          })
+        );
         return;
       }
 
@@ -87,20 +91,24 @@ export default function ThanksPage() {
       const totalCents = Number(json?.total_cents ?? 0);
 
       if (!contributionCents || !totalCents) {
-        setState({
-          status: "error",
-          message: "Payment confirmed, but amounts were missing.",
-        });
+        queueMicrotask(() =>
+          setState({
+            status: "error",
+            message: "Payment confirmed, but amounts were missing.",
+          })
+        );
         return;
       }
 
-      setState({
-        status: json?.already_recorded ? "already" : "ok",
-        currency,
-        contributionCents,
-        feeCents,
-        totalCents,
-      });
+      queueMicrotask(() =>
+        setState({
+          status: json?.already_recorded ? "already" : "ok",
+          currency,
+          contributionCents,
+          feeCents,
+          totalCents,
+        })
+      );
     }
 
     run();
@@ -148,7 +156,8 @@ export default function ThanksPage() {
               </div>
 
               <div className="mt-2 text-xs text-neutral-600">
-                Recipient receives the contribution amount. Fee helps cover processing.
+                Recipient receives the contribution amount. Fee helps cover payment
+                processing.
               </div>
             </div>
           </>
