@@ -5,9 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const BodySchema = z.object({
   token: z.string().min(10),
@@ -26,59 +24,57 @@ export async function POST(req: Request) {
 
   const { token } = parsed.data;
 
-  // 1) Load list owner
-  const { data: list, error: listErr } = await supabaseAdmin
+  const { data: list } = await supabaseAdmin
     .from("lists")
-    .select("id,owner_id,visibility")
+    .select("id, owner_id")
     .eq("share_token", token)
-    .single();
+    .maybeSingle();
 
-  if (listErr || !list) {
+  if (!list) {
     return NextResponse.json({ error: "List not found" }, { status: 404 });
   }
 
-  // Dev-only: allow even for unlisted/public. (In prod: require owner auth.)
-  const origin = req.headers.get("origin") ?? "http://localhost:3000";
-
-  // 2) Check if payment account exists
+  // Ensure payment account row exists
   const { data: existing } = await supabaseAdmin
     .from("payment_accounts")
-    .select("provider_account_id")
+    .select("provider_account_id, charges_enabled, payouts_enabled, details_submitted")
     .eq("owner_id", list.owner_id)
     .maybeSingle();
 
-  let accountId = existing?.provider_account_id;
+  let providerAccountId = existing?.provider_account_id ?? null;
 
-  // 3) Create connected account if missing (Express)
-  if (!accountId) {
+  if (!providerAccountId) {
     const acct = await stripe.accounts.create({
       type: "express",
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
-      metadata: { owner_id: list.owner_id },
     });
 
-    accountId = acct.id;
+    providerAccountId = acct.id;
 
     await supabaseAdmin.from("payment_accounts").upsert({
       owner_id: list.owner_id,
       provider: "stripe",
-      provider_account_id: accountId,
-      charges_enabled: acct.charges_enabled,
-      payouts_enabled: acct.payouts_enabled,
-      details_submitted: acct.details_submitted,
+      provider_account_id: providerAccountId,
+      charges_enabled: Boolean(acct.charges_enabled),
+      payouts_enabled: Boolean(acct.payouts_enabled),
+      details_submitted: Boolean(acct.details_submitted),
     });
   }
 
-  // 4) Create account onboarding link
+  const origin = req.headers.get("origin") ?? "http://localhost:3000";
+
   const link = await stripe.accountLinks.create({
-    account: accountId,
+    account: providerAccountId,
     refresh_url: `${origin}/u/${token}`,
     return_url: `${origin}/u/${token}`,
     type: "account_onboarding",
   });
 
-  return NextResponse.json({ ok: true, url: link.url });
+  return NextResponse.json({
+    ok: true,
+    url: link.url,
+  });
 }
