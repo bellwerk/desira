@@ -90,15 +90,15 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [x] Block **contribute** if that wish is reserved — *enforced in checkout route*
 
 ### M3 — UI v1 (no polish yet, just works)
-- [ ] App layout (sidebar/topbar)
-- [ ] Lists screen:
-  - [ ] Create list
-  - [ ] See my lists
-- [ ] List detail screen:
-  - [ ] Add wish
-  - [ ] Wish cards with: title, link, price, status
-  - [ ] Reserve button (shows “Reserved” after)
-  - [ ] Contribute button (wish or list fund)
+- [x] App layout (sidebar/topbar)
+- [x] Lists screen:
+  - [x] Create list
+  - [x] See my lists
+- [x] List detail screen:
+  - [x] Add wish
+  - [x] Wish cards with: title, link, price, status
+  - [ ] Reserve button (shows "Reserved" after) — *status shown, action is public-facing*
+  - [ ] Contribute button (wish or list fund) — *status shown, action is public-facing*
 - [ ] Invite flow:
   - [ ] Generate invite link
   - [ ] Accept invite
@@ -180,6 +180,10 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2024-12-30 (pm):
+  - Done: Added "Add wish" functionality to list detail screen (modal form, Zod validation). Item cards with title, price, link, status badges (Available/Reserved/Funded). Delete item action with confirmation. Funding progress bar display.
+  - Next: Invite flow (generate/accept links), or polish Reserve/Contribute buttons for owner testing.
+  - Blockers: None
 - 2024-12-30:
   - Done: M0 complete, M1 complete, M2 mostly complete (tables exist, views exist, RLS partial). Fixed reservation cancel flow (localStorage token format).
   - Next: M3 (app UI) — create/manage lists from authenticated dashboard.
