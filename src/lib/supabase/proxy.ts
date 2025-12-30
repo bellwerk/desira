@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-function publicKey() {
+function publicKey(): string {
   return (
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
@@ -10,8 +10,11 @@ function publicKey() {
   );
 }
 
-export async function updateSession(request: NextRequest) {
-  const response = NextResponse.next({ request });
+// Routes that require authentication
+const PROTECTED_ROUTES = ["/app"];
+
+export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +34,27 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh auth cookies for SSR (safe even if not logged in)
-  await supabase.auth.getClaims();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  // Check if accessing a protected route without auth
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (isProtectedRoute && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    response = NextResponse.redirect(loginUrl);
+  }
+
+  // Redirect logged-in users away from login page
+  if (pathname === "/login" && user) {
+    response = NextResponse.redirect(new URL("/app", request.url));
+  }
 
   return response;
 }

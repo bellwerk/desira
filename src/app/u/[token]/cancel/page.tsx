@@ -3,9 +3,14 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+type CancelTicketData = {
+  reservation_id: string;
+  cancel_token: string;
+};
+
 type State =
   | { status: "loading" }
-  | { status: "ready"; cancelTicket: string }
+  | { status: "ready"; ticketData: CancelTicketData }
   | { status: "missing" }
   | { status: "error"; message: string };
 
@@ -25,8 +30,8 @@ export default function CancelPage() {
     }
 
     try {
-      const t = localStorage.getItem(ticketKey);
-      if (!t) {
+      const raw = localStorage.getItem(ticketKey);
+      if (!raw) {
         queueMicrotask(() =>
           setState({
             status: "error",
@@ -36,7 +41,21 @@ export default function CancelPage() {
         return;
       }
 
-      queueMicrotask(() => setState({ status: "ready", cancelTicket: t }));
+      // Parse the JSON ticket data
+      try {
+        const parsed = JSON.parse(raw) as CancelTicketData;
+        if (parsed.reservation_id && parsed.cancel_token) {
+          queueMicrotask(() => setState({ status: "ready", ticketData: parsed }));
+        } else {
+          queueMicrotask(() =>
+            setState({ status: "error", message: "Invalid ticket format." })
+          );
+        }
+      } catch {
+        queueMicrotask(() =>
+          setState({ status: "error", message: "Invalid ticket format." })
+        );
+      }
     } catch {
       queueMicrotask(() =>
         setState({ status: "error", message: "Cannot access localStorage." })
@@ -47,13 +66,15 @@ export default function CancelPage() {
   async function confirmCancel() {
     if (!itemId || state.status !== "ready") return;
 
+    const { ticketData } = state;
+
+    // Use PATCH to cancel reservation (matches the API)
     const res = await fetch("/api/reservations", {
-      method: "DELETE",
+      method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        token,
-        item_id: itemId,
-        cancel_ticket: state.cancelTicket,
+        reservation_id: ticketData.reservation_id,
+        cancel_token: ticketData.cancel_token,
       }),
     });
 
@@ -64,7 +85,7 @@ export default function CancelPage() {
       return;
     }
 
-    // clear ticket
+    // Clear ticket from localStorage
     try {
       localStorage.removeItem(`desira_cancel_${itemId}`);
     } catch {

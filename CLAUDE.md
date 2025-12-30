@@ -75,3 +75,4 @@ When given a task:
 2) Implement with minimal changes.
 3) List exactly what files you changed and why.
 4) Note any follow-ups / risks / edge cases.
+5) Before starting work, read PROJECT.md and pick the top unchecked item in Next up.

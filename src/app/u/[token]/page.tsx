@@ -66,6 +66,10 @@ export default async function PublicListPage({ params }: PageProps) {
     );
   }
 
+  // ✅ normalize possible nulls
+  const allowContributions = (list.allow_contributions ?? true) as boolean;
+  const allowReservations = (list.allow_reservations ?? true) as boolean;
+
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("items")
     .select(
@@ -116,8 +120,12 @@ export default async function PublicListPage({ params }: PageProps) {
     totals = (r2.data ?? []) as ContributionTotal[];
   }
 
-  const reservedMap = new Map(reservedFlags.map((r) => [r.item_id, r.is_reserved]));
-  const fundedMap = new Map(totals.map((t) => [t.item_id, t.funded_amount_cents]));
+  const reservedMap = new Map(
+    reservedFlags.map((r) => [r.item_id, r.is_reserved])
+  );
+  const fundedMap = new Map(
+    totals.map((t) => [t.item_id, t.funded_amount_cents])
+  );
 
   return (
     <main className="mx-auto max-w-3xl p-6">
@@ -156,10 +164,14 @@ export default async function PublicListPage({ params }: PageProps) {
           const isFunded =
             item.status === "funded" || (target ? funded >= target : false);
 
-          const statusLabel = isFunded ? "Funded" : isReserved ? "Reserved" : "Available";
+          const statusLabel = isFunded
+            ? "Funded"
+            : isReserved
+            ? "Reserved"
+            : "Available";
 
-          const contributeDisabled = !list.allow_contributions || isFunded || isReserved;
-          const reserveDisabled = !list.allow_reservations || isReserved || isFunded;
+          const contributeDisabled = !allowContributions || isFunded || isReserved;
+          const reserveDisabled = !allowReservations || isReserved || isFunded;
 
           const left = target && target > funded ? Math.max(target - funded, 0) : 0;
 
@@ -194,7 +206,7 @@ export default async function PublicListPage({ params }: PageProps) {
                   </div>
                 ) : null}
 
-                {list.allow_contributions && target ? (
+                {allowContributions && target ? (
                   <div className="mt-3">
                     <div className="h-2 w-full rounded-full bg-neutral-100">
                       <div
