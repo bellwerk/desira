@@ -4,7 +4,7 @@
   --background: #f8fafc;
   --foreground: #0f172a;
   --accent-from: #f43f5e;
-  --accent-to: #fb923c;
+  --accent-to: #F0AB69;
 }
 
 @theme inline {
@@ -37,3 +37,43 @@ html {
   outline: 2px solid var(--accent-from);
   outline-offset: 2px;
 }
+
+/* Login page gradient animation */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient-shift 15s ease infinite;
+  background-size: 400% 400%;
+}
+/* Liquid Glass baseline (tweak values once, reuse everywhere) */
+.glass-1{
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.10);
+}
+
+.glass-2{
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  background: rgba(255,255,255,0.58);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.16);
+}
+
+.glass-3{
+  backdrop-filter: blur(34px);
+  -webkit-backdrop-filter: blur(34px);
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: 0 22px 80px rgba(0,0,0,0.18);
+}
+
+/* Dark mode variants (if using class-based dark mode) */
+.dark .glass-1{ background: rgba(20,20,24,0.45); border-color: rgba(255,255,255,0.12); }
+.dark .glass-2{ background: rgba(18,18,22,0.52); border-color: rgba(255,255,255,0.14); }
+.dark .glass-3{ background: rgba(14,14,18,0.62); border-color: rgba(255,255,255,0.12); }

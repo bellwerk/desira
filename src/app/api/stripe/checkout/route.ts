@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -81,6 +82,17 @@ export async function POST(req: Request) {
 
   if (list.visibility === "private") {
     return NextResponse.json({ error: "List is private." }, { status: 403 });
+  }
+
+  // Self-gifting prevention: check if authenticated user is the list owner
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user && list.owner_id === user.id) {
+    return NextResponse.json(
+      { error: "Cannot contribute to your own list items" },
+      { status: 403 }
+    );
   }
 
   // Load item and ensure it belongs to list

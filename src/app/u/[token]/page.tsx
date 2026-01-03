@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { ItemActions } from "@/components/ItemActions";
 import { EnablePayoutsButton } from "@/components/EnablePayoutsButton";
 
@@ -51,7 +52,8 @@ export default async function PublicListPage({ params }: PageProps) {
       allow_contributions,
       allow_anonymous,
       currency,
-      visibility
+      visibility,
+      owner_id
     `
     )
     .eq("share_token", token)
@@ -69,6 +71,11 @@ export default async function PublicListPage({ params }: PageProps) {
   // ✅ normalize possible nulls
   const allowContributions = (list.allow_contributions ?? true) as boolean;
   const allowReservations = (list.allow_reservations ?? true) as boolean;
+
+  // Check if current user is the list owner (for self-gifting prevention)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user ? list.owner_id === user.id : false;
 
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("items")
@@ -226,6 +233,7 @@ export default async function PublicListPage({ params }: PageProps) {
                   contributeDisabled={contributeDisabled}
                   canReserve={!reserveDisabled}
                   isReserved={isReserved}
+                  isOwner={isOwner}
                 />
               </div>
             </article>

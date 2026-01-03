@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-type CancelTicketData = {
-  reservation_id: string;
-  cancel_token: string;
-};
+// New format includes reservation_id; legacy format is just the token string
+type CancelTicketData =
+  | { type: "new"; reservation_id: string; cancel_token: string }
+  | { type: "legacy"; cancel_token: string };
 
 function readCancelTicket(itemId: string): CancelTicketData | null {
   const key = `desira_cancel_${itemId}`;
@@ -16,27 +16,28 @@ function readCancelTicket(itemId: string): CancelTicketData | null {
     const v = localStorage.getItem(key);
     if (!v || !v.trim()) return null;
 
-    // Handle both JSON format and legacy plain string
+    // Try to parse as JSON (new format)
     try {
-      const parsed = JSON.parse(v) as CancelTicketData;
+      const parsed = JSON.parse(v) as { reservation_id?: string; cancel_token?: string };
       if (parsed.reservation_id && parsed.cancel_token) {
-        return parsed;
+        return { type: "new", reservation_id: parsed.reservation_id, cancel_token: parsed.cancel_token };
       }
     } catch {
-      // Legacy plain string format - can't use without reservation_id
-      return null;
+      // Not JSON - treat as legacy plain string token
     }
-    return null;
+
+    // Legacy plain string format - still valid for cancellation via hash lookup
+    return { type: "legacy", cancel_token: v };
   } catch {
     return null;
   }
 }
 
-function writeCancelTicket(itemId: string, data: CancelTicketData): void {
+function writeCancelTicket(itemId: string, reservationId: string, cancelToken: string): void {
   const key = `desira_cancel_${itemId}`;
 
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify({ reservation_id: reservationId, cancel_token: cancelToken }));
   } catch {
     // ignore
   }
@@ -48,9 +49,10 @@ export function ItemActions(props: {
   contributeDisabled: boolean;
   canReserve: boolean;
   isReserved: boolean;
+  isOwner?: boolean;
 }) {
   const router = useRouter();
-  const { token, itemId, contributeDisabled, canReserve, isReserved } = props;
+  const { token, itemId, contributeDisabled, canReserve, isReserved, isOwner } = props;
 
   const [cancelTicket, setCancelTicket] = useState<CancelTicketData | null>(() =>
     readCancelTicket(itemId)
@@ -65,6 +67,15 @@ export function ItemActions(props: {
       ? "pointer-events-none bg-neutral-200 text-neutral-500"
       : "bg-neutral-900 text-white";
   }, [contributeDisabled]);
+
+  // Self-gifting prevention: hide all actions for list owners
+  if (isOwner) {
+    return (
+      <div className="mt-4 text-sm text-neutral-500 italic">
+        You own this list
+      </div>
+    );
+  }
 
   async function reserve() {
     const res = await fetch("/api/reservations", {
@@ -81,16 +92,12 @@ export function ItemActions(props: {
     }
 
     // Store cancel token for later cancellation
-    const reservationId = json?.reservation?.id;
-    const cancelToken = json?.cancel_token;
+    const reservationId = json?.reservation?.id as string | undefined;
+    const cancelTokenVal = json?.cancel_token as string | undefined;
     
-    if (reservationId && cancelToken) {
-      const ticketData: CancelTicketData = {
-        reservation_id: reservationId,
-        cancel_token: cancelToken,
-      };
-      writeCancelTicket(itemId, ticketData);
-      setCancelTicket(ticketData);
+    if (reservationId && cancelTokenVal) {
+      writeCancelTicket(itemId, reservationId, cancelTokenVal);
+      setCancelTicket({ type: "new", reservation_id: reservationId, cancel_token: cancelTokenVal });
     }
 
     router.refresh();

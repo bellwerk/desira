@@ -3,10 +3,10 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-type CancelTicketData = {
-  reservation_id: string;
-  cancel_token: string;
-};
+// New format includes reservation_id; legacy format is just the token string
+type CancelTicketData =
+  | { type: "new"; reservation_id: string; cancel_token: string }
+  | { type: "legacy"; cancel_token: string };
 
 type State =
   | { status: "loading" }
@@ -31,7 +31,7 @@ export default function CancelPage() {
 
     try {
       const raw = localStorage.getItem(ticketKey);
-      if (!raw) {
+      if (!raw || !raw.trim()) {
         queueMicrotask(() =>
           setState({
             status: "error",
@@ -41,21 +41,32 @@ export default function CancelPage() {
         return;
       }
 
-      // Parse the JSON ticket data
+      // Try to parse as JSON (new format)
       try {
-        const parsed = JSON.parse(raw) as CancelTicketData;
+        const parsed = JSON.parse(raw) as { reservation_id?: string; cancel_token?: string };
         if (parsed.reservation_id && parsed.cancel_token) {
-          queueMicrotask(() => setState({ status: "ready", ticketData: parsed }));
-        } else {
+          // Capture values to satisfy TypeScript narrowing in closure
+          const rid = parsed.reservation_id;
+          const ct = parsed.cancel_token;
           queueMicrotask(() =>
-            setState({ status: "error", message: "Invalid ticket format." })
+            setState({
+              status: "ready",
+              ticketData: { type: "new", reservation_id: rid, cancel_token: ct },
+            })
           );
+          return;
         }
       } catch {
-        queueMicrotask(() =>
-          setState({ status: "error", message: "Invalid ticket format." })
-        );
+        // Not JSON - fall through to legacy handling
       }
+
+      // Legacy plain string format - still valid for cancellation via hash lookup
+      queueMicrotask(() =>
+        setState({
+          status: "ready",
+          ticketData: { type: "legacy", cancel_token: raw },
+        })
+      );
     } catch {
       queueMicrotask(() =>
         setState({ status: "error", message: "Cannot access localStorage." })
@@ -68,14 +79,17 @@ export default function CancelPage() {
 
     const { ticketData } = state;
 
+    // Build payload based on ticket type
+    const payload =
+      ticketData.type === "new"
+        ? { reservation_id: ticketData.reservation_id, cancel_token: ticketData.cancel_token }
+        : { cancel_token: ticketData.cancel_token };
+
     // Use PATCH to cancel reservation (matches the API)
     const res = await fetch("/api/reservations", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        reservation_id: ticketData.reservation_id,
-        cancel_token: ticketData.cancel_token,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json().catch(() => ({}));

@@ -3,19 +3,44 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 
-type AuthResult = { error?: string; message?: string } | undefined;
-
-export async function login(formData: FormData): Promise<AuthResult> {
+export async function signInWithGoogle(redirectTo?: string): Promise<{ url?: string; error?: string }> {
   const supabase = await createClient();
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "http://localhost:3000";
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirectTo") as string) || "/app";
-
-  if (!email || !password) {
-    return { error: "Email and password are required" };
+  // Build the callback URL with the intended redirect destination
+  const callbackUrl = new URL("/auth/callback", origin);
+  if (redirectTo) {
+    callbackUrl.searchParams.set("next", redirectTo);
   }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: callbackUrl.toString(),
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (data.url) {
+    return { url: data.url };
+  }
+
+  return { error: "Failed to get OAuth URL" };
+}
+
+// Email/password login
+export async function signInWithEmail(
+  email: string,
+  password: string,
+  redirectTo?: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -27,22 +52,16 @@ export async function login(formData: FormData): Promise<AuthResult> {
   }
 
   revalidatePath("/", "layout");
-  
-  // Redirect to intended destination (or /app by default)
-  // Validate that redirectTo is a relative path to prevent open redirect
-  const safeRedirect = redirectTo.startsWith("/") ? redirectTo : "/app";
+  const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/app";
   redirect(safeRedirect);
 }
 
-export async function signup(formData: FormData): Promise<AuthResult> {
+// Email/password signup
+export async function signUpWithEmail(
+  email: string,
+  password: string
+): Promise<{ error?: string; message?: string }> {
   const supabase = await createClient();
-
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  if (!email || !password) {
-    return { error: "Email and password are required" };
-  }
 
   if (password.length < 6) {
     return { error: "Password must be at least 6 characters" };
@@ -69,4 +88,3 @@ export async function signout(): Promise<void> {
   revalidatePath("/", "layout");
   redirect("/login");
 }
-

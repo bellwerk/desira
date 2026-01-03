@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -11,10 +12,17 @@ const CreateSchema = z.object({
   reserved_by_email: z.string().trim().email().max(120).optional(),
 });
 
-const CancelSchema = z.object({
-  reservation_id: z.string().uuid(),
-  cancel_token: z.string().min(10).max(200),
-});
+// New format: { reservation_id, cancel_token }
+// Legacy format: { cancel_token } only (lookup by hash)
+const CancelSchema = z.union([
+  z.object({
+    reservation_id: z.string().uuid(),
+    cancel_token: z.string().min(10).max(200),
+  }),
+  z.object({
+    cancel_token: z.string().min(10).max(200),
+  }),
+]);
 
 function sha256(s: string) {
   return crypto.createHash("sha256").update(s).digest("hex");
@@ -68,6 +76,41 @@ export async function POST(req: Request) {
     );
   }
 
+  // Block reservation if item already has contributions (mutual exclusivity)
+  const { data: contribs } = await supabaseAdmin
+    .from("contributions")
+    .select("id")
+    .eq("item_id", item_id)
+    .eq("payment_status", "succeeded")
+    .limit(1);
+
+  if (contribs && contribs.length > 0) {
+    return NextResponse.json(
+      { error: "Cannot reserve: item already has contributions" },
+      { status: 409 }
+    );
+  }
+
+  // Self-gifting prevention: check if authenticated user is the list owner
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    // Check if this user is the list owner
+    const { data: listWithOwner } = await supabaseAdmin
+      .from("lists")
+      .select("owner_id")
+      .eq("id", item.list_id)
+      .single();
+
+    if (listWithOwner && listWithOwner.owner_id === user.id) {
+      return NextResponse.json(
+        { error: "Cannot reserve your own list items" },
+        { status: 403 }
+      );
+    }
+  }
+
   const cancelToken = crypto.randomBytes(24).toString("base64url");
   const cancelTokenHash = sha256(cancelToken);
 
@@ -98,7 +141,7 @@ export async function POST(req: Request) {
 }
 
 // PATCH /api/reservations -> cancel reservation (requires cancel token)
-export async function PATCH(req: Request) {
+export async function PATCH(req: Request): Promise<NextResponse> {
   const json = await req.json().catch(() => null);
   const parsed = CancelSchema.safeParse(json);
 
@@ -109,31 +152,54 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const { reservation_id, cancel_token } = parsed.data;
+  const { cancel_token } = parsed.data;
   const hash = sha256(cancel_token);
 
-  const { data: r, error: rErr } = await supabaseAdmin
-    .from("reservations")
-    .select("id,status,cancel_token_hash")
-    .eq("id", reservation_id)
-    .single();
+  // Check if reservation_id was provided (new format) or if we need to lookup (legacy)
+  const hasReservationId = "reservation_id" in parsed.data;
 
-  if (rErr || !r) {
-    return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
+  let reservation: { id: string; status: string; cancel_token_hash: string | null } | null = null;
+
+  if (hasReservationId) {
+    // New format: lookup by reservation_id
+    const reservation_id = (parsed.data as { reservation_id: string }).reservation_id;
+    const { data: r, error: rErr } = await supabaseAdmin
+      .from("reservations")
+      .select("id,status,cancel_token_hash")
+      .eq("id", reservation_id)
+      .single();
+
+    if (rErr || !r) {
+      return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
+    }
+    reservation = r;
+  } else {
+    // Legacy format: lookup by cancel_token_hash
+    const { data: r, error: rErr } = await supabaseAdmin
+      .from("reservations")
+      .select("id,status,cancel_token_hash")
+      .eq("cancel_token_hash", hash)
+      .eq("status", "reserved")
+      .single();
+
+    if (rErr || !r) {
+      return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
+    }
+    reservation = r;
   }
 
-  if (r.status !== "reserved") {
+  if (reservation.status !== "reserved") {
     return NextResponse.json({ error: "Not cancelable" }, { status: 409 });
   }
 
-  if (!r.cancel_token_hash || r.cancel_token_hash !== hash) {
+  if (!reservation.cancel_token_hash || reservation.cancel_token_hash !== hash) {
     return NextResponse.json({ error: "Invalid cancel token" }, { status: 403 });
   }
 
   const { data: updated, error: upErr } = await supabaseAdmin
     .from("reservations")
     .update({ status: "canceled", canceled_at: new Date().toISOString() })
-    .eq("id", reservation_id)
+    .eq("id", reservation.id)
     .select("id,status")
     .single();
 
