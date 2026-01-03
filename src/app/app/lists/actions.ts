@@ -130,7 +130,8 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
   }
 
   // Verify user is an accepted member of the list (owner or member)
-  const { data: membership, error: membershipErr } = await supabase
+  // First, check list_members for membership
+  const { data: membership } = await supabase
     .from("list_members")
     .select("id, role")
     .eq("list_id", parsed.data.list_id)
@@ -138,8 +139,19 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
     .eq("status", "accepted")
     .single();
 
-  if (membershipErr || !membership) {
-    return { success: false, error: "List not found or you don't have permission" };
+  // If not found in list_members, check if user is the list owner directly
+  // (fallback in case the on_list_created trigger didn't run)
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", parsed.data.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "List not found or you don't have permission" };
+    }
   }
 
   // Get max sort_order
@@ -199,7 +211,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
   }
 
   // Verify user is an accepted member of the list (owner or member)
-  const { data: membership, error: membershipErr } = await supabase
+  const { data: membership } = await supabase
     .from("list_members")
     .select("id, role")
     .eq("list_id", item.list_id)
@@ -207,8 +219,19 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
     .eq("status", "accepted")
     .single();
 
-  if (membershipErr || !membership) {
-    return { success: false, error: "You don't have permission to delete this item" };
+  // If not found in list_members, check if user is the list owner directly
+  // (fallback in case the on_list_created trigger didn't run)
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", item.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "You don't have permission to delete this item" };
+    }
   }
 
   const { error } = await supabase.from("items").delete().eq("id", itemId);
