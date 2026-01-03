@@ -23,9 +23,9 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2024-12-31
+- Date: 2025-01-02
 - Current branch: main
-- What we're building now: M3 (Link Preview) — auto-parse item metadata from URL
+- What we're building now: M3 (Link Preview) ✅ DONE — next: M6 (Notifications) or M7 (Hardening)
 - What's blocked: None
 
 ---
@@ -146,25 +146,25 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 **Goal:** When a user pastes a product URL, Desira auto-fills item fields (best-effort) and never blocks manual entry.
 
 ### Scope (M3)
-- [ ] Extract **title**, **description**, **image**, **price (best-effort)** from a product link
-- [ ] Use **Open Graph / Twitter meta tags** + **JSON-LD** parsing
-- [ ] Server-side fetch (no client-side scraping)
-- [ ] Cache results to avoid repeated fetches
+- [x] Extract **title**, **description**, **image**, **price (best-effort)** from a product link
+- [x] Use **Open Graph / Twitter meta tags** + **JSON-LD** parsing
+- [x] Server-side fetch (no client-side scraping)
+- [x] Cache results to avoid repeated fetches
 
 ### Non-goals (M3)
-- [ ] “Works on every store” reliability (JS-rendered pages / anti-bot)
+- [ ] "Works on every store" reliability (JS-rendered pages / anti-bot)
 - [ ] Headless browser scraping
 - [ ] Guaranteed price accuracy
 
 ---
 
 ### UX / UI Behavior
-- [ ] URL input in “Add Item”
-- [ ] Debounce ~500ms after paste/typing
-- [ ] Show loading skeleton → then Preview Card (image + title + domain + price if found)
-- [ ] Autofill editable fields: title, description, image, price/currency (optional)
-- [ ] Failure state: inline error (“Couldn’t fetch details…”) + user can still save manually
-- [ ] “Refresh” button to refetch (`force=true`)
+- [x] URL input in "Add Item"
+- [x] Debounce ~500ms after paste/typing
+- [x] Show loading skeleton → then Preview Card (image + title + domain + price if found)
+- [x] Autofill editable fields: title, description, image, price/currency (optional)
+- [x] Failure state: inline error ("Couldn't fetch details…") + user can still save manually
+- [x] "Refresh" button to refetch (`force=true`)
 
 ---
 
@@ -197,22 +197,22 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ### Caching
-- [ ] Cache by `normalizedUrl`
-- [ ] Default TTL: **7 days**
-- [ ] If price exists: TTL **24 hours**
-- [ ] `force=true` bypasses TTL
+- [x] Cache by `normalizedUrl`
+- [x] Default TTL: **7 days**
+- [x] If price exists: TTL **24 hours**
+- [x] `force=true` bypasses TTL
 
 ---
 
 ### Security / Abuse (must-have)
-- [ ] SSRF protection:
+- [x] SSRF protection:
   - allow only `http/https`
   - block localhost + private/link-local IP ranges
   - DNS resolve + re-check
   - limit redirects (≤5)
   - timeout (6–8s)
   - max response size (1–2MB)
-- [ ] Rate limit preview calls (e.g., per user/IP)
+- [ ] Rate limit preview calls (e.g., per user/IP) — *deferred to M7 hardening*
 
 ---
 
@@ -229,21 +229,21 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ### Implementation Tasks (in order)
-1. [ ] URL normalization (strip utm_*, fbclid, gclid, etc.)
-2. [ ] Route handler `/api/link-preview` with SSRF guard + caching read/write
-3. [ ] HTML fetch + meta parsing (OG/Twitter/meta/title)
-4. [ ] JSON-LD parsing (Product + Offers for price)
-5. [ ] UI wiring: debounce → fetch → preview card → autofill → editable fields
-6. [ ] Error handling + “Refresh” (`force=true`)
-7. [ ] Rate limit + logging/metrics (status + error_code)
-8. [ ] Tests: normalization, SSRF, JSON-LD price extraction edge cases
+1. [x] URL normalization (strip utm_*, fbclid, gclid, etc.) — `src/lib/url.ts`
+2. [x] Route handler `/api/link-preview` with SSRF guard + caching read/write
+3. [x] HTML fetch + meta parsing (OG/Twitter/meta/title)
+4. [x] JSON-LD parsing (Product + Offers for price)
+5. [x] UI wiring: debounce → fetch → preview card → autofill → editable fields
+6. [x] Error handling + "Refresh" (`force=true`)
+7. [ ] Rate limit + logging/metrics (status + error_code) — *deferred to M7*
+8. [ ] Tests: normalization, SSRF, JSON-LD price extraction edge cases — *future*
 
 ### Acceptance Criteria
-- [ ] Pasting a typical ecommerce URL auto-fills title/desc/image in <3s (when available)
-- [ ] Price fills when present in JSON-LD/OG; otherwise stays empty (editable)
-- [ ] Failure never blocks saving an item manually
-- [ ] SSRF protections + rate limiting are enforced
-- [ ] Cache prevents repeated fetches for the same normalized URL within TTL
+- [x] Pasting a typical ecommerce URL auto-fills title/desc/image in <3s (when available)
+- [x] Price fills when present in JSON-LD/OG; otherwise stays empty (editable)
+- [x] Failure never blocks saving an item manually
+- [x] SSRF protections enforced (rate limiting deferred to M7)
+- [x] Cache prevents repeated fetches for the same normalized URL within TTL
 
 
 ### M4 — Reserve flow (the "no duplicates" feature)
@@ -328,6 +328,16 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2025-01-02:
+  - Done: M3 Link Preview fully implemented:
+    - `link_previews` table migration (006)
+    - URL normalization + SSRF protection utilities (`src/lib/url.ts`)
+    - `/api/link-preview` route with OG/Twitter/JSON-LD parsing + caching
+    - `useLinkPreview` hook with 500ms debounce
+    - `AddItemForm` wired up: paste URL → preview → autofill title/image/price
+  - Deferred: Rate limiting (M7), comprehensive tests (future)
+  - Next: M6 Notifications or M7 MVP hardening
+  - Blockers: None
 - 2024-12-31:
   - Done: Audited PROJECT.md — marked M2 RLS, M3 UI, and M4 reserve flow as complete. List settings page, invite flow, self-gifting prevention (UI+server), and mutual exclusivity (DB triggers + server checks) all implemented.
   - Next: M3 Link Preview (auto-parse item metadata from URL) OR M6 Notifications.

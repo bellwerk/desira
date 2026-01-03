@@ -1,14 +1,92 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { addItem } from "../actions";
+import { useLinkPreview } from "@/hooks/useLinkPreview";
+import { LinkPreviewCard } from "@/components/ui/LinkPreviewCard";
 
 export function AddItemForm({ listId }: { listId: string }): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Form field refs for autofill
+  const titleRef = useRef<HTMLInputElement>(null);
+  const productUrlRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const imageUrlRef = useRef<HTMLInputElement>(null);
+
+  // Track which fields were autofilled (for visual feedback)
+  const [autofilledFields, setAutofilledFields] = useState<Set<string>>(new Set());
+
+  // Link preview hook
+  const {
+    status: previewStatus,
+    data: previewData,
+    error: previewError,
+    fetch: fetchPreview,
+    reset: resetPreview,
+  } = useLinkPreview();
+
+  // Handle URL change with debounced preview
+  const handleUrlChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const url = e.target.value;
+      fetchPreview(url);
+    },
+    [fetchPreview]
+  );
+
+  // Autofill fields from preview data
+  const handleAutofill = useCallback(() => {
+    if (!previewData) return;
+
+    const filled = new Set<string>();
+
+    // Autofill title if empty
+    if (titleRef.current && !titleRef.current.value && previewData.title) {
+      titleRef.current.value = previewData.title;
+      filled.add("title");
+    }
+
+    // Autofill image URL if empty
+    if (imageUrlRef.current && !imageUrlRef.current.value && previewData.image) {
+      imageUrlRef.current.value = previewData.image;
+      filled.add("image_url");
+    }
+
+    // Autofill price if empty and we have price data
+    if (priceRef.current && !priceRef.current.value && previewData.price) {
+      // Price from API is already in dollars (not cents)
+      priceRef.current.value = previewData.price.amount.toFixed(2);
+      filled.add("price");
+    }
+
+    setAutofilledFields(filled);
+
+    // Clear autofill highlights after a delay
+    if (filled.size > 0) {
+      setTimeout(() => setAutofilledFields(new Set()), 2000);
+    }
+  }, [previewData]);
+
+  // Auto-fill when preview data arrives
+  useEffect(() => {
+    if (previewStatus === "success" && previewData) {
+      // Use queueMicrotask to avoid calling setState directly in effect
+      queueMicrotask(() => handleAutofill());
+    }
+  }, [previewStatus, previewData, handleAutofill]);
+
+  // Reset form state when closing
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setError(null);
+    resetPreview();
+    setAutofilledFields(new Set());
+  }, [resetPreview]);
 
   async function handleSubmit(formData: FormData): Promise<void> {
     formData.set("list_id", listId);
@@ -17,13 +95,21 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
     startTransition(async () => {
       const result = await addItem(formData);
       if (result.success) {
-        setIsOpen(false);
+        handleClose();
         router.refresh();
       } else {
         setError(result.error ?? "Failed to add item");
       }
     });
   }
+
+  // Force refresh preview
+  const handleRefreshPreview = useCallback(() => {
+    const url = productUrlRef.current?.value;
+    if (url) {
+      fetchPreview(url, true);
+    }
+  }, [fetchPreview]);
 
   if (!isOpen) {
     return (
@@ -39,12 +125,18 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
     );
   }
 
+  // Helper for autofill highlight class
+  const getAutofillClass = (field: string) =>
+    autofilledFields.has(field)
+      ? "ring-2 ring-emerald-500/50 border-emerald-400 dark:border-emerald-500"
+      : "";
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add new item</h3>
         <button
-          onClick={() => setIsOpen(false)}
+          onClick={handleClose}
           className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -60,33 +152,57 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
       )}
 
       <form action={handleSubmit} className="space-y-4">
+        {/* Product URL — moved to top for link preview flow */}
+        <div>
+          <label htmlFor="product_url" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Product URL <span className="text-slate-400">(optional — paste to auto-fill)</span>
+          </label>
+          <input
+            ref={productUrlRef}
+            type="url"
+            id="product_url"
+            name="product_url"
+            placeholder="https://example.com/product"
+            onChange={handleUrlChange}
+            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+          />
+        </div>
+
+        {/* Link Preview Card */}
+        {previewStatus !== "idle" && (
+          <LinkPreviewCard
+            status={previewStatus}
+            data={
+              previewData
+                ? {
+                    title: previewData.title ?? undefined,
+                    description: previewData.description ?? undefined,
+                    image: previewData.image ?? undefined,
+                    domain: previewData.domain,
+                    price: previewData.price ?? undefined,
+                  }
+                : undefined
+            }
+            error={previewError ?? undefined}
+            onRefresh={handleRefreshPreview}
+            className="mt-2"
+          />
+        )}
+
         {/* Title */}
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Title <span className="text-red-500">*</span>
           </label>
           <input
+            ref={titleRef}
             type="text"
             id="title"
             name="title"
             required
             maxLength={200}
             placeholder="e.g., Wireless headphones"
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
-          />
-        </div>
-
-        {/* Product URL */}
-        <div>
-          <label htmlFor="product_url" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Product URL <span className="text-slate-400">(optional)</span>
-          </label>
-          <input
-            type="url"
-            id="product_url"
-            name="product_url"
-            placeholder="https://example.com/product"
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+            className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("title")}`}
           />
         </div>
 
@@ -97,13 +213,14 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
               Price (CAD) <span className="text-slate-400">(optional)</span>
             </label>
             <input
+              ref={priceRef}
               type="number"
               id="price"
               name="price"
               min="0"
               step="0.01"
               placeholder="0.00"
-              className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("price")}`}
             />
           </div>
 
@@ -113,11 +230,12 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
               Image URL <span className="text-slate-400">(optional)</span>
             </label>
             <input
+              ref={imageUrlRef}
               type="url"
               id="image_url"
               name="image_url"
               placeholder="https://..."
-              className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("image_url")}`}
             />
           </div>
         </div>
@@ -156,7 +274,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
           >
             Cancel
@@ -187,7 +305,3 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
     </div>
   );
 }
-
-
-
-

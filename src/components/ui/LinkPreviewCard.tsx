@@ -120,7 +120,7 @@ export function LinkPreviewCard({
           )}
           {data?.price && (
             <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-300">
-              {data.price.currency} {(data.price.amount / 100).toFixed(2)}
+              {data.price.currency} {data.price.amount.toFixed(2)}
             </p>
           )}
         </div>
