@@ -23,9 +23,9 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2025-01-02
+- Date: 2026-01-03
 - Current branch: main
-- What we're building now: M3 (Link Preview) ✅ DONE — next: M6 (Notifications) or M7 (Hardening)
+- What we're building now: M6 (Notifications) or M7 (Hardening) — all core flows (M0–M5) done
 - What's blocked: None
 
 ---
@@ -328,6 +328,11 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2026-01-03:
+  - Audit: Reviewed all milestones — M0, M1 (core), M2, M3 (UI + Link Preview), M4, M5 are complete.
+  - Remaining: M6 (Notifications) and M7 (MVP hardening) are next.
+  - Note: Auth providers (Google/Facebook/Apple OAuth) need Supabase Dashboard config, not code.
+  - Next: Recommend M7 (hardening) before M6 — solidify error/loading states before adding notifications.
 - 2025-01-02:
   - Done: M3 Link Preview fully implemented:
     - `link_previews` table migration (006)

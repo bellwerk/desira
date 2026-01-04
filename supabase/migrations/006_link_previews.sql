@@ -59,3 +59,5 @@ CREATE TRIGGER set_link_preview_updated_at
   BEFORE UPDATE ON public.link_previews
   FOR EACH ROW EXECUTE FUNCTION public.update_link_preview_timestamp();
 
+
+

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useToastActions } from "@/components/ui";
 
 // New format includes reservation_id; legacy format is just the token string
 type CancelTicketData =
@@ -52,8 +53,10 @@ export function ItemActions(props: {
   isOwner?: boolean;
 }) {
   const router = useRouter();
+  const toast = useToastActions();
   const { token, itemId, contributeDisabled, canReserve, isReserved, isOwner } = props;
 
+  const [isLoading, setIsLoading] = useState(false);
   const [cancelTicket, setCancelTicket] = useState<CancelTicketData | null>(() =>
     readCancelTicket(itemId)
   );
@@ -78,29 +81,38 @@ export function ItemActions(props: {
   }
 
   async function reserve() {
-    const res = await fetch("/api/reservations", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token, item_id: itemId }),
-    });
+    setIsLoading(true);
 
-    const json = await res.json().catch(() => ({}));
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, item_id: itemId }),
+      });
 
-    if (!res.ok) {
-      alert(json?.error ?? "Failed to reserve.");
-      return;
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast.error(json?.error ?? "Failed to reserve item.");
+        return;
+      }
+
+      // Store cancel token for later cancellation
+      const reservationId = json?.reservation?.id as string | undefined;
+      const cancelTokenVal = json?.cancel_token as string | undefined;
+      
+      if (reservationId && cancelTokenVal) {
+        writeCancelTicket(itemId, reservationId, cancelTokenVal);
+        setCancelTicket({ type: "new", reservation_id: reservationId, cancel_token: cancelTokenVal });
+      }
+
+      toast.success("Item reserved! You can cancel anytime.");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Store cancel token for later cancellation
-    const reservationId = json?.reservation?.id as string | undefined;
-    const cancelTokenVal = json?.cancel_token as string | undefined;
-    
-    if (reservationId && cancelTokenVal) {
-      writeCancelTicket(itemId, reservationId, cancelTokenVal);
-      setCancelTicket({ type: "new", reservation_id: reservationId, cancel_token: cancelTokenVal });
-    }
-
-    router.refresh();
   }
 
   function goCancel() {
@@ -141,14 +153,28 @@ export function ItemActions(props: {
         <button
           type="button"
           onClick={reserve}
-          disabled={!canReserve}
-          className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${
-            canReserve
-              ? "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-300"
+          disabled={!canReserve || isLoading}
+          className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+            canReserve && !isLoading
+              ? "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50"
               : "bg-neutral-200 text-neutral-500"
           }`}
         >
-          Reserve
+          {isLoading ? (
+            <span className="inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Reserving…
+            </span>
+          ) : (
+            "Reserve"
+          )}
         </button>
       )}
     </div>

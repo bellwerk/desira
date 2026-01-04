@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteItem } from "../actions";
-import { GlassCard, GlassButton, BadgeChip, ProgressBar } from "@/components/ui";
+import { GlassCard, GlassButton, BadgeChip, ProgressBar, useToastActions } from "@/components/ui";
 
 type ItemRow = {
   id: string;
@@ -59,6 +59,7 @@ export function ItemCard({
   isOwner = true, // Default to owner view in /app/lists/[id]
 }: ItemCardProps): React.ReactElement {
   const router = useRouter();
+  const toast = useToastActions();
   const [isPending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -75,8 +76,14 @@ export function ItemCard({
 
   function handleDelete(): void {
     startTransition(async () => {
-      await deleteItem(item.id);
-      router.refresh();
+      const result = await deleteItem(item.id);
+      if (result.success) {
+        toast.success("Item deleted");
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Failed to delete item");
+        setShowConfirm(false);
+      }
     });
   }
 

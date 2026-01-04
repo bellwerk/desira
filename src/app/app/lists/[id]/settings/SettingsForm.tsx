@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateList, deleteList, ActionResult } from "../../actions";
+import { useToastActions } from "@/components/ui";
 import type { ListSettings } from "./page";
 
 type SettingsFormProps = {
@@ -14,6 +15,7 @@ const initialState: ActionResult = { success: false };
 
 export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
   const router = useRouter();
+  const toast = useToastActions();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -22,6 +24,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
     async (_prev: ActionResult, formData: FormData) => {
       const result = await updateList(formData);
       if (result.success) {
+        toast.success("Settings saved successfully!");
         router.push(`/app/lists/${list.id}`);
       }
       return result;
@@ -36,11 +39,15 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
       const result = await deleteList(list.id);
       if (!result.success) {
         setDeleteError(result.error ?? "Failed to delete list");
+        toast.error(result.error ?? "Failed to delete list");
         setIsDeleting(false);
+      } else {
+        toast.success("List deleted");
       }
       // On success, the action redirects to /app/lists
     } catch {
       setDeleteError("An unexpected error occurred");
+      toast.error("An unexpected error occurred");
       setIsDeleting(false);
     }
   }
@@ -54,12 +61,6 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
         {state.error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
             {state.error}
-          </div>
-        )}
-
-        {state.success && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-            Settings saved successfully!
           </div>
         )}
 
@@ -390,5 +391,6 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
     </>
   );
 }
+
 
 
