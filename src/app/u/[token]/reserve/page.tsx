@@ -2,11 +2,13 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useToastActions } from "@/components/ui";
 
 export default function ReservePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
+  const toast = useToastActions();
   const itemId = search.get("item");
 
   const [name, setName] = useState("");
@@ -40,8 +42,10 @@ export default function ReservePage() {
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      const msg = json?.error ?? "Failed to reserve";
       setStatus("error");
-      setErrorMsg(json?.error ?? "Failed to reserve");
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
@@ -57,6 +61,7 @@ export default function ReservePage() {
     }
 
     setStatus("success");
+    toast.success("Item reserved! Redirecting…");
     setTimeout(() => router.push(`/u/${token}`), 600);
   }
 

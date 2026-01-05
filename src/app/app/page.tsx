@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DevSeedButton } from "@/components/DevSeedButton";
 
 export default function DashboardPage(): React.ReactElement {
   return (
@@ -61,6 +62,9 @@ export default function DashboardPage(): React.ReactElement {
           </p>
         </Link>
       </div>
+
+      {/* Dev mode seed button */}
+      <DevSeedButton />
 
       {/* Getting started checklist */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

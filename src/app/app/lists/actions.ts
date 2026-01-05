@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { z } from "zod";
+import {
+  createNotificationsForUsers,
+  getListMemberIdsExcept,
+  NotificationType,
+} from "@/lib/notifications";
 
 export type ActionResult = {
   success: boolean;
@@ -165,22 +170,44 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
 
   const nextOrder = ((maxSort?.sort_order as number | null) ?? 0) + 1;
 
-  const { error } = await supabase.from("items").insert({
-    list_id: parsed.data.list_id,
-    title: parsed.data.title,
-    product_url: parsed.data.product_url || null,
-    image_url: parsed.data.image_url || null,
-    price_cents: parsed.data.price_cents ?? null,
-    target_amount_cents: parsed.data.target_amount_cents ?? null,
-    note_public: parsed.data.note_public ?? null,
-    note_private: parsed.data.note_private ?? null,
-    status: "active",
-    sort_order: nextOrder,
-  });
+  const { data: insertedItem, error } = await supabase
+    .from("items")
+    .insert({
+      list_id: parsed.data.list_id,
+      title: parsed.data.title,
+      product_url: parsed.data.product_url || null,
+      image_url: parsed.data.image_url || null,
+      price_cents: parsed.data.price_cents ?? null,
+      target_amount_cents: parsed.data.target_amount_cents ?? null,
+      note_public: parsed.data.note_public ?? null,
+      note_private: parsed.data.note_private ?? null,
+      status: "active",
+      sort_order: nextOrder,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { success: false, error: error.message };
   }
+
+  // Notify other list members about the new item (fire-and-forget)
+  void (async () => {
+    const memberIds = await getListMemberIdsExcept(parsed.data.list_id, user.id);
+    if (memberIds.length > 0) {
+      await createNotificationsForUsers(memberIds, {
+        type: NotificationType.ITEM_ADDED,
+        title: "New wish added",
+        body: `"${parsed.data.title}" was added to the list`,
+        link: `/app/lists/${parsed.data.list_id}`,
+        metadata: {
+          list_id: parsed.data.list_id,
+          item_id: insertedItem.id,
+          item_title: parsed.data.title,
+        },
+      });
+    }
+  })();
 
   return { success: true };
 }

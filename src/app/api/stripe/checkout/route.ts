@@ -84,23 +84,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "List is private." }, { status: 403 });
   }
 
-  // Self-gifting prevention: check if authenticated user is the list owner
+  // Parallel fetch: item, user auth, and payment account (reduces waterfall)
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [itemResult, userResult, acctResult] = await Promise.all([
+    // Load item and ensure it belongs to list
+    supabaseAdmin
+      .from("items")
+      .select(`id, list_id, title, target_amount_cents, price_cents, status`)
+      .eq("id", body.item_id)
+      .maybeSingle(),
+    // Self-gifting prevention: check if authenticated user is the list owner
+    supabase.auth.getUser(),
+    // Recipient must have a connected Stripe account
+    supabaseAdmin
+      .from("payment_accounts")
+      .select("provider_account_id, charges_enabled, payouts_enabled, details_submitted")
+      .eq("owner_id", list.owner_id)
+      .maybeSingle(),
+  ]);
 
+  const { data: item, error: itemErr } = itemResult;
+  const { data: { user } } = userResult;
+  const { data: acct } = acctResult;
+
+  // Self-gifting check
   if (user && list.owner_id === user.id) {
     return NextResponse.json(
       { error: "Cannot contribute to your own list items" },
       { status: 403 }
     );
   }
-
-  // Load item and ensure it belongs to list
-  const { data: item, error: itemErr } = await supabaseAdmin
-    .from("items")
-    .select(`id, list_id, title, target_amount_cents, price_cents, status`)
-    .eq("id", body.item_id)
-    .maybeSingle();
 
   if (itemErr || !item || item.list_id !== list.id) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
@@ -110,27 +123,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Item is not available." }, { status: 409 });
   }
 
-  // Block contributions if reserved (per your rule)
-  const { data: rsv } = await supabaseAdmin
-    .from("reservations")
-    .select("id")
-    .eq("item_id", item.id)
-    .eq("status", "reserved")
-    .maybeSingle();
+  // Parallel fetch: reservations and contributions (reduces waterfall)
+  const targetCents = item.target_amount_cents ?? item.price_cents ?? null;
+
+  const [rsvResult, contribsResult] = await Promise.all([
+    // Block contributions if reserved
+    supabaseAdmin
+      .from("reservations")
+      .select("id")
+      .eq("item_id", item.id)
+      .eq("status", "reserved")
+      .maybeSingle(),
+    // Get funding status if there's a target
+    targetCents
+      ? supabaseAdmin
+          .from("contributions")
+          .select("amount_cents, payment_status")
+          .eq("item_id", item.id)
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  const { data: rsv } = rsvResult;
+  const { data: contribs, error: sumErr } = contribsResult;
 
   if (rsv) {
     return NextResponse.json({ error: "Item is reserved." }, { status: 409 });
   }
 
-  // Optional: close when funded (default behavior)
-  const targetCents = item.target_amount_cents ?? item.price_cents ?? null;
-
   if (targetCents) {
-    const { data: contribs, error: sumErr } = await supabaseAdmin
-      .from("contributions")
-      .select("amount_cents, payment_status")
-      .eq("item_id", item.id);
-
     if (sumErr) {
       return NextResponse.json({ error: "Failed to compute funding." }, { status: 500 });
     }
@@ -152,13 +172,6 @@ export async function POST(req: Request) {
       );
     }
   }
-
-  // Recipient must have a connected Stripe account
-  const { data: acct } = await supabaseAdmin
-    .from("payment_accounts")
-    .select("provider_account_id, charges_enabled, payouts_enabled, details_submitted")
-    .eq("owner_id", list.owner_id)
-    .maybeSingle();
 
   if (
     !acct?.provider_account_id ||

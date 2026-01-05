@@ -2,6 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useToastActions } from "@/components/ui";
 
 type Draft = {
   item_id: string;
@@ -35,6 +36,7 @@ export default function PayPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
+  const toast = useToastActions();
   const itemId = search.get("item");
 
   const draftKey = useMemo(
@@ -113,15 +115,19 @@ export default function PayPage() {
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      const errorMsg = json?.error ?? "Failed to start checkout.";
+      toast.error(errorMsg);
       setState({
         status: "error",
-        message: json?.error ?? "Failed to start checkout.",
+        message: errorMsg,
       });
       return;
     }
 
     if (!json?.url) {
-      setState({ status: "error", message: "Stripe checkout URL missing." });
+      const errorMsg = "Stripe checkout URL missing.";
+      toast.error(errorMsg);
+      setState({ status: "error", message: errorMsg });
       return;
     }
 
@@ -137,7 +143,7 @@ export default function PayPage() {
         <h1 className="text-xl font-semibold tracking-tight">Checkout</h1>
 
         {state.status === "loading" ? (
-          <p className="mt-2 text-sm text-neutral-600">Loading…</p>
+          <p className="mt-2 text-sm text-neutral-600">Loading...</p>
         ) : state.status === "missing" ? (
           <p className="mt-2 text-sm text-neutral-600">Missing item.</p>
         ) : state.status === "error" ? (

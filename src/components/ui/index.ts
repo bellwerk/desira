@@ -5,6 +5,7 @@ export { ProgressBar } from "./ProgressBar";
 export { LinkPreviewCard } from "./LinkPreviewCard";
 export { ToastProvider, useToast, useToastActions } from "./Toast";
 export type { ToastType, ToastItem } from "./Toast";
+export { Spinner, PageSpinner, ButtonSpinner } from "./Spinner";
 
 
 

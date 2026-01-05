@@ -1,6 +1,7 @@
 "use client";
 
 import { SignOutButton } from "@/app/app/SignOutButton";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface AppHeaderProps {
   userEmail: string;
@@ -14,6 +15,7 @@ export function AppHeader({ userEmail }: AppHeaderProps): React.ReactElement {
       </div>
 
       <div className="flex items-center gap-4">
+        <NotificationBell />
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-orange-400 text-xs font-medium text-white">
             {userEmail.charAt(0).toUpperCase()}

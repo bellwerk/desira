@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToastActions } from "@/components/ui";
 
 function dollarsToCents(input: string) {
   const clean = input.replace(/[^0-9.]/g, "");
@@ -57,6 +58,7 @@ export function ContributeForm(props: {
   closeWhenFunded: boolean;
 }) {
   const router = useRouter();
+  const toast = useToastActions();
 
   const leftCents = useMemo(() => {
     if (!props.targetCents) return null;
@@ -155,6 +157,7 @@ export function ContributeForm(props: {
 
     if (amountError) {
       setError(amountError);
+      toast.warning(amountError);
       return;
     }
 
@@ -171,7 +174,13 @@ export function ContributeForm(props: {
       created_at: new Date().toISOString(),
     };
 
-    localStorage.setItem(`desira_contrib_${props.itemId}`, JSON.stringify(draft));
+    try {
+      localStorage.setItem(`desira_contrib_${props.itemId}`, JSON.stringify(draft));
+    } catch {
+      // Draft persistence is optional; warn but proceed to checkout
+      toast.warning("Draft not saved (storage unavailable). Continuing anyway.");
+    }
+
     router.push(`/u/${props.token}/pay?item=${props.itemId}`);
   }
 

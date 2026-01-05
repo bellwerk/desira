@@ -23,9 +23,9 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2026-01-03
+- Date: 2026-01-04
 - Current branch: main
-- What we're building now: M6 (Notifications) or M7 (Hardening) — all core flows (M0–M5) done
+- What we're building now: M6 (Notifications) complete — MVP ready for testing
 - What's blocked: None
 
 ---
@@ -276,20 +276,20 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 > Note: Keep compliance simple for MVP: record transactions cleanly, avoid storing sensitive data, server-only Stripe logic.
 
 ### M6 — Notifications v1 (minimum)
-- [ ] In-app notifications table + UI (basic)
-- [ ] Notify on:
-  - [ ] new wish added
-  - [ ] wish reserved
-  - [ ] contribution received
+- [x] In-app notifications table + UI (basic) — migration 008, `/app/notifications`, `NotificationBell` in header
+- [x] Notify on:
+  - [x] new wish added — triggered in `addItem` action
+  - [x] wish reserved — triggered in `POST /api/reservations`
+  - [x] contribution received — triggered in Stripe webhook
 - [ ] Email notifications (P1, later)
 
-### M7 — MVP hardening (before “real users”)
-- [ ] Error states + toasts
-- [ ] Loading states
-- [ ] Basic audit log (optional but helpful)
-- [ ] Seed/demo data for quick testing
-- [ ] Security pass: confirm RLS + server checks
-- [ ] Performance sanity: avoid N+1 queries
+### M7 — MVP hardening (before "real users")
+- [x] Error states + toasts — Toast system wired to all key flows (reserve, contribute, cancel, pay)
+- [x] Loading states — Added `Spinner` component + `loading.tsx` for key routes
+- [x] Basic audit log — `audit_events` table (migration 007) + `logAuditEvent()` helper
+- [x] Seed/demo data for quick testing — Dev-mode seed button on dashboard
+- [x] Security pass: confirm RLS + server checks — Documented in `docs/SECURITY.md`
+- [x] Performance sanity: avoid N+1 queries — Parallelized checkout queries
 
 ---
 
@@ -328,6 +328,26 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2026-01-04 (pm):
+  - Done: M6 (Notifications v1) fully implemented:
+    - `notifications` table migration (008) with RLS
+    - `src/lib/notifications.ts` helper functions
+    - Notifications triggered on: item added, item reserved, contribution received
+    - `/api/notifications` route (GET + PATCH for mark-as-read)
+    - `NotificationBell` component in AppHeader with dropdown
+    - `/app/notifications` full page view
+  - Next: Email notifications (P1), or testing the full MVP flow
+  - Blockers: None
+- 2026-01-04:
+  - Done: M7 (MVP Hardening) fully implemented:
+    - Reusable `Spinner` component + `loading.tsx` files for key routes
+    - Toast notifications wired to ContributeForm, pay/page, reserve/page
+    - `audit_events` table (migration 007) + `logAuditEvent()` helper in API routes
+    - Dev-mode seed button on dashboard for quick testing
+    - Security documentation in `docs/SECURITY.md`
+    - Parallelized Stripe checkout queries to avoid waterfall
+  - Next: M6 (Notifications) — in-app notifications table + UI
+  - Blockers: None
 - 2026-01-03:
   - Audit: Reviewed all milestones — M0, M1 (core), M2, M3 (UI + Link Preview), M4, M5 are complete.
   - Remaining: M6 (Notifications) and M7 (MVP hardening) are next.

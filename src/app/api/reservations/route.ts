@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { logAuditEvent, AuditEventType, getClientIP } from "@/lib/audit";
+import {
+  createNotification,
+  getListOwnerId,
+  NotificationType,
+} from "@/lib/notifications";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -133,6 +139,46 @@ export async function POST(req: Request) {
     );
   }
 
+  // Log audit event (fire-and-forget)
+  void logAuditEvent({
+    eventType: AuditEventType.RESERVATION_CREATED,
+    actorId: user?.id ?? null,
+    actorType: user ? "user" : "guest",
+    resourceType: "reservation",
+    resourceId: created.id,
+    metadata: { item_id, list_id: item.list_id },
+    ipAddress: getClientIP(req),
+  });
+
+  // Notify list owner about the reservation (fire-and-forget)
+  void (async () => {
+    const ownerId = await getListOwnerId(item.list_id);
+    // Only notify if owner is not the one reserving
+    if (ownerId && ownerId !== user?.id) {
+      // Fetch item title for the notification
+      const { data: itemData } = await supabaseAdmin
+        .from("items")
+        .select("title")
+        .eq("id", item_id)
+        .single();
+
+      await createNotification({
+        userId: ownerId,
+        type: NotificationType.ITEM_RESERVED,
+        title: "Item reserved",
+        body: itemData?.title
+          ? `"${itemData.title}" has been reserved`
+          : "An item on your list was reserved",
+        link: `/app/lists/${item.list_id}`,
+        metadata: {
+          list_id: item.list_id,
+          item_id,
+          reservation_id: created.id,
+        },
+      });
+    }
+  })();
+
   return NextResponse.json({
     ok: true,
     reservation: created,
@@ -206,6 +252,15 @@ export async function PATCH(req: Request): Promise<NextResponse> {
   if (upErr || !updated) {
     return NextResponse.json({ error: "Failed to cancel" }, { status: 500 });
   }
+
+  // Log audit event (fire-and-forget)
+  void logAuditEvent({
+    eventType: AuditEventType.RESERVATION_CANCELED,
+    actorType: "guest", // Cancellation is via token, not auth
+    resourceType: "reservation",
+    resourceId: reservation.id,
+    ipAddress: getClientIP(req),
+  });
 
   return NextResponse.json({ ok: true, reservation: updated });
 }
