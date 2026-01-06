@@ -75,3 +75,5 @@ CREATE POLICY "Users can delete own notifications"
 
 COMMENT ON TABLE public.notifications IS 'In-app notifications for users (M6)';
 
+
+

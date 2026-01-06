@@ -24,6 +24,7 @@ type ItemRow = {
   id: string;
   title: string;
   image_url: string | null;
+  product_url: string | null;
   price_cents: number | null;
   target_amount_cents: number | null;
   note_public: string | null;
@@ -84,6 +85,7 @@ export default async function PublicListPage({ params }: PageProps) {
       id,
       title,
       image_url,
+      product_url,
       price_cents,
       target_amount_cents,
       note_public,
@@ -149,6 +151,11 @@ export default async function PublicListPage({ params }: PageProps) {
 
             <div className="mt-3 text-sm text-neutral-600">
               Reserved gifts stay anonymous · Contributions go to the recipient
+            </div>
+
+            {/* Affiliate disclosure (FTC compliance) */}
+            <div className="mt-2 text-xs text-neutral-400">
+              Some links may earn Desira a small commission at no cost to you.
             </div>
           </div>
 
@@ -230,6 +237,7 @@ export default async function PublicListPage({ params }: PageProps) {
                 <ItemActions
                   token={token}
                   itemId={item.id}
+                  productUrl={item.product_url}
                   contributeDisabled={contributeDisabled}
                   canReserve={!reserveDisabled}
                   isReserved={isReserved}

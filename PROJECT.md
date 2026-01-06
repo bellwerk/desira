@@ -23,10 +23,10 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2026-01-04
+- Date: 2026-01-05
 - Current branch: main
-- What we're building now: M6 (Notifications) complete — MVP ready for testing
-- What's blocked: None
+- What we're building now: Skimlinks affiliate integration complete — ready for signup
+- What's blocked: Need to sign up at https://skimlinks.com to get Publisher ID
 
 ---
 
@@ -86,8 +86,8 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 
 #### Login UI
 - [x] Continue with Google button
-- [x] Continue with Facebook button *(placeholder — needs Supabase config)*
-- [x] Continue with Apple button *(placeholder — needs Supabase config)*
+- [x] Continue with Facebook button *(code ready — needs Supabase config)*
+- [x] Continue with Apple button *(code ready — needs Supabase config)*
 - [x] Email / password login + signup
 
 ### M2 — Data model v1 + RLS (critical)
@@ -269,9 +269,9 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [x] Block contributions if reserved (**enforced in DB + server**)
 
 ### Affiliate link monetization (Skimlinks)
-- [ ] Add redirect route `/go/[wishId]` (all outbound product clicks go through server redirect)
-- [ ] Integrate Skimlinks to monetize outbound product links
-- [ ] Add clear affiliate disclosure on `/l/[token]` (and anywhere product links appear)
+- [x] Add redirect route `/api/go/[itemId]` (all outbound product clicks go through server redirect)
+- [x] Integrate Skimlinks to monetize outbound product links — `src/lib/affiliate.ts`
+- [x] Add clear affiliate disclosure on `/u/[token]` (and anywhere product links appear)
 
 > Note: Keep compliance simple for MVP: record transactions cleanly, avoid storing sensitive data, server-only Stripe logic.
 
@@ -328,6 +328,16 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2026-01-05:
+  - Done: Skimlinks affiliate link integration fully implemented:
+    - `src/lib/affiliate.ts` — Skimlinks URL generation utility
+    - `/api/go/[itemId]` redirect route with click tracking (audit log)
+    - "Buy this gift" button on public list `/u/[token]`
+    - Affiliate disclosure text for FTC compliance
+    - All product links (owner + public views) route through affiliate redirect
+  - Config needed: Set `SKIMLINKS_PUBLISHER_ID` env variable after Skimlinks signup
+  - Next: Sign up at https://skimlinks.com and configure publisher ID
+  - Blockers: None
 - 2026-01-04 (pm):
   - Done: M6 (Notifications v1) fully implemented:
     - `notifications` table migration (008) with RLS

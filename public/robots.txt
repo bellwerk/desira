@@ -1,0 +1,30 @@
+# Desira Robots.txt
+# Marketing pages are indexable, app/shared pages are not
+
+User-agent: *
+
+# Allow marketing pages
+Allow: /
+Allow: /blog
+Allow: /privacy
+Allow: /terms
+
+# Disallow authenticated app pages
+Disallow: /app
+Disallow: /app/
+
+# Disallow shared list pages (link-only, private)
+Disallow: /u/
+Disallow: /l/
+
+# Disallow auth-related pages
+Disallow: /login
+Disallow: /auth/
+
+# Disallow API routes
+Disallow: /api/
+
+# Sitemap (if we add one later)
+# Sitemap: https://desira.app/sitemap.xml
+
+

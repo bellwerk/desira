@@ -175,3 +175,5 @@ Before going live:
 5. [ ] Enable Supabase database backups
 6. [ ] Review and test all RLS policies with different user roles
 
+
+

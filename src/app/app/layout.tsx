@@ -2,36 +2,43 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
+import type { Metadata } from "next";
+
+/**
+ * App layout — authenticated area
+ *
+ * This layout:
+ * - Protects routes by requiring authentication
+ * - Prevents indexing of authenticated app pages
+ */
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    noarchive: true,
+  },
+};
 
 export default async function AppLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>): Promise<React.ReactElement> {
+}) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getUser();
 
-  // Defense-in-depth: middleware should catch this, but verify here too
-  if (!user) {
+  if (!data?.user) {
     redirect("/login");
   }
 
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-100 via-rose-50/30 to-amber-50/30 dark:from-slate-900 dark:via-rose-950/20 dark:to-amber-950/20">
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader userEmail={user.email ?? "User"} />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <AppHeader userEmail={data.user.email ?? ""} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
 }
-
-
-
-
-

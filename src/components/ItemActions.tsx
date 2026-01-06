@@ -47,6 +47,7 @@ function writeCancelTicket(itemId: string, reservationId: string, cancelToken: s
 export function ItemActions(props: {
   token: string;
   itemId: string;
+  productUrl?: string | null;
   contributeDisabled: boolean;
   canReserve: boolean;
   isReserved: boolean;
@@ -54,7 +55,7 @@ export function ItemActions(props: {
 }) {
   const router = useRouter();
   const toast = useToastActions();
-  const { token, itemId, contributeDisabled, canReserve, isReserved, isOwner } = props;
+  const { token, itemId, productUrl, contributeDisabled, canReserve, isReserved, isOwner } = props;
 
   const [isLoading, setIsLoading] = useState(false);
   const [cancelTicket, setCancelTicket] = useState<CancelTicketData | null>(() =>
@@ -123,8 +124,22 @@ export function ItemActions(props: {
   // - If reserved and you have ticket -> show Cancel
   // - If reserved and no ticket -> show Reserved (disabled)
   // - Else show Reserve (if allowed)
+  // - If product URL exists -> show Buy button
   return (
-    <div className="mt-4 flex gap-2">
+    <div className="mt-4 space-y-2">
+      {/* Buy button - routes through affiliate redirect */}
+      {productUrl && (
+        <a
+          href={`/api/go/${itemId}?token=${encodeURIComponent(token)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-all hover:from-emerald-600 hover:to-teal-700"
+        >
+          Buy this gift &rarr;
+        </a>
+      )}
+      
+      <div className="flex gap-2">
       <Link
         href={`/u/${token}/contribute?item=${itemId}`}
         className={`flex-1 rounded-xl px-3 py-2 text-center text-sm font-medium ${contributeClass}`}
@@ -177,6 +192,7 @@ export function ItemActions(props: {
           )}
         </button>
       )}
+      </div>
     </div>
   );
 }

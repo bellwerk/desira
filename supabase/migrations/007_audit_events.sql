@@ -70,3 +70,5 @@ ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 
 COMMENT ON TABLE public.audit_events IS 'Audit log for tracking key user and system actions';
 
+
+

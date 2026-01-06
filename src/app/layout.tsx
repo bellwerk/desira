@@ -14,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://desira.app"
+  ),
   title: "Desira - Gift Coordination Made Simple",
-  description: "Coordinate gifts with friends and family. Create wishlists, reserve items, and contribute to gifts without duplicates.",
+  description:
+    "Coordinate gifts with friends and family. Create wishlists, reserve items, and contribute to gifts without duplicates.",
 };
 
 export default function RootLayout({

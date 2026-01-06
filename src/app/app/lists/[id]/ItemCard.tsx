@@ -155,7 +155,7 @@ export function ItemCard({
         <div className="flex items-center gap-2 pt-2 border-t border-white/10">
           {item.product_url && (
             <a
-              href={item.product_url}
+              href={`/api/go/${item.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >

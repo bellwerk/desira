@@ -2,7 +2,13 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from "./actions";
+import {
+  signInWithGoogle,
+  signInWithFacebook,
+  signInWithApple,
+  signInWithEmail,
+  signUpWithEmail,
+} from "./actions";
 
 export function LoginForm(): React.ReactElement {
   const searchParams = useSearchParams();
@@ -62,8 +68,34 @@ export function LoginForm(): React.ReactElement {
     });
   }
 
-  function handlePlaceholderClick(provider: string): void {
-    setError(`${provider} login is not configured yet. Please use email or Google.`);
+  function handleFacebookSignIn(): void {
+    setError(null);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await signInWithFacebook(redirectTo);
+
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        window.location.href = result.url;
+      }
+    });
+  }
+
+  function handleAppleSignIn(): void {
+    setError(null);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await signInWithApple(redirectTo);
+
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        window.location.href = result.url;
+      }
+    });
   }
 
   const glassInputStyle = {
@@ -199,8 +231,9 @@ export function LoginForm(): React.ReactElement {
 
         <button
           type="button"
-          onClick={() => handlePlaceholderClick("Facebook")}
-          className="flex w-full items-center rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-white/60 hover:shadow-md"
+          onClick={handleFacebookSignIn}
+          disabled={isPending}
+          className="flex w-full items-center rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-white/60 hover:shadow-md disabled:opacity-50"
           style={glassButtonStyle}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#1877F2">
@@ -211,8 +244,9 @@ export function LoginForm(): React.ReactElement {
 
         <button
           type="button"
-          onClick={() => handlePlaceholderClick("Apple")}
-          className="flex w-full items-center rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-white/60 hover:shadow-md"
+          onClick={handleAppleSignIn}
+          disabled={isPending}
+          className="flex w-full items-center rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-white/60 hover:shadow-md disabled:opacity-50"
           style={glassButtonStyle}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#000">

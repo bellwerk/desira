@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 
-export async function signInWithGoogle(redirectTo?: string): Promise<{ url?: string; error?: string }> {
+type OAuthResult = { url?: string; error?: string };
+
+async function signInWithOAuthProvider(
+  provider: "google" | "facebook" | "apple",
+  redirectTo?: string
+): Promise<OAuthResult> {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "http://localhost:3000";
@@ -17,7 +22,7 @@ export async function signInWithGoogle(redirectTo?: string): Promise<{ url?: str
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider,
     options: {
       redirectTo: callbackUrl.toString(),
     },
@@ -32,6 +37,18 @@ export async function signInWithGoogle(redirectTo?: string): Promise<{ url?: str
   }
 
   return { error: "Failed to get OAuth URL" };
+}
+
+export async function signInWithGoogle(redirectTo?: string): Promise<OAuthResult> {
+  return signInWithOAuthProvider("google", redirectTo);
+}
+
+export async function signInWithFacebook(redirectTo?: string): Promise<OAuthResult> {
+  return signInWithOAuthProvider("facebook", redirectTo);
+}
+
+export async function signInWithApple(redirectTo?: string): Promise<OAuthResult> {
+  return signInWithOAuthProvider("apple", redirectTo);
 }
 
 // Email/password login

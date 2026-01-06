@@ -42,6 +42,16 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "Not authenticated" };
   }
 
+  // Ensure profile exists (fallback if trigger didn't create one)
+  await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      display_name:
+        user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+    },
+    { onConflict: "id", ignoreDuplicates: true }
+  );
+
   const raw = {
     title: formData.get("title"),
     recipient_type: formData.get("recipient_type") ?? "person",

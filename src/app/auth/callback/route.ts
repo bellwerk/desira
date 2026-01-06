@@ -11,6 +11,23 @@ export async function GET(request: Request): Promise<NextResponse> {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // Ensure profile exists (fallback if trigger didn't create one)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // Upsert profile: create if missing, ignore if exists
+        await supabase.from("profiles").upsert(
+          {
+            id: user.id,
+            display_name:
+              user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+          },
+          { onConflict: "id", ignoreDuplicates: true }
+        );
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
