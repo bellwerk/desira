@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CopyButton } from "@/components/CopyButton";
 import { GlassCard, GlassButton, BadgeChip } from "@/components/ui";
 import { AddItemForm } from "./AddItemForm";
-import { ItemCard } from "./ItemCard";
+import { ItemsGrid } from "./ItemsGrid";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -71,9 +71,6 @@ export default async function ListDetailPage({
     .eq("id", id)
     .single();
 
-  // Check if current user is the owner
-  const isOwner = list?.owner_id === user.id;
-
   if (listErr || !list) {
     notFound();
   }
@@ -121,12 +118,16 @@ export default async function ListDetailPage({
     totals = (r2.data ?? []) as ContributionTotal[];
   }
 
-  const reservedMap = new Map(
-    reservedFlags.map((r) => [r.item_id, r.is_reserved])
-  );
-  const fundedMap = new Map(
-    totals.map((t) => [t.item_id, t.funded_amount_cents])
-  );
+  // Convert to plain objects for client component serialization
+  const reservedMap: Record<string, boolean> = {};
+  for (const r of reservedFlags) {
+    reservedMap[r.item_id] = r.is_reserved;
+  }
+
+  const fundedMap: Record<string, number> = {};
+  for (const t of totals) {
+    fundedMap[t.item_id] = t.funded_amount_cents;
+  }
 
   // Build absolute share URL from request headers (server component)
   const headersList = await headers();
@@ -249,41 +250,13 @@ export default async function ListDetailPage({
       <AddItemForm listId={list.id} />
 
       {/* Items */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
-          Items ({typedItems.length})
-        </h2>
-
-        {typedItems.length === 0 ? (
-          <GlassCard className="text-center py-8">
-            <p className="text-slate-600 dark:text-slate-400">
-              No items yet. Add your first wish above!
-            </p>
-          </GlassCard>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {typedItems.map((item) => {
-              const isReserved = Boolean(reservedMap.get(item.id));
-              const funded = fundedMap.get(item.id) ?? 0;
-              const target = item.target_amount_cents ?? item.price_cents ?? 0;
-              const isFunded =
-                item.status === "funded" || (target > 0 && funded >= target);
-
-              return (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  isReserved={isReserved}
-                  isFunded={isFunded}
-                  fundedAmount={funded}
-                  currency={list.currency ?? "CAD"}
-                  isOwner={isOwner}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <ItemsGrid
+        items={typedItems}
+        reservedMap={reservedMap}
+        fundedMap={fundedMap}
+        currency={list.currency ?? "CAD"}
+        shareToken={list.share_token}
+      />
     </div>
   );
 }

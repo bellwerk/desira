@@ -77,3 +77,4 @@ COMMENT ON TABLE public.notifications IS 'In-app notifications for users (M6)';
 
 
 
+

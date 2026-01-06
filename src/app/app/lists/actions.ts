@@ -43,14 +43,42 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   }
 
   // Ensure profile exists (fallback if trigger didn't create one)
-  await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      display_name:
-        user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-    },
-    { onConflict: "id", ignoreDuplicates: true }
-  );
+  // Use admin client to bypass RLS for this check
+  const { data: existingProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!existingProfile) {
+    // Generate a unique handle from email or user id
+    const emailPrefix = user.email?.split("@")[0] ?? "";
+    const handle = emailPrefix
+      ? `${emailPrefix.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${Date.now()}`
+      : `user_${Date.now()}`;
+
+    const { error: profileInsertError } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        id: user.id,
+        handle,
+        display_name:
+          user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+      });
+
+    if (profileInsertError) {
+      console.error("Failed to create profile:", profileInsertError);
+      // Check if it's a duplicate key error (profile was created by trigger concurrently)
+      if (profileInsertError.code === "23505") {
+        // Profile exists, continue
+      } else {
+        return {
+          success: false,
+          error: `Failed to set up your account: ${profileInsertError.message}`,
+        };
+      }
+    }
+  }
 
   const raw = {
     title: formData.get("title"),

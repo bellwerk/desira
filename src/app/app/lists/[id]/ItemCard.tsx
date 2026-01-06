@@ -25,6 +25,7 @@ type ItemCardProps = {
   fundedAmount: number;
   currency: string;
   isOwner?: boolean; // Owner mode: read-only, no actions
+  isPreview?: boolean; // Preview mode: show visitor UI but disable actions
 };
 
 function formatCents(cents: number | null | undefined): string {
@@ -46,6 +47,7 @@ function getDomainFromUrl(url: string | null): string | null {
  *
  * Business rules:
  * - If isOwner: show "You own this list" label, hide Reserve/Contribute
+ * - If isPreview: show visitor UI but disable actions (buttons visible but non-functional)
  * - If isReserved: show Reserved chip, Contribute disabled
  * - If fundedAmount > 0: Reserve disabled
  * - If isFunded: show Funded chip, both actions disabled
@@ -57,6 +59,7 @@ export function ItemCard({
   fundedAmount,
   currency,
   isOwner = true, // Default to owner view in /app/lists/[id]
+  isPreview = false, // Preview mode: show visitor UI but buttons disabled
 }: ItemCardProps): React.ReactElement {
   const router = useRouter();
   const toast = useToastActions();
@@ -222,9 +225,11 @@ export function ItemCard({
               <GlassButton
                 variant="secondary"
                 size="sm"
-                disabled={isReserved || isFunded || hasContributions}
+                disabled={isPreview || isReserved || isFunded || hasContributions}
                 title={
-                  hasContributions
+                  isPreview
+                    ? "Preview mode — use public link to test"
+                    : hasContributions
                     ? "Can't reserve — this item already has contributions"
                     : isReserved
                     ? "Already reserved"
@@ -240,9 +245,11 @@ export function ItemCard({
               <GlassButton
                 variant="primary"
                 size="sm"
-                disabled={isReserved || isFunded}
+                disabled={isPreview || isReserved || isFunded}
                 title={
-                  isReserved
+                  isPreview
+                    ? "Preview mode — use public link to test"
+                    : isReserved
                     ? "Can't contribute — this item is reserved"
                     : isFunded
                     ? "Fully funded"
