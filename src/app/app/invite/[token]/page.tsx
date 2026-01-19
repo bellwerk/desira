@@ -67,7 +67,7 @@ export default async function AcceptInvitePage({
               />
             </svg>
           </div>
-          <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">
+          <h1 className="mt-4 text-xl font-semibold text-[#343338] dark:text-white">
             You own this list
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
@@ -105,7 +105,7 @@ export default async function AcceptInvitePage({
               />
             </svg>
           </div>
-          <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">
+          <h1 className="mt-4 text-xl font-semibold text-[#343338] dark:text-white">
             Invite error
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
@@ -141,7 +141,7 @@ export default async function AcceptInvitePage({
             />
           </svg>
         </div>
-        <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">
+        <h1 className="mt-4 text-xl font-semibold text-[#343338] dark:text-white">
           {alreadyMember ? "Already a member" : "Invite accepted!"}
         </h1>
         <p className="mt-2 text-slate-600 dark:text-slate-400">
@@ -178,7 +178,7 @@ function InvalidInvite(): React.ReactElement {
             />
           </svg>
         </div>
-        <h1 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">
+        <h1 className="mt-4 text-xl font-semibold text-[#343338] dark:text-white">
           Invalid invite
         </h1>
         <p className="mt-2 text-slate-600 dark:text-slate-400">

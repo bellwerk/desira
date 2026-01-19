@@ -40,6 +40,7 @@ interface LinkPreviewData {
   image: string | null;
   images: string[];
   price: { amount: number; currency: string } | null;
+  favicon: string | null;
 }
 
 interface SuccessResponse {
@@ -319,9 +320,51 @@ function extractPriceFromProduct(product: Record<string, unknown>): { amount: nu
 }
 
 /**
+ * Extract favicon URL from HTML
+ * Priority: apple-touch-icon → icon → shortcut icon
+ */
+function extractFavicon(html: string, baseUrl: string): string | null {
+  // Try various link rel patterns
+  const patterns = [
+    /<link[^>]+rel=["']apple-touch-icon["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon["']/i,
+    /<link[^>]+rel=["']icon["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']icon["']/i,
+    /<link[^>]+rel=["']shortcut icon["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']shortcut icon["']/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(html);
+    if (match?.[1]) {
+      const faviconUrl = match[1];
+      // Resolve relative URLs
+      try {
+        return new URL(faviconUrl, baseUrl).toString();
+      } catch {
+        return faviconUrl;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get favicon URL with fallback to Google's favicon service
+ */
+function getFaviconWithFallback(extractedFavicon: string | null, domain: string): string {
+  if (extractedFavicon) {
+    return extractedFavicon;
+  }
+  // Use Google's favicon service as a reliable fallback
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+}
+
+/**
  * Parse HTML and extract metadata
  */
-function parseHtml(html: string): LinkPreviewData {
+function parseHtml(html: string, finalUrl: string): LinkPreviewData {
   // Extract JSON-LD first
   const jsonLdItems = extractJsonLd(html);
   const product = findProductInJsonLd(jsonLdItems);
@@ -388,12 +431,18 @@ function parseHtml(html: string): LinkPreviewData {
     }
   }
 
+  // Extract favicon
+  const domain = extractDomain(finalUrl);
+  const extractedFavicon = extractFavicon(html, finalUrl);
+  const favicon = getFaviconWithFallback(extractedFavicon, domain);
+
   return {
     title: title ? decodeHtmlEntities(title) : null,
     description: description ? decodeHtmlEntities(description) : null,
     image,
     images,
     price,
+    favicon,
   };
 }
 
@@ -422,7 +471,7 @@ async function getCachedPreview(normalizedUrl: string, force: boolean): Promise<
 
   const { data } = await supabaseAdmin
     .from("link_previews")
-    .select("title, description, image, images, price_amount, price_currency, status, expires_at")
+    .select("title, description, image, images, price_amount, price_currency, favicon, status, expires_at")
     .eq("normalized_url", normalizedUrl)
     .single();
 
@@ -436,6 +485,9 @@ async function getCachedPreview(normalizedUrl: string, force: boolean): Promise<
   // Don't return cached errors
   if (data.status !== "ok") return null;
 
+  // Get domain for fallback favicon
+  const domain = extractDomain(normalizedUrl);
+
   return {
     title: data.title,
     description: data.description,
@@ -444,6 +496,7 @@ async function getCachedPreview(normalizedUrl: string, force: boolean): Promise<
     price: data.price_amount !== null && data.price_currency
       ? { amount: Number(data.price_amount), currency: data.price_currency }
       : null,
+    favicon: data.favicon ?? getFaviconWithFallback(null, domain),
   };
 }
 
@@ -471,6 +524,7 @@ async function cachePreview(
       images: data.images,
       price_amount: data.price?.amount ?? null,
       price_currency: data.price?.currency ?? null,
+      favicon: data.favicon,
       status,
       http_status: httpStatus ?? null,
       error_code: errorCode ?? null,
@@ -539,7 +593,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
     // Cache the error
     await cachePreview(
       normalizedUrl,
-      { title: null, description: null, image: null, images: [], price: null },
+      { title: null, description: null, image: null, images: [], price: null, favicon: null },
       "error",
       undefined,
       fetchResult.code
@@ -551,7 +605,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
     );
   }
 
-  const data = parseHtml(fetchResult.html);
+  const data = parseHtml(fetchResult.html, fetchResult.finalUrl);
 
   // Check if we got any useful metadata
   if (!data.title && !data.description && !data.image) {

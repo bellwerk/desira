@@ -58,7 +58,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
             My Lists
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
@@ -103,7 +103,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
               />
             </svg>
           </div>
-          <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-white">
+          <h3 className="mt-4 text-lg font-medium text-[#343338] dark:text-white">
             No lists yet
           </h3>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
@@ -162,7 +162,7 @@ function ListCard({ list, userId }: { list: ListRow; userId: string }): React.Re
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-[#343338] dark:text-white">
               {list.title}
             </h3>
             <BadgeChip variant={visibilityVariant}>{visibilityLabel}</BadgeChip>

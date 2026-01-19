@@ -10,6 +10,7 @@ interface LinkPreviewData {
   image?: string;
   domain?: string;
   price?: { amount: number; currency: string };
+  favicon?: string;
 }
 
 interface LinkPreviewCardProps {
@@ -114,9 +115,23 @@ export function LinkPreviewCard({
             </p>
           )}
           {data?.domain && (
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-              {data.domain}
-            </p>
+            <div className="flex items-center gap-1.5">
+              {data.favicon && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={data.favicon}
+                  alt=""
+                  className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                  onError={(e) => {
+                    // Hide on error
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                {data.domain}
+              </p>
+            </div>
           )}
           {data?.price && (
             <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-300">

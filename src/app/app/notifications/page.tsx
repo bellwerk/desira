@@ -129,7 +129,7 @@ export default function NotificationsPage(): React.ReactElement {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-[#343338] dark:text-white">
             Notifications
           </h1>
           {unreadCount > 0 && (
@@ -149,7 +149,7 @@ export default function NotificationsPage(): React.ReactElement {
       </div>
 
       {/* Content */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#eaeaea]">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-rose-500" />
@@ -179,7 +179,7 @@ export default function NotificationsPage(): React.ReactElement {
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm ${!notification.is_read ? "font-semibold" : "font-medium"} text-slate-900 dark:text-white`}>
+                    <p className={`text-sm ${!notification.is_read ? "font-semibold" : "font-medium"} text-[#343338] dark:text-white`}>
                       {notification.title}
                     </p>
                     {notification.body && (

@@ -8,10 +8,10 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantClasses: Record<GlassCardVariant, string> = {
-  default: "glass-1 rounded-3xl p-6",
+  default: "glass-1 rounded-[30px] p-6",
   interactive:
-    "glass-1 rounded-3xl p-6 cursor-pointer transition-all duration-150 hover:scale-[1.01] hover:shadow-lg active:scale-[0.99]",
-  dense: "glass-1 rounded-2xl p-4",
+    "glass-1 rounded-[30px] p-6 cursor-pointer transition-all duration-150 hover:scale-[1.01] hover:shadow-lg active:scale-[0.99]",
+  dense: "glass-1 rounded-[30px] p-4",
 };
 
 /**
@@ -37,6 +37,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
 );
 
 GlassCard.displayName = "GlassCard";
+
+
 
 
 

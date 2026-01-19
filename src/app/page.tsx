@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { GlassCard, GlassButton } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Desira — Gifts without duplicates",
@@ -226,15 +227,16 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/u/demo"
-              className="hidden rounded-full px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] sm:block"
+              className="hidden sm:block"
             >
-              View Demo
+              <GlassButton variant="ghost" size="md">
+                View Demo
+              </GlassButton>
             </Link>
-            <Link
-              href="/login"
-              className="btn-primary text-sm"
-            >
-              Get Started
+            <Link href="/login">
+              <GlassButton variant="primary" size="md">
+                Get Started
+              </GlassButton>
             </Link>
           </div>
         </nav>
@@ -269,18 +271,16 @@ export default function LandingPage() {
 
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/login"
-              className="btn-primary inline-flex items-center gap-2 text-base"
-            >
-              <HeartIcon className="h-5 w-5" />
-              Create Your Wishlist
+            <Link href="/login">
+              <GlassButton variant="primary" size="lg" className="inline-flex items-center gap-2">
+                <HeartIcon className="h-5 w-5" />
+                Create Your Wishlist
+              </GlassButton>
             </Link>
-            <Link
-              href="/u/demo"
-              className="btn-secondary inline-flex items-center gap-2 text-base"
-            >
-              See How It Works
+            <Link href="/u/demo">
+              <GlassButton variant="secondary" size="lg" className="inline-flex items-center gap-2">
+                See How It Works
+              </GlassButton>
             </Link>
           </div>
 
@@ -316,7 +316,7 @@ export default function LandingPage() {
 
           <div className="grid gap-8 md:grid-cols-3">
             {/* Feature 1: Secret Reservations */}
-            <div className="feature-card group">
+            <GlassCard variant="interactive" className="group">
               <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50">
                 <LockIcon className="h-7 w-7 text-purple-600 dark:text-purple-400" />
               </div>
@@ -326,10 +326,10 @@ export default function LandingPage() {
               <p className="leading-relaxed text-[var(--text-secondary)]">
                 Claim a gift without anyone knowing it was you. Prevent duplicates while keeping the surprise intact.
               </p>
-            </div>
+            </GlassCard>
 
             {/* Feature 2: Group Contributions */}
-            <div className="feature-card group">
+            <GlassCard variant="interactive" className="group">
               <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50">
                 <WalletIcon className="h-7 w-7 text-pink-600 dark:text-pink-400" />
               </div>
@@ -339,10 +339,10 @@ export default function LandingPage() {
               <p className="leading-relaxed text-[var(--text-secondary)]">
                 Chip in together for bigger gifts. See the funding progress without revealing who contributed what.
               </p>
-            </div>
+            </GlassCard>
 
             {/* Feature 3: Easy Sharing */}
-            <div className="feature-card group">
+            <GlassCard variant="interactive" className="group">
               <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/50 dark:to-yellow-800/50">
                 <LinkIcon className="h-7 w-7 text-yellow-600 dark:text-yellow-500" />
               </div>
@@ -352,7 +352,7 @@ export default function LandingPage() {
               <p className="leading-relaxed text-[var(--text-secondary)]">
                 Share your list with a single link. Friends and family can view and participate without creating an account.
               </p>
-            </div>
+            </GlassCard>
           </div>
         </div>
       </section>
@@ -426,7 +426,7 @@ export default function LandingPage() {
 
           <div className="grid gap-6 md:grid-cols-3">
             {/* Testimonial 1 */}
-            <div className="rounded-2xl border border-[var(--border-color)] bg-white p-6 dark:bg-[var(--bg-soft)]">
+            <GlassCard>
               <div className="mb-4 flex gap-1">
                 {[...Array(5)].map((_, i) => (
                   <StarIcon key={i} className="h-5 w-5 text-yellow-400" />
@@ -444,10 +444,10 @@ export default function LandingPage() {
                   <p className="text-sm text-[var(--text-muted)]">Mom of 3</p>
                 </div>
               </div>
-            </div>
+            </GlassCard>
 
             {/* Testimonial 2 */}
-            <div className="rounded-2xl border border-[var(--border-color)] bg-white p-6 dark:bg-[var(--bg-soft)]">
+            <GlassCard>
               <div className="mb-4 flex gap-1">
                 {[...Array(5)].map((_, i) => (
                   <StarIcon key={i} className="h-5 w-5 text-yellow-400" />
@@ -465,10 +465,10 @@ export default function LandingPage() {
                   <p className="text-sm text-[var(--text-muted)]">Gift coordinator</p>
                 </div>
               </div>
-            </div>
+            </GlassCard>
 
             {/* Testimonial 3 */}
-            <div className="rounded-2xl border border-[var(--border-color)] bg-white p-6 dark:bg-[var(--bg-soft)]">
+            <GlassCard>
               <div className="mb-4 flex gap-1">
                 {[...Array(5)].map((_, i) => (
                   <StarIcon key={i} className="h-5 w-5 text-yellow-400" />
@@ -486,7 +486,7 @@ export default function LandingPage() {
                   <p className="text-sm text-[var(--text-muted)]">Newlywed</p>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       </section>
@@ -510,12 +510,11 @@ export default function LandingPage() {
               Create your first wishlist in seconds. It&apos;s free, and your friends will thank you.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/login"
-                className="btn-primary inline-flex items-center gap-2 text-base"
-              >
-                <HeartIcon className="h-5 w-5" />
-                Get Started — It&apos;s Free
+              <Link href="/login">
+                <GlassButton variant="primary" size="lg" className="inline-flex items-center gap-2">
+                  <HeartIcon className="h-5 w-5" />
+                  Get Started — It&apos;s Free
+                </GlassButton>
               </Link>
             </div>
           </div>

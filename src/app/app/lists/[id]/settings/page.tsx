@@ -83,7 +83,7 @@ export default async function ListSettingsPage({
       <div className="mb-8">
         <Link
           href={`/app/lists/${id}`}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-[#343338] dark:text-slate-400 dark:hover:text-white transition-colors"
         >
           <svg
             className="h-4 w-4"
@@ -100,7 +100,7 @@ export default async function ListSettingsPage({
           </svg>
           Back to list
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
           List settings
         </h1>
         <p className="mt-1 text-slate-600 dark:text-slate-400">

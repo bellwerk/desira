@@ -111,7 +111,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
     <div className="mt-8 space-y-6">
       {/* Divider */}
       <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h2 className="text-lg font-semibold text-[#343338] dark:text-white">
           Team Members
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -129,7 +129,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">
+            <p className="text-sm font-medium text-[#343338] dark:text-white">
               Generate invite link
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -185,7 +185,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
         {/* New invite link display */}
         {newInviteLink && (
           <div className="mt-4 flex items-center gap-2">
-            <code className="flex-1 truncate rounded-lg bg-white px-3 py-2 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            <code className="flex-1 truncate rounded-lg bg-white px-3 py-2 text-sm text-slate-700 dark:bg-[#eaeaea] dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               {newInviteLink}
             </code>
             <button
@@ -201,7 +201,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
 
       {/* Current members */}
       <div>
-        <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-3">
+        <h3 className="text-sm font-medium text-[#343338] dark:text-white mb-3">
           Members ({nonOwnerMembers.length})
         </h3>
         {isLoading ? (
@@ -245,7 +245,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      <p className="text-sm font-medium text-[#343338] dark:text-white">
                         {displayName}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
@@ -270,7 +270,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
       {/* Pending invites */}
       {pendingInvites.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-3">
+          <h3 className="text-sm font-medium text-[#343338] dark:text-white mb-3">
             Pending invites ({pendingInvites.length})
           </h3>
           <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800">
@@ -296,7 +296,7 @@ export function InvitesSection({ listId, baseUrl }: InvitesSectionProps): React.
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    <p className="text-sm font-medium text-[#343338] dark:text-white">
                       Invite link
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -350,7 +350,7 @@ function CopyInviteButton({
     <button
       type="button"
       onClick={handleCopy}
-      className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+      className="text-sm text-slate-600 hover:text-[#343338] dark:text-slate-400 dark:hover:text-white"
     >
       {copied ? "Copied!" : "Copy"}
     </button>

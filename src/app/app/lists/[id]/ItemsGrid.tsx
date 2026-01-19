@@ -38,7 +38,7 @@ export function ItemsGrid({
     <div>
       {/* Header with toggle */}
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h2 className="text-lg font-semibold text-[#343338] dark:text-white">
           Items ({items.length})
         </h2>
 
@@ -96,7 +96,7 @@ export function ItemsGrid({
               />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-slate-900 dark:text-white">
+              <p className="text-sm font-medium text-[#343338] dark:text-white">
                 Visitor Preview Mode
               </p>
               <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fefcfb;
+  --background: #EAEAEA;
   --foreground: #1a1625;
   
   /* Giftful-inspired warm palette */
@@ -14,9 +14,9 @@
   --accent-light: #fcd34d;
   
   /* Soft backgrounds */
-  --bg-soft: #fdf4ff;      /* Very light purple tint */
-  --bg-pink: #fdf2f8;      /* Very light pink */
-  --bg-yellow: #fffbeb;    /* Very light yellow */
+  --bg-soft: #EAEAEA;      /* Unified background */
+  --bg-pink: #EAEAEA;      /* Unified background */
+  --bg-yellow: #EAEAEA;    /* Unified background */
   
   /* Neutral tones */
   --text-primary: #1a1625;
@@ -31,8 +31,8 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-asul: var(--font-asul);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -108,43 +108,46 @@ html {
 
 /* Glass effects for the new design */
 .glass-1 {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(217, 217, 217, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px #eaeaea;
 }
 
 .glass-2 {
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(217, 217, 217, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px #eaeaea;
 }
 
 .glass-3 {
-  backdrop-filter: blur(34px);
-  -webkit-backdrop-filter: blur(34px);
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(217, 217, 217, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px #eaeaea;
 }
 
 /* Dark mode variants */
 .dark .glass-1 {
-  background: rgba(30, 27, 38, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 27, 38, 0.7);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px rgba(20, 17, 28, 0.8);
 }
 
 .dark .glass-2 {
-  background: rgba(26, 22, 37, 0.7);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(26, 22, 37, 0.6);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px rgba(20, 17, 28, 0.8);
 }
 
 .dark .glass-3 {
-  background: rgba(20, 17, 28, 0.8);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 17, 28, 0.85);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 2px 2px 4px 2px rgba(20, 17, 28, 0.8);
 }
 
 /* Giftful-style button */
@@ -213,4 +216,44 @@ html {
   filter: blur(60px);
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* List type card hover effects */
+.list-type-card {
+  transform-origin: bottom center;
+}
+
+.list-type-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  z-index: 10 !important;
+}
+
+/* Marble-like texture for list cards */
+.list-type-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 30px;
+  background-image: 
+    radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(200, 200, 200, 0.3) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* Scrollbar styling for popular items */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }

@@ -68,7 +68,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
         <div>
           <label
             htmlFor="title"
-            className="block text-sm font-medium text-slate-900 dark:text-white"
+            className="block text-sm font-medium text-[#343338] dark:text-white"
           >
             List title <span className="text-red-500">*</span>
           </label>
@@ -80,13 +80,13 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
             maxLength={100}
             defaultValue={list.title}
             placeholder="e.g., Birthday Wishlist, Holiday Gifts"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
           />
         </div>
 
         {/* Recipient Type */}
         <div>
-          <label className="block text-sm font-medium text-slate-900 dark:text-white">
+          <label className="block text-sm font-medium text-[#343338] dark:text-white">
             Who is this list for?
           </label>
           <div className="mt-2 grid grid-cols-2 gap-3">
@@ -115,7 +115,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="font-medium text-[#343338] dark:text-white">
                     Individual
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -150,7 +150,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="font-medium text-[#343338] dark:text-white">
                     Group
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -165,13 +165,13 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
 
         {/* Visibility */}
         <div>
-          <label className="block text-sm font-medium text-slate-900 dark:text-white">
+          <label className="block text-sm font-medium text-[#343338] dark:text-white">
             Visibility
           </label>
           <select
             name="visibility"
             defaultValue={list.visibility}
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="unlisted">Unlisted — Only people with the link</option>
             <option value="private">Private — Only invited members</option>
@@ -183,7 +183,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
         <div>
           <label
             htmlFor="occasion"
-            className="block text-sm font-medium text-slate-900 dark:text-white"
+            className="block text-sm font-medium text-[#343338] dark:text-white"
           >
             Occasion <span className="text-slate-400">(optional)</span>
           </label>
@@ -194,7 +194,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
             maxLength={100}
             defaultValue={list.occasion ?? ""}
             placeholder="e.g., Birthday, Christmas, Wedding"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -202,7 +202,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
         <div>
           <label
             htmlFor="event_date"
-            className="block text-sm font-medium text-slate-900 dark:text-white"
+            className="block text-sm font-medium text-[#343338] dark:text-white"
           >
             Event date <span className="text-slate-400">(optional)</span>
           </label>
@@ -211,13 +211,13 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
             id="event_date"
             name="event_date"
             defaultValue={list.event_date ?? ""}
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
 
         {/* Feature toggles */}
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-          <p className="text-sm font-medium text-slate-900 dark:text-white">
+          <p className="text-sm font-medium text-[#343338] dark:text-white">
             Features
           </p>
           <div className="mt-4 space-y-4">
@@ -230,7 +230,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <p className="text-sm font-medium text-[#343338] dark:text-white">
                   Allow reservations
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -247,7 +247,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <p className="text-sm font-medium text-[#343338] dark:text-white">
                   Allow contributions
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -264,7 +264,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <p className="text-sm font-medium text-[#343338] dark:text-white">
                   Allow anonymous
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">

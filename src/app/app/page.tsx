@@ -1,108 +1,178 @@
 import Link from "next/link";
-import { DevSeedButton } from "@/components/DevSeedButton";
+import { createClient } from "@/lib/supabase/server";
+import { GlassCard } from "@/components/ui";
 
-export default function DashboardPage(): React.ReactElement {
+// Gift box icon for Wishlist card
+function GiftIcon(): React.ReactElement {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      {/* Welcome card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-          Welcome to Desira
-        </h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Your gift coordination hub. Create lists, share with loved ones, and never give duplicate gifts again.
-        </p>
+    <svg className="my-2.5 h-24 w-24" viewBox="0 0 59 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M57.9997 51.7079L47.4997 62.7079H24.833V53.7079H43.4997L49.1663 47.3503V28.7424H57.9997V51.7079Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M0.499601 28.7411L11.9996 17.7065L34.8525 17.7065L34.8525 26.7065L15.9996 26.7065L9.99963 32.7065L9.99963 51.6431L0.499599 51.6431L0.499601 28.7411Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M47.5 17.7078H34.5V26.7078H47.5V17.7078Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M24.5 53.7065H11.5V62.7065H24.5V53.7065Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M15.4059 7.79207L22.4908 0.707133L30.5879 8.8042L23.503 15.8891L15.4059 7.79207Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M40.0873 0.707162L47.1723 7.79209L39.0752 15.8892L31.9903 8.80423L40.0873 0.707162Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+    </svg>
+  );
+}
+
+// Registry icon for Registry card
+function RegistryIcon(): React.ReactElement {
+  return (
+    <svg className="my-2.5 h-24 w-24" viewBox="0 0 62 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fillRule="evenodd" clipRule="evenodd" d="M22.975 58.5H37.475L61.1631 35.3V14.5L50 0.5H40.375L32.4 9.5H29L21.5 0.5H11.5L0.5 14.5V35.3L22.975 58.5ZM33.5 20.5H28.05L17 9.5L10.5 16.5V31.5L28.05 49H32.4L51.25 31.5V16.5L45 9.5L33.5 20.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+    </svg>
+  );
+}
+
+// Document icon for Personal card  
+function DocumentIcon(): React.ReactElement {
+  return (
+    <svg className="my-2.5 h-24 w-24" viewBox="0 0 60 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M48.5 0.5H35.5V9.5H48.5V0.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M43.5 18.5H16.5V26.5H43.5V18.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M43.5 32.5H16.5V40.5H43.5V32.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M50.5 12.5L50.5 23.5L59.5 23.5L59.5 12.5L50.5 12.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M0.5 35.5L0.5 46.5L9.5 46.5L9.5 35.5L0.5 35.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M0.499819 12.1001L12.0998 0.500055L35.2998 0.500057L35.2998 9.5L16.4998 9.5L9.49985 16.5L9.49985 35.3L0.499817 35.3L0.499819 12.1001Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+      <path d="M59.5004 47L48.3504 58.4999H25.1504V49H44.5004L50.5004 42.5V23.7H59.5004V47Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+    </svg>
+  );
+}
+
+interface ListTypeCardProps {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+}
+
+function ListTypeCard({ title, subtitle, icon }: ListTypeCardProps): React.ReactElement {
+  return (
+    <Link
+      href="/app/lists/new"
+      className="group relative flex h-[300px] w-[230px] flex-col items-center justify-center rounded-[30px] border-2 border-white/50 bg-[#d9d9d9]/70 pb-0 px-[21px] text-center shadow-[inset_2px_2px_4px_2px_#eaeaea] backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-0.5"
+    >
+      {/* Title badge */}
+      <div className="absolute top-5 mt-3.5 mb-3.5 rounded-full bg-white/70 px-6 py-2 text-center text-[#eaeaea]">
+        <span className="font-asul text-lg font-semibold tracking-normal text-[#343338]">{title}</span>
+      </div>
+      
+      {/* Icon */}
+      <div className="mb-2.5 mt-15">{icon}</div>
+      
+      {/* Subtitle */}
+      <p className="flex h-fit max-w-[10rem] flex-wrap justify-center text-center text-base leading-tight text-[#343338]">
+        {subtitle}
+      </p>
+    </Link>
+  );
+}
+
+interface GiftSuggestionCardProps {
+  name: string;
+  price: string;
+  imageUrl?: string | null;
+  favicon?: string | null;
+}
+
+/**
+ * GiftSuggestionCard — displays a gift suggestion with image, name, price, and favicon
+ * Used in the "Popular gift ideas" section on the dashboard
+ */
+function GiftSuggestionCard({ name, price, imageUrl, favicon }: GiftSuggestionCardProps): React.ReactElement {
+  return (
+    <div className="group relative flex-shrink-0 w-[106px] h-[140px] rounded-[15px] bg-[#2b2b2b]/15 p-1.5 font-inter">
+      {/* Add button */}
+      <button className="absolute right-2.5 top-2.5 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-[#2b2b2b] shadow-md transition-transform hover:scale-110">
+        <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      </button>
+      
+      {/* Product image */}
+      <div className="aspect-square w-full rounded-xl bg-gradient-to-br from-stone-200 to-stone-300 mb-0.5 overflow-hidden">
+        {imageUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={imageUrl}
+            alt={name}
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
+      
+      {/* Info */}
+      <p className="text-xs font-inter font-medium text-[#2b2b2b] truncate">{name}</p>
+      <div className="flex items-center gap-0.5 leading-3 font-inter">
+        {favicon ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={favicon}
+            alt=""
+            className="h-3.5 w-3.5 shrink-0 rounded-sm"
+            onError={(e) => {
+              // Hide favicon on error
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <span className="text-xs text-[#62748e]" aria-hidden="true">·</span>
+        )}
+        <span className="text-[11px] text-[#2b2b2b]">{price}</span>
+      </div>
+    </div>
+  );
+}
+
+export default async function DashboardPage(): Promise<React.ReactElement> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  
+  // Fetch profile to get display name
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userData?.user?.id ?? "")
+    .single();
+  
+  const displayName = profile?.display_name ?? userData?.user?.email?.split("@")[0] ?? "there";
+
+  return (
+    <div className="relative flex min-h-full flex-col items-center justify-start text-[#2b2b2b]">
+      {/* Greeting */}
+      <h1 className="mt-8 font-inter text-lg font-medium text-[#2b2b2b]">
+        Hey {displayName}, let&apos;s make some wishes happen!
+      </h1>
+
+      {/* List type cards */}
+      <div className="relative mt-14 w-full max-w-6xl">
+        <div className="mx-auto grid w-fit grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-5">
+          <ListTypeCard title="Wishlist" subtitle="Birthday gifts, Christmas, etc." icon={<GiftIcon />} />
+          <ListTypeCard title="Registry" subtitle="Weddings, baby showers & more" icon={<RegistryIcon />} />
+          <ListTypeCard title="Personal" subtitle="Shopping list for personal use" icon={<DocumentIcon />} />
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link
-          href="/app/lists"
-          className="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-rose-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-rose-800"
-        >
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-400 text-white transition-transform group-hover:scale-105">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">My Lists</h3>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            View and manage your gift wishlists
-          </p>
-        </Link>
+      {/* Popular gift ideas section */}
+      <GlassCard className="mt-8 w-full max-w-[740px] py-3">
+        <div className="flex items-center justify-between mb-2 text-[#2b2b2b]">
+          <span className="text-sm text-[#2b2b2b]">Popular gift ideas</span>
+          <button className="text-xs font-medium text-[#2b2b2b] hover:text-[#2b2b2b]/70">
+            Explore All
+          </button>
+        </div>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 font-inter">
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
+        </div>
+      </GlassCard>
 
-        <Link
-          href="/app/lists/new"
-          className="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-rose-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-rose-800"
-        >
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-400 text-white transition-transform group-hover:scale-105">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Create List</h3>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Start a new wishlist for yourself or a group
-          </p>
-        </Link>
-
-        <Link
-          href="/app/settings"
-          className="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-rose-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-rose-800"
-        >
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-400 text-white transition-transform group-hover:scale-105">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Settings</h3>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Manage your account and preferences
-          </p>
-        </Link>
-      </div>
-
-      {/* Dev mode seed button */}
-      <DevSeedButton />
-
-      {/* Getting started checklist */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Getting Started
-        </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Complete these steps to set up your gift coordination.
-        </p>
-        <ul className="mt-4 space-y-3">
-          <li className="flex items-center gap-3 text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </span>
-            <span className="text-slate-600 dark:text-slate-400">Create your account</span>
-          </li>
-          <li className="flex items-center gap-3 text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-300 text-slate-400 dark:border-slate-600">
-              2
-            </span>
-            <span className="text-slate-900 dark:text-white">Create your first wishlist</span>
-          </li>
-          <li className="flex items-center gap-3 text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-300 text-slate-400 dark:border-slate-600">
-              3
-            </span>
-            <span className="text-slate-900 dark:text-white">Add items to your list</span>
-          </li>
-          <li className="flex items-center gap-3 text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-300 text-slate-400 dark:border-slate-600">
-              4
-            </span>
-            <span className="text-slate-900 dark:text-white">Share with friends and family</span>
-          </li>
-        </ul>
-      </div>
     </div>
   );
 }

@@ -155,7 +155,7 @@ export default async function ListDetailPage({
       <div>
         <Link
           href="/app/lists"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-[#343338] dark:text-slate-400 dark:hover:text-white transition-colors"
         >
           <svg
             className="h-4 w-4"
@@ -175,7 +175,7 @@ export default async function ListDetailPage({
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
               {list.title}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
@@ -226,7 +226,7 @@ export default async function ListDetailPage({
 
       {/* Share link */}
       <GlassCard variant="dense">
-        <p className="text-sm font-medium text-slate-900 dark:text-white">
+        <p className="text-sm font-medium text-[#343338] dark:text-white">
           Share link
         </p>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

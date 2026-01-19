@@ -19,6 +19,7 @@ export interface LinkPreviewData {
   image: string | null;
   images: string[];
   price: LinkPreviewPrice | null;
+  favicon: string | null;
   domain: string;
   normalizedUrl: string;
 }
@@ -151,6 +152,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
             image: result.data.image,
             images: result.data.images ?? [],
             price: result.data.price,
+            favicon: result.data.favicon ?? null,
             domain: result.domain,
             normalizedUrl: result.normalizedUrl,
           });
@@ -181,6 +183,8 @@ export function useLinkPreview(): UseLinkPreviewResult {
     reset,
   };
 }
+
+
 
 
 

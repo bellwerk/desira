@@ -106,7 +106,7 @@ export function ItemCard({
         {/* Title + Status */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 font-medium text-slate-900 dark:text-white">
+            <h3 className="line-clamp-2 font-medium text-[#343338] dark:text-white">
               {item.title}
             </h3>
             {domain && (

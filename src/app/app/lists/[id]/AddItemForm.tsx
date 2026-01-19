@@ -115,7 +115,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-[#eaeaea] dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800"
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -134,7 +134,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add new item</h3>
+        <h3 className="text-lg font-semibold text-[#343338] dark:text-white">Add new item</h3>
         <button
           onClick={handleClose}
           className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
@@ -164,7 +164,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
             name="product_url"
             placeholder="https://example.com/product"
             onChange={handleUrlChange}
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -202,7 +202,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
             required
             maxLength={200}
             placeholder="e.g., Wireless headphones"
-            className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("title")}`}
+            className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("title")}`}
           />
         </div>
 
@@ -220,7 +220,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
               min="0"
               step="0.01"
               placeholder="0.00"
-              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("price")}`}
+              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("price")}`}
             />
           </div>
 
@@ -235,7 +235,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
               id="image_url"
               name="image_url"
               placeholder="https://..."
-              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("image_url")}`}
+              className={`mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500 transition-all ${getAutofillClass("image_url")}`}
             />
           </div>
         </div>
@@ -251,7 +251,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
             rows={2}
             maxLength={500}
             placeholder="e.g., Size M, color blue preferred"
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -266,7 +266,7 @@ export function AddItemForm({ listId }: { listId: string }): React.ReactElement 
             rows={2}
             maxLength={500}
             placeholder="e.g., Alternative options, personal reminders"
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
+            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
           />
         </div>
 

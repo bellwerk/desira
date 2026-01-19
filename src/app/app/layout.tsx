@@ -20,24 +20,44 @@ export const metadata: Metadata = {
   },
 };
 
+interface Profile {
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
+  const { data: userData } = await supabase.auth.getUser();
 
-  if (!data?.user) {
+  if (!userData?.user) {
     redirect("/login");
   }
 
+  // Fetch profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", userData.user.id)
+    .single<Profile>();
+
+  const email = userData.user.email ?? "";
+  const displayName = profile?.display_name ?? email.split("@")[0];
+  const username = email.split("@")[0];
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-100 via-rose-50/30 to-amber-50/30 dark:from-slate-900 dark:via-rose-950/20 dark:to-amber-950/20">
+    <div className="min-h-screen bg-[#EAEAEA] dark:bg-[#eaeaea]">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-h-screen">
-        <AppHeader userEmail={data.user.email ?? ""} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+      <div className="flex flex-col min-h-screen">
+        <AppHeader 
+          displayName={displayName} 
+          username={username}
+          avatarUrl={profile?.avatar_url}
+        />
+        <main className="flex-1 px-8 pb-8">{children}</main>
       </div>
     </div>
   );

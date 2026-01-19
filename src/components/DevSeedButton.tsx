@@ -90,7 +90,7 @@ export function DevSeedButton(): React.ReactElement | null {
 
       {result && (
         <div className="mt-4 rounded-lg bg-white p-3 dark:bg-slate-800">
-          <p className="text-sm font-medium text-slate-900 dark:text-white">Demo Created!</p>
+          <p className="text-sm font-medium text-[#343338] dark:text-white">Demo Created!</p>
           <div className="mt-2 space-y-1 text-xs">
             <p className="text-slate-600 dark:text-slate-400">
               <span className="font-medium">Public URL:</span>{" "}
@@ -117,6 +117,8 @@ export function DevSeedButton(): React.ReactElement | null {
     </div>
   );
 }
+
+
 
 
 

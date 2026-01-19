@@ -172,10 +172,10 @@ export function NotificationBell(): React.ReactElement {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-[#eaeaea]">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-sm font-semibold text-[#343338] dark:text-white">
               Notifications
             </h3>
             {unreadCount > 0 && (
@@ -216,7 +216,7 @@ export function NotificationBell(): React.ReactElement {
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm ${!notification.is_read ? "font-semibold" : "font-medium"} text-slate-900 dark:text-white`}>
+                        <p className={`text-sm ${!notification.is_read ? "font-semibold" : "font-medium"} text-[#343338] dark:text-white`}>
                           {notification.title}
                         </p>
                         {notification.body && (
@@ -275,6 +275,8 @@ export function NotificationBell(): React.ReactElement {
     </div>
   );
 }
+
+
 
 
 
