@@ -12,7 +12,7 @@ type PageProps = {
 export type ListSettings = {
   id: string;
   title: string;
-  recipient_type: "person" | "group";
+  recipient_type: "person" | "group" | "shared";
   visibility: "unlisted" | "private" | "public";
   occasion: string | null;
   event_date: string | null;
@@ -62,7 +62,7 @@ export default async function ListSettingsPage({
   const listSettings: ListSettings = {
     id: list.id as string,
     title: list.title as string,
-    recipient_type: (list.recipient_type as "person" | "group") ?? "person",
+    recipient_type: (list.recipient_type as "person" | "group" | "shared") ?? "person",
     visibility: (list.visibility as "unlisted" | "private" | "public") ?? "unlisted",
     occasion: list.occasion as string | null,
     event_date: list.event_date as string | null,

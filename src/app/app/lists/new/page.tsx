@@ -1,10 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 import Link from "next/link";
 import { createList, ActionResult } from "../actions";
+import { GlassButton } from "@/components/ui";
 
 const initialState: ActionResult = { success: false };
+
+type ListType = "wishlist" | "household" | "collaborative";
+type Visibility = "private_link" | "public";
+
+const LIST_TYPE_CONFIG: Record<ListType, { label: string; description: string }> = {
+  wishlist: { label: "Wishlist", description: "One person's wishes" },
+  household: { label: "Household", description: "Gifts for couple / family" },
+  collaborative: { label: "Collaborative", description: "Everyone can add items" },
+};
+
+const VISIBILITY_CONFIG: Record<Visibility, { label: string; helper: string }> = {
+  private_link: { label: "Private link", helper: "Only people with the link can view." },
+  public: { label: "Public", helper: "Anyone with the link — and search engines if indexed." },
+};
 
 export default function NewListPage(): React.ReactElement {
   const [state, formAction, isPending] = useActionState(
@@ -14,229 +29,250 @@ export default function NewListPage(): React.ReactElement {
     initialState
   );
 
+  const [listName, setListName] = useState("");
+  const [listNameTouched, setListNameTouched] = useState(false);
+  const [listType, setListType] = useState<ListType>("wishlist");
+  const [visibility, setVisibility] = useState<Visibility>("private_link");
+  const [allowReservations, setAllowReservations] = useState(true);
+  const [allowContributions, setAllowContributions] = useState(true);
+  const [allowAnonymous, setAllowAnonymous] = useState(true);
+
+  const showListNameError = listNameTouched && !listName.trim();
+  const isFormValid = listName.trim().length > 0;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && isFormValid) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-2xl">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/app/lists"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-[#343338] dark:text-slate-400 dark:hover:text-white"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-          Back to lists
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
-          Create a new list
-        </h1>
-        <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Set up a wishlist for yourself, a loved one, or a group.
-        </p>
+    <div className="flex min-h-full items-start justify-center pt-8 pb-16">
+      {/* Modal Container */}
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+        {/* Header */}
+        <div className="border-b border-gray-100 px-6 py-5">
+          <h1 className="text-lg font-semibold text-[#2b2b2b]">Create a list</h1>
+          <p className="mt-0.5 text-sm text-[#2b2b2b]/60">You can change settings later.</p>
+        </div>
+
+        <form action={formAction} className="px-6 py-6">
+          {state.error && (
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {state.error}
+            </div>
+          )}
+
+          {/* SECTION: BASICS */}
+          <div className="space-y-4">
+            {/* List Name */}
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-[#2b2b2b]">
+                List name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                maxLength={100}
+                placeholder="Tony's Birthday"
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+                onBlur={() => setListNameTouched(true)}
+                onKeyDown={handleKeyDown}
+                className={`mt-2 block w-full rounded-[14px] border bg-gray-50/50 px-4 py-3 text-[#2b2b2b] placeholder:text-[#2b2b2b]/40 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 ${
+                  showListNameError
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-gray-200 focus:border-rose-400"
+                }`}
+              />
+              {showListNameError && (
+                <p className="mt-1.5 text-xs text-red-500">List name is required</p>
+              )}
+            </div>
+
+            {/* Event Date */}
+            <div>
+              <label htmlFor="event_date" className="block text-sm font-medium text-[#2b2b2b]">
+                Event date <span className="font-normal text-[#2b2b2b]/50">(optional)</span>
+              </label>
+              <div className="relative mt-2">
+                <input
+                  type="date"
+                  id="event_date"
+                  name="event_date"
+                  className="block w-full rounded-[14px] border border-gray-200 bg-gray-50/50 px-4 py-3 text-[#2b2b2b] transition-all focus:border-rose-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                />
+              </div>
+            </div>
+
+            {/* List Type */}
+            <div>
+              <label className="block text-sm font-medium text-[#2b2b2b]">List type</label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {(Object.keys(LIST_TYPE_CONFIG) as ListType[]).map((type) => {
+                  const config = LIST_TYPE_CONFIG[type];
+                  const isSelected = listType === type;
+                  return (
+                    <label
+                      key={type}
+                      className={`relative flex cursor-pointer flex-col rounded-[14px] border p-3 transition-all ${
+                        isSelected
+                          ? "border-[#9D8DF1] bg-[#9D8DF1]/10"
+                          : "border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="recipient_type"
+                        value={type === "wishlist" ? "person" : type === "household" ? "group" : "shared"}
+                        checked={isSelected}
+                        onChange={() => setListType(type)}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[#2b2b2b]">{config.label}</span>
+                        {isSelected && (
+                          <svg className="h-4 w-4 text-[#9D8DF1]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="mt-0.5 text-xs text-[#2b2b2b]/60">{config.description}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: SHARE SETTINGS */}
+          <div className="mt-5 space-y-3">
+            <label className="block text-sm font-medium text-[#2b2b2b]">Visibility</label>
+            
+            {/* Segmented Control */}
+            <div className="inline-flex rounded-full border border-gray-200 bg-gray-50/50 p-1">
+              {(Object.keys(VISIBILITY_CONFIG) as Visibility[]).map((vis) => {
+                const config = VISIBILITY_CONFIG[vis];
+                const isSelected = visibility === vis;
+                return (
+                  <button
+                    key={vis}
+                    type="button"
+                    onClick={() => setVisibility(vis)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      isSelected
+                        ? "bg-white text-[#2b2b2b] shadow-sm"
+                        : "text-[#2b2b2b]/60 hover:text-[#2b2b2b]"
+                    }`}
+                  >
+                    {config.label}
+                    {vis === "private_link" && !isSelected && (
+                      <span className="ml-1 text-xs text-[#2b2b2b]/40">(Rec.)</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-[#2b2b2b]/60">{VISIBILITY_CONFIG[visibility].helper}</p>
+
+            {/* Hidden field for form submission */}
+            <input type="hidden" name="visibility" value={visibility === "private_link" ? "unlisted" : visibility} />
+          </div>
+
+          {/* SECTION: GIFT CONTROLS */}
+          <div className="mt-5 space-y-3">
+            <label className="block text-sm font-medium text-[#2b2b2b]">Gift controls</label>
+
+            {/* Reservations */}
+            <ToggleRow
+              name="allow_reservations"
+              label="Reservations"
+              helper="Prevent duplicate gifts."
+              checked={allowReservations}
+              onChange={setAllowReservations}
+            />
+
+            {/* Contributions */}
+            <ToggleRow
+              name="allow_contributions"
+              label="Contributions"
+              helper="Chip in toward an item."
+              checked={allowContributions}
+              onChange={setAllowContributions}
+            />
+
+            {/* Allow Anonymous */}
+            <ToggleRow
+              name="allow_anonymous"
+              label="Allow anonymous"
+              helper="Hide names from other guests."
+              checked={allowAnonymous}
+              onChange={setAllowAnonymous}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="mt-6 flex items-center justify-between pt-4">
+            <Link href="/app/lists">
+              <button
+                type="button"
+                className="text-sm font-medium text-[#2b2b2b]/60 hover:text-[#2b2b2b] transition-colors"
+              >
+                Cancel
+              </button>
+            </Link>
+            <GlassButton
+              variant="primary"
+              size="md"
+              type="submit"
+              disabled={!isFormValid}
+              loading={isPending}
+            >
+              {isPending ? "Creating..." : "Create list"}
+            </GlassButton>
+          </div>
+        </form>
       </div>
-
-      {/* Form */}
-      <form action={formAction} className="space-y-6">
-        {state.error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-            {state.error}
-          </div>
-        )}
-
-        {/* Title */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-[#343338] dark:text-white">
-            List title <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            required
-            maxLength={100}
-            placeholder="e.g., Birthday Wishlist, Holiday Gifts"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
-          />
-        </div>
-
-        {/* Recipient Type */}
-        <div>
-          <label className="block text-sm font-medium text-[#343338] dark:text-white">
-            Who is this list for?
-          </label>
-          <div className="mt-2 grid grid-cols-2 gap-3">
-            <label className="relative flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white p-4 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
-              <input
-                type="radio"
-                name="recipient_type"
-                value="person"
-                defaultChecked
-                className="peer sr-only"
-              />
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
-                  <svg className="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-medium text-[#343338] dark:text-white">Individual</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">For one person</p>
-                </div>
-              </div>
-              <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-rose-500"></div>
-            </label>
-            <label className="relative flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white p-4 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
-              <input
-                type="radio"
-                name="recipient_type"
-                value="group"
-                className="peer sr-only"
-              />
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
-                  <svg className="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-medium text-[#343338] dark:text-white">Group</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Family or friends</p>
-                </div>
-              </div>
-              <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-rose-500"></div>
-            </label>
-          </div>
-        </div>
-
-        {/* Visibility */}
-        <div>
-          <label className="block text-sm font-medium text-[#343338] dark:text-white">
-            Visibility
-          </label>
-          <select
-            name="visibility"
-            defaultValue="unlisted"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          >
-            <option value="unlisted">Unlisted — Only people with the link</option>
-            <option value="private">Private — Only invited members</option>
-            <option value="public">Public — Anyone can find it</option>
-          </select>
-        </div>
-
-        {/* Occasion (optional) */}
-        <div>
-          <label htmlFor="occasion" className="block text-sm font-medium text-[#343338] dark:text-white">
-            Occasion <span className="text-slate-400">(optional)</span>
-          </label>
-          <input
-            type="text"
-            id="occasion"
-            name="occasion"
-            maxLength={100}
-            placeholder="e.g., Birthday, Christmas, Wedding"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
-          />
-        </div>
-
-        {/* Event Date (optional) */}
-        <div>
-          <label htmlFor="event_date" className="block text-sm font-medium text-[#343338] dark:text-white">
-            Event date <span className="text-slate-400">(optional)</span>
-          </label>
-          <input
-            type="date"
-            id="event_date"
-            name="event_date"
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[#343338] focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          />
-        </div>
-
-        {/* Feature toggles */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-          <p className="text-sm font-medium text-[#343338] dark:text-white">Features</p>
-          <div className="mt-4 space-y-4">
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                name="allow_reservations"
-                value="true"
-                defaultChecked
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
-              />
-              <div>
-                <p className="text-sm font-medium text-[#343338] dark:text-white">Allow reservations</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">People can reserve items to avoid duplicates</p>
-              </div>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                name="allow_contributions"
-                value="true"
-                defaultChecked
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
-              />
-              <div>
-                <p className="text-sm font-medium text-[#343338] dark:text-white">Allow contributions</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">People can contribute money toward items</p>
-              </div>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                name="allow_anonymous"
-                value="true"
-                defaultChecked
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
-              />
-              <div>
-                <p className="text-sm font-medium text-[#343338] dark:text-white">Allow anonymous</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Contributors can remain anonymous</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* Submit */}
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6 dark:border-slate-700">
-          <Link
-            href="/app/lists"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-rose-500 to-orange-400 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-rose-600 hover:to-orange-500 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isPending ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Creating...
-              </>
-            ) : (
-              <>Create list</>
-            )}
-          </button>
-        </div>
-      </form>
     </div>
   );
 }
 
+interface ToggleRowProps {
+  name: string;
+  label: string;
+  helper: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
 
-
-
-
-
-
-
-
-
-
+function ToggleRow({ name, label, helper, checked, onChange }: ToggleRowProps): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div>
+        <p className="text-sm font-medium text-[#2b2b2b]">{label}</p>
+        <p className="text-xs text-[#2b2b2b]/60">{helper}</p>
+      </div>
+      <label className="relative inline-flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          name={name}
+          value="true"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <div className={`h-6 w-11 rounded-full transition-colors ${checked ? "bg-[#9D8DF1]" : "bg-gray-200"}`}>
+          <div
+            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+              checked ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </div>
+      </label>
+    </div>
+  );
+}

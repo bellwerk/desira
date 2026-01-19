@@ -89,7 +89,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
           <label className="block text-sm font-medium text-[#343338] dark:text-white">
             Who is this list for?
           </label>
-          <div className="mt-2 grid grid-cols-2 gap-3">
+          <div className="mt-2 grid grid-cols-3 gap-3">
             <label className="relative flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white p-4 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
               <input
                 type="radio"
@@ -155,6 +155,41 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Family or friends
+                  </p>
+                </div>
+              </div>
+              <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-rose-500"></div>
+            </label>
+            <label className="relative flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white p-4 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
+              <input
+                type="radio"
+                name="recipient_type"
+                value="shared"
+                defaultChecked={list.recipient_type === "shared"}
+                className="peer sr-only"
+              />
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
+                  <svg
+                    className="h-5 w-5 text-slate-600 dark:text-slate-300"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium text-[#343338] dark:text-white">
+                    Collaborative
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Everyone can add
                   </p>
                 </div>
               </div>

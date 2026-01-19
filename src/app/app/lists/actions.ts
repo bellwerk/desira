@@ -22,7 +22,7 @@ export type ActionResult = {
 // --------------------------------------------------------------------------
 const createListSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
-  recipient_type: z.enum(["person", "group"]).default("person"),
+  recipient_type: z.enum(["person", "group", "shared"]).default("person"),
   visibility: z.enum(["unlisted", "private", "public"]).default("unlisted"),
   occasion: z.string().max(100).optional(),
   event_date: z.string().optional(),
@@ -314,7 +314,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
 const updateListSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1, "Title is required").max(100),
-  recipient_type: z.enum(["person", "group"]),
+  recipient_type: z.enum(["person", "group", "shared"]),
   visibility: z.enum(["unlisted", "private", "public"]),
   occasion: z.string().max(100).optional(),
   event_date: z.string().optional(),

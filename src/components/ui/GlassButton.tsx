@@ -12,7 +12,7 @@ interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<GlassButtonVariant, string> = {
   primary:
-    "bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-lg hover:from-rose-600 hover:to-orange-500 hover:shadow-xl active:scale-[0.98]",
+    "bg-[#9D8DF1] text-white shadow-lg hover:bg-[#8A7AE0] hover:shadow-xl active:scale-[0.98]",
   secondary:
     "glass-1 text-slate-800 dark:text-slate-100 hover:bg-white/80 dark:hover:bg-white/10 active:scale-[0.98]",
   ghost:
