@@ -27,7 +27,7 @@ export function ItemActions(props: {
     const res = await fetch("/api/reservations", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token, item_id: itemId }),
+      body: JSON.stringify({ share_token: token, item_id: itemId }),
     });
 
     const json = await res.json().catch(() => ({}));

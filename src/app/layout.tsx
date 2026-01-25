@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Asul, Playfair_Display } from "next/font/google";
+import { Inter, Asul } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -11,13 +12,6 @@ const asul = Asul({
   variable: "--font-asul",
   subsets: ["latin"],
   weight: ["400", "700"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -37,9 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${asul.variable} ${playfair.variable} antialiased`}
+        className={`${inter.variable} ${asul.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

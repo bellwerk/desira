@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -9,6 +10,7 @@ const CreateSchema = z.object({
   item_id: z.string().uuid(),
   reserved_by_name: z.string().trim().max(80).optional(),
   reserved_by_email: z.string().trim().email().max(120).optional(),
+  share_token: z.string().min(1).max(200).optional(),
 });
 
 const CancelSchema = z.object({
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { item_id, reserved_by_name, reserved_by_email } = parsed.data;
+  const { item_id, reserved_by_name, reserved_by_email, share_token } = parsed.data;
 
   const { data: item, error: itemErr } = await supabaseAdmin
     .from("items")
@@ -51,9 +53,10 @@ export async function POST(req: Request) {
     );
   }
 
+  // Fetch list with owner_id and share_token to enable self-gifting prevention and access validation
   const { data: list, error: listErr } = await supabaseAdmin
     .from("lists")
-    .select("allow_reservations,visibility")
+    .select("owner_id,allow_reservations,visibility,share_token")
     .eq("id", item.list_id)
     .single();
 
@@ -61,9 +64,57 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "List not found" }, { status: 404 });
   }
 
-  if (!list.allow_reservations || list.visibility === "private") {
+  if (!list.allow_reservations) {
     return NextResponse.json(
       { error: "Reservations disabled" },
+      { status: 403 }
+    );
+  }
+
+  // Get authenticated user (if any) for access validation and self-gifting prevention
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Helper: check if user is an authenticated list member
+  const checkMembership = async (): Promise<boolean> => {
+    if (!user) return false;
+    const { data: membership } = await supabaseAdmin
+      .from("list_members")
+      .select("id")
+      .eq("list_id", item.list_id)
+      .eq("user_id", user.id)
+      .eq("status", "accepted")
+      .maybeSingle();
+    return Boolean(membership);
+  };
+
+  // For private lists, require authenticated membership
+  if (list.visibility === "private") {
+    const isMember = await checkMembership();
+    if (!isMember) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
+  }
+
+  // For unlisted lists, validate share token access or authenticated membership
+  if (list.visibility === "unlisted") {
+    const hasValidToken = share_token && list.share_token === share_token;
+    const isMember = await checkMembership();
+    if (!hasValidToken && !isMember) {
+      return NextResponse.json(
+        { error: "Invalid or missing share token" },
+        { status: 403 }
+      );
+    }
+  }
+
+  // Self-gifting prevention: check if authenticated user is the list owner
+  if (user && list.owner_id === user.id) {
+    return NextResponse.json(
+      { error: "Cannot reserve your own list items" },
       { status: 403 }
     );
   }

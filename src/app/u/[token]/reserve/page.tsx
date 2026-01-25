@@ -34,6 +34,7 @@ export default function ReservePage() {
         item_id: itemId,
         reserved_by_name: openDetails && name.trim() ? name.trim() : undefined,
         reserved_by_email: openDetails && email.trim() ? email.trim() : undefined,
+        share_token: token,
       }),
     });
 

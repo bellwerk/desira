@@ -6,8 +6,15 @@ export const runtime = "nodejs";
 
 // GET /api/seed
 // Creates a demo auth user + profile + unlisted list + a few items.
-// We'll delete/lock this endpoint before launch.
-export async function GET() {
+// Locked down to development environments only.
+export async function GET(): Promise<NextResponse> {
+  // Block in production to prevent abuse
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Seed endpoint is disabled in production" },
+      { status: 403 }
+    );
+  }
   // 1) Create demo auth user
   const stamp = Date.now();
   const email = `demo+${stamp}@example.com`;

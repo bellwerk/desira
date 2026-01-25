@@ -57,7 +57,9 @@ export default async function PublicListPage({ params }: PageProps) {
     .eq("share_token", token)
     .single();
 
-  if (listErr || !list) {
+  // Block access if list not found OR if visibility is private
+  // Private lists should only be accessible to authenticated members, not via share link
+  if (listErr || !list || list.visibility === "private") {
     return (
       <main style={{ padding: 24, fontFamily: "system-ui" }}>
         <h1>List not found</h1>

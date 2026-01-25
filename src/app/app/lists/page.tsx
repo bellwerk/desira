@@ -14,16 +14,6 @@ interface ListRow {
   owner_id: string;
 }
 
-// Sample product data for the "Popular gift ideas" section
-const popularGiftIdeas = [
-  { id: 1, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-  { id: 2, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-  { id: 3, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-  { id: 4, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-  { id: 5, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-  { id: 6, name: "Nike Sport Shoes for wh...", originalPrice: "$545.00", currentPrice: "$545.00" },
-];
-
 export default async function ListsPage(): Promise<React.ReactElement> {
   const supabase = await createClient();
   const {
@@ -64,74 +54,82 @@ export default async function ListsPage(): Promise<React.ReactElement> {
   const typedLists = (lists ?? []) as ListRow[];
 
   return (
-    <div className="ml-12 space-y-6">
-      {/* Tagline */}
-      <p className="text-center text-lg font-normal text-[#2B2B2B]">
-        Great surprises won&apos;t create themselves!
-      </p>
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
+            My Lists
+          </h1>
+          <p className="mt-1 text-slate-600 dark:text-slate-400">
+            Manage your wishlists and share them with friends and family.
+          </p>
+        </div>
+        <Link href="/app/lists/new">
+          <GlassButton variant="primary" size="md">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            New List
+          </GlassButton>
+        </Link>
+      </div>
 
       {/* Lists */}
       {typedLists.length === 0 ? (
-        <div className="space-y-6">
-          {/* Empty State Card */}
-          <div className="mx-auto max-w-2xl rounded-3xl bg-[#3D3D3D] px-8 py-12 text-center">
-            <h2 className="font-[family-name:var(--font-playfair)] text-2xl italic text-white md:text-3xl">
-              Only you know what you want!
-            </h2>
-            <Link href="/app/lists/new" className="mt-6 inline-block">
-              <button className="rounded-full border border-[#2B2B2B]/20 bg-[#D4D7C2] px-6 py-2.5 text-sm font-medium text-[#2B2B2B] transition-all hover:bg-[#c9ccb7]">
-                Create you first wishlist
-              </button>
-            </Link>
+        <GlassCard className="text-center py-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60 dark:bg-slate-800/60">
+            <svg
+              className="h-8 w-8 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+              />
+            </svg>
           </div>
-
-          {/* Popular Gift Ideas Section */}
-          <div className="mx-auto max-w-3xl rounded-2xl bg-white/60 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-xs font-normal text-[#5C5C5C]">Popular gift ideas</span>
-              <button className="rounded-full bg-white px-3 py-1 text-[10px] font-medium text-[#2B2B2B] shadow-sm transition-all hover:shadow-md">
-                Explore All
-              </button>
-            </div>
-            
-            {/* Product Cards Carousel */}
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {popularGiftIdeas.map((product) => (
-                <div
-                  key={product.id}
-                  className="relative min-w-[100px] flex-shrink-0"
-                >
-                  {/* Product Image Placeholder */}
-                  <div className="relative h-20 w-full rounded-lg bg-[#B8B8C8]">
-                    {/* Add Button */}
-                    <button className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2B2B2B] text-white transition-transform hover:scale-110">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  {/* Product Info */}
-                  <div className="mt-1.5">
-                    <p className="truncate text-[9px] font-medium text-[#2B2B2B]">
-                      {product.name}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] text-[#8A8A8A] line-through">
-                        {product.originalPrice}
-                      </span>
-                      <span className="text-[8px] font-medium text-[#2B2B2B]">
-                        {product.currentPrice}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          <h3 className="mt-4 text-lg font-medium text-[#343338] dark:text-white">
+            No lists yet
+          </h3>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Create your first wishlist to start organizing gifts.
+          </p>
+          <Link href="/app/lists/new" className="inline-block mt-6">
+            <GlassButton variant="primary" size="md">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4.5v15m7.5-7.5h-15"
+                />
+              </svg>
+              Create your first list
+            </GlassButton>
+          </Link>
+        </GlassCard>
       ) : (
-        <div className="mx-auto max-w-4xl grid gap-4">
+        <div className="grid gap-4">
           {typedLists.map((list) => (
             <ListCard key={list.id} list={list} userId={user.id} />
           ))}
