@@ -9,7 +9,11 @@ import {
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("Missing STRIPE_SECRET_KEY");
+  return new Stripe(key);
+}
 
 async function rawBody(req: Request) {
   const ab = await req.arrayBuffer();
@@ -21,6 +25,8 @@ function errorMessage(err: unknown) {
 }
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
+
   const sig = req.headers.get("stripe-signature");
   if (!sig) return new Response("Missing stripe-signature", { status: 400 });
 
