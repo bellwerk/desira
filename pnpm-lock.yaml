@@ -6,6 +6,8 @@ settings:
 
 overrides:
   qs: '>=6.14.1'
+  tar: '>=7.5.4'
+  '@smithy/config-resolver': '>=4.4.0'
 
 importers:
 
@@ -1269,10 +1271,6 @@ packages:
     resolution: {integrity: sha512-WmU0TnhEAJLWvfSeMxBNe5xtbselEO8+4wG0NtZeL8oR21WgH1xiO37El+/Y+H/Ie4SCwBy3MxYWmOYaGgZueA==}
     engines: {node: '>=18.0.0'}
 
-  '@smithy/config-resolver@2.2.0':
-    resolution: {integrity: sha512-fsiMgd8toyUba6n1WRmr+qACzXltpdDkPTAaDqc8QqPBUzO+/JKwL6bUBseHVi8tu9l+3JOK+tSf7cay+4B3LA==}
-    engines: {node: '>=14.0.0'}
-
   '@smithy/config-resolver@4.4.6':
     resolution: {integrity: sha512-qJpzYC64kaj3S0fueiu3kXm8xPrR3PcXDPEgnaNMRn0EjNSZFoFjvbUp0YUDsRhN1CB90EnHJtbxWKevnH99UQ==}
     engines: {node: '>=18.0.0'}
@@ -1520,10 +1518,6 @@ packages:
   '@smithy/util-buffer-from@4.2.0':
     resolution: {integrity: sha512-kAY9hTKulTNevM2nlRtxAG2FQ3B2OR6QIrPY3zE5LqJy1oxzmgBGsHLWTcNhWXKchgA0WHW+mZkQrng/pgcCew==}
     engines: {node: '>=18.0.0'}
-
-  '@smithy/util-config-provider@2.3.0':
-    resolution: {integrity: sha512-HZkzrRcuFN1k70RLqlNK4FnPXKOpkik1+4JaBoHNJn+RnJGYqaa3c5/+XtLOXhlKzlRgNvyaLieHTW2VwGN0VQ==}
-    engines: {node: '>=14.0.0'}
 
   '@smithy/util-config-provider@4.2.0':
     resolution: {integrity: sha512-YEjpl6XJ36FTKmD+kRJJWYvrHeUvm5ykaUS5xK+6oXffQPHeEM4/nXlZPe+Wu0lsgRUcNZiliYNh/y7q9c2y6Q==}
@@ -3618,8 +3612,8 @@ packages:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
     engines: {node: '>=6'}
 
-  tar@7.5.2:
-    resolution: {integrity: sha512-7NyxrTE4Anh8km8iEy7o0QYPs+0JKBTj5ZaqHg6B39erLg0qYXN3BijtShwbsNSvQ+LN75+KV+C4QR/f6Gwnpg==}
+  tar@7.5.6:
+    resolution: {integrity: sha512-xqUeu2JAIJpXyvskvU3uvQW8PAmHrtXp2KDuMJwQqW8Sqq0CaZBAQ+dKS3RBXVhU4wC5NjAdKrmh84241gO9cA==}
     engines: {node: '>=18'}
 
   terser@5.16.9:
@@ -4025,7 +4019,7 @@ snapshots:
       '@aws-sdk/util-user-agent-browser': 3.398.0
       '@aws-sdk/util-user-agent-node': 3.398.0
       '@aws-sdk/xml-builder': 3.310.0
-      '@smithy/config-resolver': 2.2.0
+      '@smithy/config-resolver': 4.4.6
       '@smithy/fetch-http-handler': 2.5.0
       '@smithy/hash-node': 2.2.0
       '@smithy/invalid-dependency': 2.2.0
@@ -4268,7 +4262,7 @@ snapshots:
       '@aws-sdk/util-endpoints': 3.398.0
       '@aws-sdk/util-user-agent-browser': 3.398.0
       '@aws-sdk/util-user-agent-node': 3.398.0
-      '@smithy/config-resolver': 2.2.0
+      '@smithy/config-resolver': 4.4.6
       '@smithy/fetch-http-handler': 2.5.0
       '@smithy/hash-node': 2.2.0
       '@smithy/invalid-dependency': 2.2.0
@@ -4352,7 +4346,7 @@ snapshots:
       '@aws-sdk/util-endpoints': 3.398.0
       '@aws-sdk/util-user-agent-browser': 3.398.0
       '@aws-sdk/util-user-agent-node': 3.398.0
-      '@smithy/config-resolver': 2.2.0
+      '@smithy/config-resolver': 4.4.6
       '@smithy/fetch-http-handler': 2.5.0
       '@smithy/hash-node': 2.2.0
       '@smithy/invalid-dependency': 2.2.0
@@ -4846,7 +4840,7 @@ snapshots:
       '@aws-sdk/util-endpoints': 3.398.0
       '@aws-sdk/util-user-agent-browser': 3.398.0
       '@aws-sdk/util-user-agent-node': 3.398.0
-      '@smithy/config-resolver': 2.2.0
+      '@smithy/config-resolver': 4.4.6
       '@smithy/fetch-http-handler': 2.5.0
       '@smithy/hash-node': 2.2.0
       '@smithy/invalid-dependency': 2.2.0
@@ -5640,14 +5634,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@smithy/config-resolver@2.2.0':
-    dependencies:
-      '@smithy/node-config-provider': 2.3.0
-      '@smithy/types': 2.12.0
-      '@smithy/util-config-provider': 2.3.0
-      '@smithy/util-middleware': 2.2.0
-      tslib: 2.8.1
-
   '@smithy/config-resolver@4.4.6':
     dependencies:
       '@smithy/node-config-provider': 4.3.8
@@ -6054,10 +6040,6 @@ snapshots:
       '@smithy/is-array-buffer': 4.2.0
       tslib: 2.8.1
 
-  '@smithy/util-config-provider@2.3.0':
-    dependencies:
-      tslib: 2.8.1
-
   '@smithy/util-config-provider@4.2.0':
     dependencies:
       tslib: 2.8.1
@@ -6079,7 +6061,7 @@ snapshots:
 
   '@smithy/util-defaults-mode-node@2.3.1':
     dependencies:
-      '@smithy/config-resolver': 2.2.0
+      '@smithy/config-resolver': 4.4.6
       '@smithy/credential-provider-imds': 2.3.0
       '@smithy/node-config-provider': 2.3.0
       '@smithy/property-provider': 2.2.0
@@ -8440,7 +8422,7 @@ snapshots:
       bin-links: 6.0.0
       https-proxy-agent: 7.0.6
       node-fetch: 3.3.2
-      tar: 7.5.2
+      tar: 7.5.6
     transitivePeerDependencies:
       - supports-color
 
@@ -8456,7 +8438,7 @@ snapshots:
 
   tapable@2.3.0: {}
 
-  tar@7.5.2:
+  tar@7.5.6:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
