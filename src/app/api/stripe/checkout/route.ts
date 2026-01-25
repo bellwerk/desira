@@ -2,30 +2,36 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-const BodySchema = z.object({
-  token: z.string().min(10),
-  item_id: z.string().uuid(),
-
-  // Contribution amount (what recipient receives)
-  amount_cents: z.number().int().positive(),
-
-  // Fee from client (we verify against server rule)
-  fee_cents: z.number().int().positive(),
-
-  contributor_name: z.string().max(80).nullable().optional(),
-  message: z.string().max(500).nullable().optional(),
-  is_anonymous: z.boolean().optional(),
-});
-
-// Fee rule: 5% with $1 minimum
+// fee rule (must match UI): 5% with $1 minimum
 function feeCentsForContribution(contributionCents: number) {
   return Math.max(100, Math.round(contributionCents * 0.05));
 }
+
+// Accept BOTH old and new shapes (so we don’t break during iteration)
+const BodySchema = z
+  .object({
+    token: z.string().min(10),
+    item_id: z.string().uuid(),
+
+    // new names
+    contribution_cents: z.number().int().positive().optional(),
+    fee_cents: z.number().int().nonnegative().optional(),
+    total_cents: z.number().int().positive().optional(),
+
+    // old name (if any)
+    amount_cents: z.number().int().positive().optional(),
+
+    contributor_name: z.string().max(80).nullable().optional(),
+    message: z.string().max(300).nullable().optional(),
+    is_anonymous: z.boolean().optional(),
+  })
+  .strict();
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -33,156 +39,227 @@ export async function POST(req: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten() },
+      { error: "invalid payload", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
 
   const body = parsed.data;
 
-  // 0) Recompute fee server-side (prevents tampering)
-  const expectedFee = feeCentsForContribution(body.amount_cents);
-  if (body.fee_cents !== expectedFee) {
-    return NextResponse.json(
-      {
-        error: "Fee mismatch (client out of date)",
-        expected_fee_cents: expectedFee,
-      },
-      { status: 409 }
-    );
+  // normalize contribution_cents
+  const contributionCents =
+    body.contribution_cents ?? body.amount_cents ?? undefined;
+
+  if (!contributionCents || !Number.isFinite(contributionCents)) {
+    return NextResponse.json({ error: "invalid payload" }, { status: 400 });
   }
 
-  const contributionCents = body.amount_cents;
-  const feeCents = expectedFee;
-  const totalChargeCents = contributionCents + feeCents;
+  if (contributionCents < 100) {
+    return NextResponse.json({ error: "Minimum contribution is $1." }, { status: 400 });
+  }
 
-  // 1) Load list by token
+  // Compute fee/total SERVER-side (don’t trust client)
+  const feeCents = feeCentsForContribution(contributionCents);
+  const totalCents = contributionCents + feeCents;
+
+  // Load list by share token
   const { data: list, error: listErr } = await supabaseAdmin
     .from("lists")
-    .select("id,owner_id,currency,allow_contributions,visibility")
+    .select(
+      `id, owner_id, currency, visibility, allow_contributions`
+    )
     .eq("share_token", body.token)
-    .single();
+    .maybeSingle();
 
   if (listErr || !list) {
     return NextResponse.json({ error: "List not found" }, { status: 404 });
   }
 
-  if (!list.allow_contributions || list.visibility === "private") {
-    return NextResponse.json({ error: "Contributions disabled" }, { status: 403 });
+  const allowContributions = (list.allow_contributions ?? true) as boolean;
+  if (!allowContributions) {
+    return NextResponse.json({ error: "Contributions are disabled." }, { status: 403 });
   }
 
-  // 2) Load item (must belong to list)
-  const { data: item, error: itemErr } = await supabaseAdmin
-    .from("items")
-    .select("id,title,target_amount_cents,price_cents,status,list_id")
-    .eq("id", body.item_id)
-    .single();
+  if (list.visibility === "private") {
+    return NextResponse.json({ error: "List is private." }, { status: 403 });
+  }
+
+  // Parallel fetch: item, user auth, and payment account (reduces waterfall)
+  const supabase = await createClient();
+  const [itemResult, userResult, acctResult] = await Promise.all([
+    // Load item and ensure it belongs to list
+    supabaseAdmin
+      .from("items")
+      .select(`id, list_id, title, target_amount_cents, price_cents, status`)
+      .eq("id", body.item_id)
+      .maybeSingle(),
+    // Self-gifting prevention: check if authenticated user is the list owner
+    supabase.auth.getUser(),
+    // Recipient must have a connected Stripe account
+    supabaseAdmin
+      .from("payment_accounts")
+      .select("provider_account_id, charges_enabled, payouts_enabled, details_submitted")
+      .eq("owner_id", list.owner_id)
+      .maybeSingle(),
+  ]);
+
+  const { data: item, error: itemErr } = itemResult;
+  const { data: { user } } = userResult;
+  const { data: acct } = acctResult;
+
+  // Self-gifting check
+  if (user && list.owner_id === user.id) {
+    return NextResponse.json(
+      { error: "Cannot contribute to your own list items" },
+      { status: 403 }
+    );
+  }
 
   if (itemErr || !item || item.list_id !== list.id) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
 
   if (item.status !== "active") {
-    return NextResponse.json({ error: "Item not fundable" }, { status: 409 });
+    return NextResponse.json({ error: "Item is not available." }, { status: 409 });
   }
 
-  // 3) Server-side cap (no overfunding in MVP)
-  const target = item.target_amount_cents ?? item.price_cents ?? null;
+  // Parallel fetch: reservations and contributions (reduces waterfall)
+  const targetCents = item.target_amount_cents ?? item.price_cents ?? null;
 
-  if (target != null) {
-    const { data: total } = await supabaseAdmin
-      .from("public_contribution_totals")
-      .select("funded_amount_cents")
+  const [rsvResult, contribsResult] = await Promise.all([
+    // Block contributions if reserved
+    supabaseAdmin
+      .from("reservations")
+      .select("id")
       .eq("item_id", item.id)
-      .maybeSingle();
+      .eq("status", "reserved")
+      .maybeSingle(),
+    // Get funding status if there's a target
+    targetCents
+      ? supabaseAdmin
+          .from("contributions")
+          .select("amount_cents, payment_status")
+          .eq("item_id", item.id)
+      : Promise.resolve({ data: null, error: null }),
+  ]);
 
-    const funded = total?.funded_amount_cents ?? 0;
-    const left = Math.max(target - funded, 0);
+  const { data: rsv } = rsvResult;
+  const { data: contribs, error: sumErr } = contribsResult;
 
-    if (left <= 0) {
-      return NextResponse.json({ error: "Already fully funded" }, { status: 409 });
+  if (rsv) {
+    return NextResponse.json({ error: "Item is reserved." }, { status: 409 });
+  }
+
+  if (targetCents) {
+    if (sumErr) {
+      return NextResponse.json({ error: "Failed to compute funding." }, { status: 500 });
     }
 
-    // Cap contribution (recipient amount)
+    const funded = (contribs ?? [])
+      .filter((c) => c.payment_status === "succeeded")
+      .reduce((acc, c) => acc + (c.amount_cents ?? 0), 0);
+
+    const left = Math.max(targetCents - funded, 0);
+
+    if (left <= 0) {
+      return NextResponse.json({ error: "This item is already fully funded." }, { status: 409 });
+    }
+
     if (contributionCents > left) {
       return NextResponse.json(
-        { error: "Amount exceeds remaining", max_cents: left },
-        { status: 409 }
+        { error: `Max contribution is ${Math.round(left / 100)}.` },
+        { status: 400 }
       );
     }
   }
 
-  // 4) Find connected Stripe account for owner
-  const { data: pay, error: payErr } = await supabaseAdmin
-    .from("payment_accounts")
-    .select("provider_account_id,charges_enabled,payouts_enabled,details_submitted")
-    .eq("owner_id", list.owner_id)
-    .maybeSingle();
+  // If cached flags indicate account not ready, refresh from Stripe before blocking
+  let chargesEnabled = acct?.charges_enabled ?? false;
+  let payoutsEnabled = acct?.payouts_enabled ?? false;
+  let detailsSubmitted = acct?.details_submitted ?? false;
+  const providerAccountId = acct?.provider_account_id ?? null;
 
-  if (payErr || !pay?.provider_account_id) {
-    return NextResponse.json(
-      { error: "Recipient payouts not enabled (owner not connected)" },
-      { status: 409 }
-    );
+  if (providerAccountId && (!chargesEnabled || !payoutsEnabled || !detailsSubmitted)) {
+    // Refresh account status from Stripe (owner may have completed onboarding)
+    try {
+      const stripeAcct = await stripe.accounts.retrieve(providerAccountId);
+      chargesEnabled = Boolean(stripeAcct.charges_enabled);
+      payoutsEnabled = Boolean(stripeAcct.payouts_enabled);
+      detailsSubmitted = Boolean(stripeAcct.details_submitted);
+
+      // Update cached values if they've changed
+      if (
+        chargesEnabled !== (acct?.charges_enabled ?? false) ||
+        payoutsEnabled !== (acct?.payouts_enabled ?? false) ||
+        detailsSubmitted !== (acct?.details_submitted ?? false)
+      ) {
+        await supabaseAdmin
+          .from("payment_accounts")
+          .update({
+            charges_enabled: chargesEnabled,
+            payouts_enabled: payoutsEnabled,
+            details_submitted: detailsSubmitted,
+          })
+          .eq("owner_id", list.owner_id);
+      }
+    } catch {
+      // If Stripe call fails, fall through to use cached values
+    }
   }
 
-  // 4b) Refresh account status from Stripe (after onboarding)
-  const acct = await stripe.accounts.retrieve(pay.provider_account_id);
-
-  await supabaseAdmin.from("payment_accounts").upsert({
-    owner_id: list.owner_id,
-    provider: "stripe",
-    provider_account_id: pay.provider_account_id,
-    charges_enabled: acct.charges_enabled,
-    payouts_enabled: acct.payouts_enabled,
-    details_submitted: acct.details_submitted,
-  });
-
-  if (!acct.charges_enabled) {
+  if (!providerAccountId || !chargesEnabled || !payoutsEnabled || !detailsSubmitted) {
     return NextResponse.json(
       { error: "Recipient account not ready for charges (finish onboarding)" },
       { status: 409 }
     );
   }
 
-  // 5) Create Checkout Session (destination charge + application fee)
   const origin = req.headers.get("origin") ?? "http://localhost:3000";
-
-  // Stripe requires application_fee_amount < amount
-  if (feeCents >= totalChargeCents) {
-    return NextResponse.json({ error: "Invalid fee" }, { status: 400 });
-  }
+  const currency = String(list.currency ?? "CAD").toLowerCase();
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    success_url: `${origin}/u/${body.token}/thanks?item=${body.item_id}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/u/${body.token}/pay?item=${body.item_id}`,
+    success_url: `${origin}/u/${body.token}/thanks?item=${item.id}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/u/${body.token}/contribute?item=${item.id}`,
     line_items: [
       {
-        quantity: 1,
         price_data: {
-          currency: list.currency.toLowerCase(),
-          unit_amount: totalChargeCents,
+          currency,
           product_data: { name: `Contribution: ${item.title}` },
+          unit_amount: contributionCents,
         },
+        quantity: 1,
+      },
+      {
+        price_data: {
+          currency,
+          product_data: { name: "Desira service fee" },
+          unit_amount: feeCents,
+        },
+        quantity: 1,
       },
     ],
+    payment_intent_data: {
+      application_fee_amount: feeCents,
+      transfer_data: { destination: providerAccountId },
+      metadata: {
+        item_id: item.id,
+        contribution_cents: String(contributionCents),
+        fee_cents: String(feeCents),
+        total_cents: String(totalCents),
+        contributor_name: body.contributor_name ?? "",
+        message: body.message ?? "",
+        is_anonymous: body.is_anonymous ? "1" : "0",
+      },
+    },
     metadata: {
-      list_id: list.id,
       item_id: item.id,
-      token: body.token,
+      contribution_cents: String(contributionCents),
+      fee_cents: String(feeCents),
+      total_cents: String(totalCents),
       contributor_name: body.contributor_name ?? "",
       message: body.message ?? "",
       is_anonymous: body.is_anonymous ? "1" : "0",
-
-      // important for webhook
-      contribution_cents: String(contributionCents),
-      fee_cents: String(feeCents),
-      total_cents: String(totalChargeCents),
-    },
-    payment_intent_data: {
-      transfer_data: { destination: pay.provider_account_id },
-      application_fee_amount: feeCents,
     },
   });
 

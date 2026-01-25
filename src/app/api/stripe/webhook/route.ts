@@ -1,5 +1,11 @@
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { logAuditEvent, AuditEventType } from "@/lib/audit";
+import {
+  createNotification,
+  getListOwnerId,
+  NotificationType,
+} from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -71,24 +77,80 @@ export async function POST(req: Request) {
     }
   }
 
-  const { error: insErr } = await supabaseAdmin.from("contributions").insert({
-    item_id: itemId,
-    amount_cents: Math.round(contributionCents),
-    fee_cents: Math.round(feeCents),
-    total_cents: Math.round(totalCents),
-    currency,
-    contributor_name: session.metadata?.contributor_name || null,
-    message: session.metadata?.message || null,
-    is_anonymous: session.metadata?.is_anonymous === "1",
-    payment_status: "succeeded",
-    provider: "stripe",
-    provider_payment_intent_id: paymentIntentId,
-  });
+  const { data: insertedContribution, error: insErr } = await supabaseAdmin
+    .from("contributions")
+    .insert({
+      item_id: itemId,
+      amount_cents: Math.round(contributionCents),
+      fee_cents: Math.round(feeCents),
+      total_cents: Math.round(totalCents),
+      currency,
+      contributor_name: session.metadata?.contributor_name || null,
+      message: session.metadata?.message || null,
+      is_anonymous: session.metadata?.is_anonymous === "1",
+      payment_status: "succeeded",
+      provider: "stripe",
+      provider_payment_intent_id: paymentIntentId,
+    })
+    .select("id")
+    .single();
 
   if (insErr) {
     if (insErr.code === "23505") return new Response("ok", { status: 200 });
     return new Response(`DB insert failed: ${insErr.message}`, { status: 500 });
   }
+
+  // Log audit event for successful contribution (fire-and-forget)
+  void logAuditEvent({
+    eventType: AuditEventType.CONTRIBUTION_SUCCEEDED,
+    actorType: "webhook",
+    resourceType: "contribution",
+    resourceId: insertedContribution.id,
+    metadata: {
+      item_id: itemId,
+      payment_intent_id: paymentIntentId,
+      amount_cents: contributionCents,
+      fee_cents: feeCents,
+      currency,
+    },
+  });
+
+  // Notify list owner about the contribution (fire-and-forget)
+  void (async () => {
+    // Get item to find list_id and title
+    const { data: itemData } = await supabaseAdmin
+      .from("items")
+      .select("list_id, title")
+      .eq("id", itemId)
+      .single();
+
+    if (itemData) {
+      const ownerId = await getListOwnerId(itemData.list_id);
+      if (ownerId) {
+        const amountFormatted = (contributionCents / 100).toFixed(2);
+        // Respect anonymity: hide contributor name when is_anonymous is set
+        const isAnonymous = session.metadata?.is_anonymous === "1";
+        const contributorName = isAnonymous
+          ? "Someone"
+          : session.metadata?.contributor_name || "Someone";
+
+        await createNotification({
+          userId: ownerId,
+          type: NotificationType.CONTRIBUTION_RECEIVED,
+          title: "Contribution received",
+          body: `${contributorName} contributed $${amountFormatted} ${currency} to "${itemData.title}"`,
+          link: `/app/lists/${itemData.list_id}`,
+          metadata: {
+            list_id: itemData.list_id,
+            item_id: itemId,
+            contribution_id: insertedContribution.id,
+            amount_cents: contributionCents,
+            currency,
+          },
+        });
+      }
+    }
+  })();
 
   return new Response("ok", { status: 200 });
 }
