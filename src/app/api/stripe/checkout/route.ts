@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("Missing STRIPE_SECRET_KEY");
+  return new Stripe(key);
+}
 
 // fee rule (must match UI): 5% with $1 minimum
 function feeCentsForContribution(contributionCents: number) {
@@ -34,6 +38,8 @@ const BodySchema = z
   .strict();
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
+
   const json = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(json);
 
