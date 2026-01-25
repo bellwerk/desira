@@ -5,13 +5,19 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("Missing STRIPE_SECRET_KEY env var");
+  return new Stripe(key);
+}
 
 const BodySchema = z.object({
   session_id: z.string().min(10),
 });
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
+
   const json = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(json);
 
