@@ -46,7 +46,8 @@
     },
     "onlyBuiltDependencies": [
       "esbuild",
-      "workerd"
+      "workerd",
+      "supabase"
     ]
   }
 }
