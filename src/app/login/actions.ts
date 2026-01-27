@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { headers } from "next/headers";
 
 type OAuthResult = { url?: string; error?: string };
 
@@ -12,11 +11,13 @@ async function signInWithOAuthProvider(
   redirectTo?: string
 ): Promise<OAuthResult> {
   const supabase = await createClient();
-  const headersList = await headers();
-  const origin = headersList.get("origin") ?? "http://localhost:3000";
+
+  // Use NEXT_PUBLIC_SITE_URL for OAuth redirects (set in production env)
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   // Build the callback URL with the intended redirect destination
-  const callbackUrl = new URL("/auth/callback", origin);
+  const callbackUrl = new URL("/auth/callback", siteUrl);
   if (redirectTo) {
     callbackUrl.searchParams.set("next", redirectTo);
   }

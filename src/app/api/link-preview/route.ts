@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import dns from "dns/promises";
+import { lookup } from "dns/promises";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   normalizeUrl,
@@ -9,10 +9,16 @@ import {
   isPrivateIp,
 } from "@/lib/url";
 
+// Use Node.js runtime to allow setting Host header for pinned-IP SSRF protection.
+// Edge runtime forbids the Host header per Web Fetch spec, which breaks TLS/SNI
+// when connecting to a resolved IP while maintaining virtual hosting.
 export const runtime = "nodejs";
 
 // Request timeout in milliseconds
 const FETCH_TIMEOUT_MS = 8000;
+
+// DoH lookup timeout in milliseconds
+const DOH_TIMEOUT_MS = 5000;
 
 // Max response size in bytes (2MB)
 const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
@@ -59,26 +65,40 @@ interface ErrorResponse {
 type LinkPreviewResponse = SuccessResponse | ErrorResponse;
 
 /**
- * DNS lookup with SSRF protection
+ * DNS-over-HTTPS response types from Cloudflare
+ */
+interface DoHAnswer {
+  name: string;
+  type: number;
+  TTL: number;
+  data: string;
+}
+
+interface DoHResponse {
+  Status: number;
+  Answer?: DoHAnswer[];
+}
+
+/**
+ * DNS lookup with SSRF protection using DNS-over-HTTPS (Cloudflare)
  * Resolves the hostname and checks if any resolved IPs (IPv4 and IPv6) are private
+ * Works in both Node.js and Cloudflare Workers environments
  */
 async function safeDnsLookup(hostname: string): Promise<{ ok: true; ip: string } | { ok: false; error: string }> {
   const allAddresses: string[] = [];
 
-  // Resolve IPv4 (A records)
-  try {
-    const ipv4Addresses = await dns.resolve4(hostname);
-    allAddresses.push(...ipv4Addresses);
-  } catch {
-    // No A records, continue to check AAAA
+  // Resolve IPv4 (A records) and IPv6 (AAAA records) in parallel via DoH
+  const [ipv4Result, ipv6Result] = await Promise.allSettled([
+    fetchDoHRecords(hostname, "A"),
+    fetchDoHRecords(hostname, "AAAA"),
+  ]);
+
+  if (ipv4Result.status === "fulfilled" && ipv4Result.value.length > 0) {
+    allAddresses.push(...ipv4Result.value);
   }
 
-  // Resolve IPv6 (AAAA records)
-  try {
-    const ipv6Addresses = await dns.resolve6(hostname);
-    allAddresses.push(...ipv6Addresses);
-  } catch {
-    // No AAAA records
+  if (ipv6Result.status === "fulfilled" && ipv6Result.value.length > 0) {
+    allAddresses.push(...ipv6Result.value);
   }
 
   // If no addresses resolved at all, fail
@@ -97,7 +117,71 @@ async function safeDnsLookup(hostname: string): Promise<{ ok: true; ip: string }
 }
 
 /**
+ * Fetch DNS records via Cloudflare DNS-over-HTTPS
+ * Includes timeout handling to prevent stalling if DoH is slow/unreachable
+ */
+async function fetchDoHRecords(hostname: string, type: "A" | "AAAA"): Promise<string[]> {
+  const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=${type}`;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DOH_TIMEOUT_MS);
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "application/dns-json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = (await response.json()) as DoHResponse;
+    
+    // Status 0 means NOERROR
+    if (data.Status !== 0 || !data.Answer) {
+      return [];
+    }
+
+    // Type 1 = A, Type 28 = AAAA
+    const expectedType = type === "A" ? 1 : 28;
+    return data.Answer
+      .filter((record) => record.type === expectedType)
+      .map((record) => record.data);
+  } catch {
+    clearTimeout(timeoutId);
+    return [];
+  }
+}
+
+/**
+ * Verify system DNS also resolves to safe (non-private) IPs
+ * This catches split-horizon DNS or hosts file overrides that could bypass DoH validation
+ */
+async function verifySystemDns(hostname: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const results = await lookup(hostname, { all: true });
+    
+    for (const entry of results) {
+      if (isPrivateIp(entry.address)) {
+        return { ok: false, error: "System DNS resolves to a private IP address" };
+      }
+    }
+    
+    return { ok: true };
+  } catch {
+    // If system DNS fails completely, block the request as we can't guarantee safety
+    return { ok: false, error: "System DNS resolution failed" };
+  }
+}
+
+/**
  * Fetch HTML with SSRF protection, timeout, and size limit
+ * Pins requests to resolved IP to prevent DNS rebinding attacks
  */
 async function safeFetch(
   urlString: string,
@@ -108,11 +192,46 @@ async function safeFetch(
   }
 
   const url = new URL(urlString);
+  const originalHostname = url.hostname;
 
-  // DNS lookup with SSRF check
+  // DNS lookup with SSRF check via DoH - returns a verified safe IP
   const dnsResult = await safeDnsLookup(url.hostname);
   if (!dnsResult.ok) {
     return { ok: false, error: dnsResult.error, code: "FETCH_BLOCKED" };
+  }
+
+  const isHttps = url.protocol === "https:";
+  const resolvedIp = dnsResult.ip;
+
+  // Build the fetch URL and headers
+  let fetchUrl: string;
+  const headers: Record<string, string> = {
+    "User-Agent": "Desira/1.0 LinkPreview (+https://desira.io)",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+  };
+
+  if (isHttps) {
+    // For HTTPS, we can't easily pin to the resolved IP because:
+    // 1. Node's native fetch uses the system resolver
+    // 2. TLS/SNI requires the original hostname for cert validation
+    //
+    // To prevent SSRF when DoH and system DNS disagree (split-horizon DNS,
+    // hosts file overrides, etc.), we verify the system resolver also
+    // returns safe (non-private) IPs before proceeding.
+    const systemDnsCheck = await verifySystemDns(originalHostname);
+    if (!systemDnsCheck.ok) {
+      return { ok: false, error: systemDnsCheck.error, code: "FETCH_BLOCKED" };
+    }
+    fetchUrl = urlString;
+  } else {
+    // HTTP: Pin to resolved IP to prevent DNS rebinding
+    const pinnedUrl = new URL(urlString);
+    // Don't manually add brackets for IPv6 - URL API handles serialization
+    pinnedUrl.hostname = resolvedIp;
+    fetchUrl = pinnedUrl.toString();
+    // Set Host header for virtual hosting
+    headers["Host"] = originalHostname;
   }
 
   // Create abort controller for timeout
@@ -120,14 +239,10 @@ async function safeFetch(
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(urlString, {
+    const response = await fetch(fetchUrl, {
       signal: controller.signal,
       redirect: "manual",
-      headers: {
-        "User-Agent": "Desira/1.0 LinkPreview (+https://desira.io)",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-      },
+      headers,
     });
 
     clearTimeout(timeoutId);
