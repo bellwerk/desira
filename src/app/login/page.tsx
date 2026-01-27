@@ -14,7 +14,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-8 sm:py-12">
       {/* Gradient Background */}
       <div
         className="absolute inset-0 -z-10 animate-gradient"
@@ -46,21 +46,21 @@ export default async function LoginPage(): Promise<React.ReactElement> {
         }}
       />
 
-      <main className="w-full max-w-sm">
+      <main className="w-full max-w-[340px] sm:max-w-sm">
         {/* Title */}
-        <h1 className="text-center text-5xl font-bold tracking-tight text-[#27323F]">
+        <h1 className="font-[family-name:var(--font-asul)] text-center text-[32px] font-bold tracking-tight text-[#452c37] sm:text-[44px]">
           Your wishes await
         </h1>
-        <h2 className="mt-2 text-center text-base font-bold text-[#27323F]">
+        <h2 className="mt-1.5 text-center text-sm font-medium text-[#452c37] sm:mt-2 sm:text-base">
           Sign in to create, manage, and share your wishlists.
         </h2>
-        <p className="mb-5 mt-2 text-center text-[16px] text-[#FCF8F7]">
+        <p className="mb-4 mt-1.5 text-center text-sm text-[#FCF8F7] sm:mb-5 sm:mt-2 sm:text-[16px]">
           Guests don&apos;t need an account to view shared lists.
         </p>
 
         {/* Liquid Glass Form Card - Apple Style */}
         <div
-          className="relative rounded-[28px] p-6 overflow-hidden"
+          className="relative rounded-[20px] p-4 overflow-hidden sm:rounded-[28px] sm:p-6"
           style={{
             background: `
               linear-gradient(
@@ -131,7 +131,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-xs text-white/50">
+        <p className="mt-6 text-center text-[10px] text-white/50 sm:mt-8 sm:text-xs">
           This site is protected by reCAPTCHA and the Google{" "}
           <a href="#" className="underline hover:text-white/70">
             Privacy Policy

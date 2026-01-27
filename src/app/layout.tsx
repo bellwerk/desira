@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Asul } from "next/font/google";
+import { Urbanist, Asul } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const inter = Inter({
-  variable: "--font-inter",
+const urbanist = Urbanist({
+  variable: "--font-urbanist",
   subsets: ["latin"],
 });
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${asul.variable} antialiased`}
+        className={`${urbanist.variable} ${asul.variable} font-[family-name:var(--font-urbanist)] antialiased`}
       >
         <Providers>{children}</Providers>
       </body>
