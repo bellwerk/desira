@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
 import type { Metadata } from "next";
@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   },
 };
 
+// Force dynamic rendering - auth pages should never be statically generated
+export const dynamic = "force-dynamic";
+
 interface Profile {
   display_name: string | null;
   avatar_url: string | null;
@@ -30,6 +33,11 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // During build, env vars may not be available - redirect to login
+  if (!isSupabaseConfigured()) {
+    redirect("/login");
+  }
+
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
 
