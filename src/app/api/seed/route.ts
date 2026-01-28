@@ -6,12 +6,12 @@ export const runtime = "nodejs";
 
 // GET /api/seed
 // Creates a demo auth user + profile + unlisted list + a few items.
-// Locked down to development environments only.
+// Requires ALLOW_SEED=true env var to be explicitly set.
 export async function GET(): Promise<NextResponse> {
-  // Block in production to prevent abuse
-  if (process.env.NODE_ENV === "production") {
+  // Only allow if explicitly enabled via env var (never set this in production)
+  if (process.env.ALLOW_SEED !== "true") {
     return NextResponse.json(
-      { error: "Seed endpoint is disabled in production" },
+      { error: "Seed endpoint is disabled. Set ALLOW_SEED=true to enable." },
       { status: 403 }
     );
   }
