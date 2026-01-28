@@ -10,6 +10,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
+    if (error) {
+      console.error("Auth callback error:", error.message, error);
+    }
+
     if (!error) {
       // Ensure profile exists (fallback if trigger didn't create one)
       const {

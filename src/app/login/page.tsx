@@ -48,7 +48,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
 
       <main className="w-full max-w-[340px] sm:max-w-sm">
         {/* Title */}
-        <h1 className="font-[family-name:var(--font-asul)] text-center text-[32px] font-bold tracking-tight text-[#452c37] sm:text-[44px]">
+        <h1 className="font-[family-name:var(--font-asul)] text-center text-[32px] font-bold leading-none tracking-tight text-[#452c37] sm:text-[44px]">
           Your wishes await
         </h1>
         <h2 className="mt-1.5 text-center text-sm font-medium text-[#452c37] sm:mt-2 sm:text-base">
