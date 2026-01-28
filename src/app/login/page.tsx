@@ -1,8 +1,25 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage(): Promise<React.ReactElement> {
+  // Check if Supabase is configured before trying to use it
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-rose-100 to-purple-100 px-4">
+        <div className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+          <h1 className="mb-4 text-2xl font-bold text-red-600">Configuration Error</h1>
+          <p className="text-slate-700">
+            Supabase environment variables are not configured.
+            <br />
+            Please set <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+            <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,21 +63,25 @@ export default async function LoginPage(): Promise<React.ReactElement> {
         }}
       />
 
-      <main className="w-full max-w-[340px] sm:max-w-sm">
-        {/* Title */}
-        <h1 className="font-[family-name:var(--font-asul)] text-center text-[32px] font-bold leading-none tracking-tight text-[#452c37] sm:text-[44px]">
-          Your wishes await
-        </h1>
-        <h2 className="mt-1.5 text-center text-sm font-medium text-[#452c37] sm:mt-2 sm:text-base">
-          Sign in to create, manage, and share your wishlists.
-        </h2>
-        <p className="mb-4 mt-1.5 text-center text-sm text-[#FCF8F7] sm:mb-5 sm:mt-2 sm:text-[16px]">
-          Guests don&apos;t need an account to view shared lists.
-        </p>
+      <main className="w-full max-w-[340px] sm:max-w-sm" aria-labelledby="login-heading">
+        <header className="mb-5 sm:mb-6">
+          <h1
+            id="login-heading"
+            className="font-[family-name:var(--font-asul)] text-center text-[32px] font-bold leading-none tracking-tight text-[#452c37] sm:text-[44px]"
+          >
+            Your wishes await
+          </h1>
+          <p className="mt-2 text-center text-sm font-medium leading-snug text-[#452c37]/90 sm:mt-3 sm:text-base">
+            Sign in to create, manage, and share your wishlists.
+          </p>
+          <p className="mt-1 text-center text-[13px] leading-snug text-[#FCF8F7] sm:mt-1.5 sm:text-sm">
+            Guests don&apos;t need an account to view shared lists.
+          </p>
+        </header>
 
-        {/* Liquid Glass Form Card - Apple Style */}
-        <div
-          className="relative rounded-[20px] p-4 overflow-hidden sm:rounded-[28px] sm:p-6"
+        <section
+          aria-label="Sign in form"
+          className="relative overflow-hidden rounded-[24px] p-5 sm:rounded-[28px] sm:p-6"
           style={{
             background: `
               linear-gradient(
@@ -82,8 +103,9 @@ export default async function LoginPage(): Promise<React.ReactElement> {
             `,
           }}
         >
-          {/* Specular highlight - top edge glow */}
+          {/* Decorative: Specular highlight - top edge glow */}
           <div
+            aria-hidden="true"
             className="pointer-events-none absolute inset-x-4 top-0 h-px"
             style={{
               background: `linear-gradient(90deg, 
@@ -95,9 +117,10 @@ export default async function LoginPage(): Promise<React.ReactElement> {
               )`,
             }}
           />
-          {/* Iridescent edge shimmer */}
+          {/* Decorative: Iridescent edge shimmer */}
           <div
-            className="pointer-events-none absolute inset-0 rounded-[28px] opacity-30"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[24px] opacity-30 sm:rounded-[28px]"
             style={{
               background: `
                 linear-gradient(
@@ -115,9 +138,10 @@ export default async function LoginPage(): Promise<React.ReactElement> {
               padding: "1px",
             }}
           />
-          {/* Inner glow layer */}
+          {/* Decorative: Inner glow layer */}
           <div
-            className="pointer-events-none absolute inset-0 rounded-[28px]"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[24px] sm:rounded-[28px]"
             style={{
               background: `
                 radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
@@ -128,20 +152,31 @@ export default async function LoginPage(): Promise<React.ReactElement> {
           <div className="relative z-10">
             <LoginForm />
           </div>
-        </div>
+        </section>
 
-        {/* Footer */}
-        <p className="mt-6 text-center text-[10px] text-white/50 sm:mt-8 sm:text-xs">
-          This site is protected by reCAPTCHA and the Google{" "}
-          <a href="#" className="underline hover:text-white/70">
-            Privacy Policy
-          </a>{" "}
-          and{" "}
-          <a href="#" className="underline hover:text-white/70">
-            Terms of Service
-          </a>{" "}
-          apply.
-        </p>
+        <footer className="mt-6 px-2 text-center sm:mt-8">
+          <p className="text-[11px] leading-relaxed text-white/50 sm:text-xs">
+            This site is protected by reCAPTCHA and the Google{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 transition-colors hover:text-white/70"
+            >
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://policies.google.com/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 transition-colors hover:text-white/70"
+            >
+              Terms of Service
+            </a>{" "}
+            apply.
+          </p>
+        </footer>
       </main>
     </div>
   );

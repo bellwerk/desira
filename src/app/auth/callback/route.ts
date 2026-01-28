@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/app";
 
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    console.error("Auth callback: Supabase not configured");
+    return NextResponse.redirect(`${origin}/login?error=config_error`);
+  }
+
   if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (error) {
-      console.error("Auth callback error:", error.message, error);
-    }
+      if (error) {
+        console.error("Auth callback error:", error.message, error);
+        return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+      }
 
-    if (!error) {
       // Ensure profile exists (fallback if trigger didn't create one)
       const {
         data: { user },
@@ -33,9 +40,12 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
 
       return NextResponse.redirect(`${origin}${next}`);
+    } catch (err) {
+      console.error("Auth callback exception:", err);
+      return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
     }
   }
 
-  // Return the user to an error page with instructions
+  // No code provided
   return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
 }

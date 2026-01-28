@@ -25,9 +25,18 @@ const PROTECTED_ROUTES = ["/app"];
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request });
 
+  const url = supabaseUrl();
+  const key = supabaseAnonKey();
+
+  // Skip Supabase auth if env vars are missing (let the page handle the error gracefully)
+  if (!url || !key) {
+    console.error("[middleware] Missing Supabase env vars - NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    return response;
+  }
+
   const supabase = createServerClient(
-    supabaseUrl(),
-    supabaseAnonKey(),
+    url,
+    key,
     {
       cookies: {
         getAll() {
