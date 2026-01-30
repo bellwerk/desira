@@ -10,5 +10,16 @@
   },
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "desira" }
-  ]
+  ],
+  "observability": {
+    "enabled": false
+  }
+  // NOTE: Runtime secrets must be set via Cloudflare Dashboard or `wrangler secret put`:
+  // - NEXT_PUBLIC_SUPABASE_URL
+  // - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // - SUPABASE_SERVICE_ROLE_KEY
+  // - STRIPE_SECRET_KEY
+  // - STRIPE_WEBHOOK_SECRET
+  // - NEXT_PUBLIC_SITE_URL (set to https://app.desira.gift)
+  // - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 }
