@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { GlassCard } from "@/components/ui";
+import { PopularGiftIdeas } from "@/components/PopularGiftIdeas";
+
+// Force dynamic rendering - this page requires authentication
+export const dynamic = "force-dynamic";
 
 // Gift box icon for Wishlist card
 function GiftIcon(): React.ReactElement {
@@ -50,95 +53,55 @@ function ListTypeCard({ title, subtitle, icon }: ListTypeCardProps): React.React
   return (
     <Link
       href="/app/lists/new"
-      className="group relative flex h-[300px] w-[230px] flex-col items-center justify-center rounded-[30px] border-2 border-white/50 bg-[#d9d9d9]/70 pb-0 px-[21px] text-center shadow-[inset_2px_2px_4px_2px_#eaeaea] backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-0.5"
+      className="glass-1 group relative flex h-[300px] w-[230px] flex-col items-center justify-center rounded-[30px] px-[21px] text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]"
     >
+      {/* Gradient overlay for visual depth */}
+      <div className="absolute inset-0 rounded-[30px] bg-gradient-to-br from-violet-500/5 via-transparent to-rose-500/5 pointer-events-none" />
+      
       {/* Title badge */}
-      <div className="absolute top-5 mt-3.5 mb-3.5 rounded-full bg-white/70 px-6 py-2 text-center text-[#eaeaea]">
-        <span className="font-asul text-lg font-semibold tracking-normal text-[#343338]">{title}</span>
+      <div className="absolute top-5 mt-3.5 mb-3.5 rounded-full bg-white/80 px-6 py-2 text-center shadow-sm z-10">
+        <span className="font-asul text-lg font-semibold tracking-normal text-[#2b2b2b]">{title}</span>
       </div>
       
       {/* Icon */}
-      <div className="mb-2.5 mt-15">{icon}</div>
+      <div className="relative z-10 mb-2.5 mt-15">{icon}</div>
       
       {/* Subtitle */}
-      <p className="flex h-fit max-w-[10rem] flex-wrap justify-center text-center text-base leading-tight text-[#343338]">
+      <p className="relative z-10 flex h-fit max-w-[10rem] flex-wrap justify-center text-center text-base leading-tight text-[#2b2b2b] font-[family-name:var(--font-urbanist)]">
         {subtitle}
       </p>
     </Link>
   );
 }
 
-interface GiftSuggestionCardProps {
-  name: string;
-  price: string;
-  imageUrl?: string | null;
-  favicon?: string | null;
-}
-
-/**
- * GiftSuggestionCard — displays a gift suggestion with image, name, price, and favicon
- * Used in the "Popular gift ideas" section on the dashboard
- */
-function GiftSuggestionCard({ name, price, imageUrl, favicon }: GiftSuggestionCardProps): React.ReactElement {
-  return (
-    <div className="group relative flex-shrink-0 w-[106px] h-[140px] rounded-[15px] bg-[#2b2b2b]/15 p-1.5 font-inter">
-      {/* Add button */}
-      <button className="absolute right-2.5 top-2.5 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-[#2b2b2b] shadow-md transition-transform hover:scale-110">
-        <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-      </button>
-      
-      {/* Product image */}
-      <div className="aspect-square w-full rounded-xl bg-gradient-to-br from-stone-200 to-stone-300 mb-0.5 overflow-hidden">
-        {imageUrl && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={imageUrl}
-            alt={name}
-            className="h-full w-full object-cover"
-          />
-        )}
-      </div>
-      
-      {/* Info */}
-      <p className="text-xs font-inter font-medium text-[#2b2b2b] truncate">{name}</p>
-      <div className="flex items-center gap-0.5 leading-3 font-inter">
-        {favicon ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={favicon}
-            alt=""
-            className="h-3.5 w-3.5 shrink-0 rounded-sm"
-            onError={(e) => {
-              // Hide favicon on error
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <span className="text-xs text-[#62748e]" aria-hidden="true">·</span>
-        )}
-        <span className="text-[11px] text-[#2b2b2b]">{price}</span>
-      </div>
-    </div>
-  );
-}
-
 export default async function DashboardPage(): Promise<React.ReactElement> {
   const supabase = await createClient();
-  const { data: userData } = await supabase.auth.getUser();
+  const { data: userData, error: authError } = await supabase.auth.getUser();
   
-  // Fetch profile to get display name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", userData?.user?.id ?? "")
-    .single();
+  if (authError) {
+    console.error("[DashboardPage] Auth error:", authError.message);
+  }
   
-  const displayName = profile?.display_name ?? userData?.user?.email?.split("@")[0] ?? "there";
+  // Fetch profile to get display name - use maybeSingle to handle missing profiles
+  let displayName = userData?.user?.email?.split("@")[0] ?? "there";
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", userData?.user?.id ?? "")
+      .maybeSingle();
+    
+    if (profileError) {
+      console.error("[DashboardPage] Profile fetch error:", profileError.message, profileError.code);
+    } else if (profile?.display_name) {
+      displayName = profile.display_name;
+    }
+  } catch (err) {
+    console.error("[DashboardPage] Profile fetch exception:", err);
+  }
 
   return (
-    <div className="relative flex min-h-full flex-col items-center justify-start text-[#2b2b2b]">
+    <div className="relative mt-[100px] flex min-h-full flex-col items-center justify-start text-[#2b2b2b]">
       {/* Greeting */}
       <h1 className="mt-8 font-inter text-lg font-medium text-[#2b2b2b]">
         Hey {displayName}, let&apos;s make some wishes happen!
@@ -154,24 +117,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       </div>
 
       {/* Popular gift ideas section */}
-      <GlassCard className="mt-8 w-full max-w-[740px] py-3">
-        <div className="flex items-center justify-between mb-2 text-[#2b2b2b]">
-          <span className="text-sm text-[#2b2b2b]">Popular gift ideas</span>
-          <button className="text-xs font-medium text-[#2b2b2b] hover:text-[#2b2b2b]/70">
-            Explore All
-          </button>
-        </div>
-        
-        <div className="flex gap-2 overflow-x-auto pb-2 font-inter">
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-          <GiftSuggestionCard name="Nike Sport Shoes for wi..." price="CA$15.99" />
-        </div>
-      </GlassCard>
+      <div className="mt-8 w-full flex justify-center">
+        <PopularGiftIdeas />
+      </div>
 
     </div>
   );

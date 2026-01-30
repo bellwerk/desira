@@ -108,6 +108,8 @@ const addItemSchema = z.object({
   target_amount_cents: z.number().int().min(0).optional(),
   note_public: z.string().max(500).optional(),
   note_private: z.string().max(500).optional(),
+  quantity: z.number().int().min(1).default(1),
+  most_desired: z.boolean().default(false),
 });
 
 export async function addItem(formData: FormData): Promise<ActionResult> {
@@ -124,6 +126,14 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
   const priceStr = formData.get("price") as string | null;
   const priceCents = priceStr ? Math.round(parseFloat(priceStr) * 100) : undefined;
 
+  // Parse quantity (default 1 if not provided or invalid)
+  const quantityStr = formData.get("quantity") as string | null;
+  const quantity = quantityStr ? Math.max(1, parseInt(quantityStr, 10) || 1) : 1;
+
+  // Parse most_desired boolean
+  const mostDesiredStr = formData.get("most_desired") as string | null;
+  const mostDesired = mostDesiredStr === "true";
+
   const raw = {
     list_id: formData.get("list_id"),
     title: formData.get("title"),
@@ -133,6 +143,8 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
     target_amount_cents: priceCents, // default target = price
     note_public: formData.get("note_public") || undefined,
     note_private: formData.get("note_private") || undefined,
+    quantity,
+    most_desired: mostDesired,
   };
 
   const parsed = addItemSchema.safeParse(raw);
@@ -193,6 +205,8 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
       note_private: parsed.data.note_private ?? null,
       status: "active",
       sort_order: nextOrder,
+      quantity: parsed.data.quantity,
+      most_desired: parsed.data.most_desired,
     })
     .select("id")
     .single();
@@ -225,7 +239,20 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
 // --------------------------------------------------------------------------
 // deleteItem
 // --------------------------------------------------------------------------
+const deleteItemSchema = z.object({
+  id: z.string().uuid(),
+});
+
 export async function deleteItem(itemId: string): Promise<ActionResult> {
+  const parsed = deleteItemSchema.safeParse({ id: itemId });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((e) => e.message).join(", "),
+    };
+  }
+
   const supabase = await createClient();
 
   const {
@@ -240,7 +267,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
   const { data: item, error: itemErr } = await supabase
     .from("items")
     .select("id, list_id")
-    .eq("id", itemId)
+    .eq("id", parsed.data.id)
     .single();
 
   if (itemErr || !item) {
@@ -271,7 +298,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
     }
   }
 
-  const { error } = await supabase.from("items").delete().eq("id", itemId);
+  const { error } = await supabase.from("items").delete().eq("id", parsed.data.id);
 
   if (error) {
     return { success: false, error: error.message };
@@ -695,6 +722,334 @@ export async function getListMembers(listId: string): Promise<ActionResult> {
   }
 
   return { success: true, data: members };
+}
+
+// --------------------------------------------------------------------------
+// updateItem
+// --------------------------------------------------------------------------
+const updateItemSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1, "Title is required").max(200),
+  product_url: z.string().url().optional().or(z.literal("")),
+  image_url: z.string().url().optional().or(z.literal("")),
+  price_cents: z.number().int().min(0).optional().nullable(),
+  target_amount_cents: z.number().int().min(0).optional().nullable(),
+  note_public: z.string().max(500).optional(),
+  note_private: z.string().max(500).optional(),
+  quantity: z.number().int().min(1).default(1),
+  most_desired: z.boolean().default(false),
+});
+
+export async function updateItem(formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const priceStr = formData.get("price") as string | null;
+  const priceCents = priceStr ? Math.round(parseFloat(priceStr) * 100) : null;
+
+  // Parse quantity (default 1 if not provided or invalid)
+  const quantityStr = formData.get("quantity") as string | null;
+  const quantity = quantityStr ? Math.max(1, parseInt(quantityStr, 10) || 1) : 1;
+
+  // Parse most_desired boolean
+  const mostDesiredStr = formData.get("most_desired") as string | null;
+  const mostDesired = mostDesiredStr === "true";
+
+  const raw = {
+    id: formData.get("id"),
+    title: formData.get("title"),
+    product_url: formData.get("product_url") || undefined,
+    image_url: formData.get("image_url") || undefined,
+    price_cents: priceCents,
+    target_amount_cents: priceCents, // default target = price
+    note_public: formData.get("note_public") || undefined,
+    note_private: formData.get("note_private") || undefined,
+    quantity,
+    most_desired: mostDesired,
+  };
+
+  const parsed = updateItemSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((e) => e.message).join(", "),
+    };
+  }
+
+  // Get item to find list_id
+  const { data: item, error: itemErr } = await supabase
+    .from("items")
+    .select("id, list_id")
+    .eq("id", parsed.data.id)
+    .single();
+
+  if (itemErr || !item) {
+    return { success: false, error: "Item not found" };
+  }
+
+  // Verify user is an accepted member of the list
+  const { data: membership } = await supabase
+    .from("list_members")
+    .select("id, role")
+    .eq("list_id", item.list_id)
+    .eq("user_id", user.id)
+    .eq("status", "accepted")
+    .single();
+
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", item.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "You don't have permission to edit this item" };
+    }
+  }
+
+  const { error } = await supabase
+    .from("items")
+    .update({
+      title: parsed.data.title,
+      product_url: parsed.data.product_url || null,
+      image_url: parsed.data.image_url || null,
+      price_cents: parsed.data.price_cents,
+      target_amount_cents: parsed.data.target_amount_cents,
+      note_public: parsed.data.note_public ?? null,
+      note_private: parsed.data.note_private ?? null,
+      quantity: parsed.data.quantity,
+      most_desired: parsed.data.most_desired,
+    })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// --------------------------------------------------------------------------
+// toggleMostDesired
+// --------------------------------------------------------------------------
+const toggleMostDesiredSchema = z.object({
+  id: z.string().uuid(),
+  most_desired: z.boolean(),
+});
+
+export async function toggleMostDesired(
+  itemId: string,
+  mostDesired: boolean
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const parsed = toggleMostDesiredSchema.safeParse({ id: itemId, most_desired: mostDesired });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((e) => e.message).join(", "),
+    };
+  }
+
+  // Get item to find list_id
+  const { data: item, error: itemErr } = await supabase
+    .from("items")
+    .select("id, list_id")
+    .eq("id", parsed.data.id)
+    .single();
+
+  if (itemErr || !item) {
+    return { success: false, error: "Item not found" };
+  }
+
+  // Verify user is an accepted member of the list
+  const { data: membership } = await supabase
+    .from("list_members")
+    .select("id, role")
+    .eq("list_id", item.list_id)
+    .eq("user_id", user.id)
+    .eq("status", "accepted")
+    .single();
+
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", item.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "You don't have permission to edit this item" };
+    }
+  }
+
+  const { error } = await supabase
+    .from("items")
+    .update({ most_desired: parsed.data.most_desired })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// --------------------------------------------------------------------------
+// markItemReceived
+// --------------------------------------------------------------------------
+const markItemReceivedSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export async function markItemReceived(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const parsed = markItemReceivedSchema.safeParse({ id: itemId });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((e) => e.message).join(", "),
+    };
+  }
+
+  const { data: item, error: itemErr } = await supabase
+    .from("items")
+    .select("id, list_id, status")
+    .eq("id", parsed.data.id)
+    .single();
+
+  if (itemErr || !item) {
+    return { success: false, error: "Item not found" };
+  }
+
+  const { data: list, error: listErr } = await supabase
+    .from("lists")
+    .select("id, owner_id")
+    .eq("id", item.list_id)
+    .single();
+
+  if (listErr || !list || list.owner_id !== user.id) {
+    return { success: false, error: "Only list owners can mark items as received" };
+  }
+
+  if (item.status === "received") {
+    return { success: true };
+  }
+
+  const { error } = await supabase
+    .from("items")
+    .update({ status: "received" })
+    .eq("id", item.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// --------------------------------------------------------------------------
+// restoreItem (for undo delete)
+// --------------------------------------------------------------------------
+export async function restoreItem(
+  itemData: {
+    id: string;
+    list_id: string;
+    title: string;
+    product_url: string | null;
+    image_url: string | null;
+    price_cents: number | null;
+    target_amount_cents: number | null;
+    note_public: string | null;
+    note_private: string | null;
+    sort_order: number | null;
+    quantity: number;
+    most_desired: boolean;
+  }
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  // Verify user is an accepted member of the list
+  const { data: membership } = await supabase
+    .from("list_members")
+    .select("id, role")
+    .eq("list_id", itemData.list_id)
+    .eq("user_id", user.id)
+    .eq("status", "accepted")
+    .single();
+
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", itemData.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "You don't have permission" };
+    }
+  }
+
+  const { error } = await supabase.from("items").insert({
+    id: itemData.id,
+    list_id: itemData.list_id,
+    title: itemData.title,
+    product_url: itemData.product_url,
+    image_url: itemData.image_url,
+    price_cents: itemData.price_cents,
+    target_amount_cents: itemData.target_amount_cents,
+    note_public: itemData.note_public,
+    note_private: itemData.note_private,
+    status: "active",
+    sort_order: itemData.sort_order,
+    quantity: itemData.quantity,
+    most_desired: itemData.most_desired,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
 }
 
 // --------------------------------------------------------------------------

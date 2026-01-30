@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { GlassCard, GlassButton, BadgeChip } from "@/components/ui";
+import { GlassCard } from "@/components/ui";
+import { PopularGiftIdeas } from "@/components/PopularGiftIdeas";
+import { ListCardWrapper } from "./ListCardWrapper";
+import { ShareProfileButton } from "./ShareProfileButton";
+
+// Force dynamic rendering - this page requires authentication
+export const dynamic = "force-dynamic";
 
 interface ListRow {
   id: string;
@@ -12,7 +18,18 @@ interface ListRow {
   share_token: string;
   created_at: string;
   owner_id: string;
+  allow_reservations: boolean;
+  allow_contributions: boolean;
+  allow_anonymous: boolean;
 }
+
+interface ItemRow {
+  id: string;
+  list_id: string;
+  image_url: string | null;
+  status: string;
+}
+
 
 export default async function ListsPage(): Promise<React.ReactElement> {
   const supabase = await createClient();
@@ -34,7 +51,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
   const { data: lists, error } = await supabase
     .from("lists")
     .select(
-      "id, title, recipient_type, visibility, occasion, event_date, share_token, created_at, owner_id"
+      "id, title, recipient_type, visibility, occasion, event_date, share_token, created_at, owner_id, allow_reservations, allow_contributions, allow_anonymous"
     )
     .order("created_at", { ascending: false });
 
@@ -53,195 +70,116 @@ export default async function ListsPage(): Promise<React.ReactElement> {
 
   const typedLists = (lists ?? []) as ListRow[];
 
+  // Fetch items for all lists to display thumbnails and stats
+  const listIds = typedLists.map((l) => l.id);
+  let items: ItemRow[] = [];
+  if (listIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("items")
+      .select("id, list_id, image_url, status")
+      .in("list_id", listIds);
+    items = (itemsData ?? []) as ItemRow[];
+  }
+
+  // Group items by list
+  const itemsByList: Record<string, ItemRow[]> = {};
+  for (const item of items) {
+    if (!itemsByList[item.list_id]) {
+      itemsByList[item.list_id] = [];
+    }
+    itemsByList[item.list_id].push(item);
+  }
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#343338] dark:text-white">
-            My Lists
-          </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Manage your wishlists and share them with friends and family.
-          </p>
-        </div>
-        <Link href="/app/lists/new">
-          <GlassButton variant="primary" size="md">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
-            New List
-          </GlassButton>
+    <div className="flex flex-col items-center pt-[60px]">
+      {/* Tagline */}
+      <h2
+        className="mb-10 text-center text-[24px] font-medium leading-[24px] text-[#2b2b2b]"
+        style={{ fontFamily: "Urbanist" }}
+      >
+        Great surprises won&apos;t create themselves!
+      </h2>
+
+      {/* Action bar */}
+      <div className="mb-8 flex w-full max-w-[1100px] items-center justify-between px-4">
+        {/* Left: Add New WishList */}
+        <Link
+          href="/app/lists/new"
+          className="inline-flex items-center gap-2 rounded-full bg-[#D4D7C2] px-5 py-2.5 text-sm font-medium text-[#2b2b2b] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98]"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add New WishList
         </Link>
+
+        {/* Right: Edit and Share Your Profile */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/app/settings"
+            className="inline-flex items-center rounded-full border border-[#2b2b2b]/20 bg-white/50 px-5 py-2.5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-white/80 active:scale-[0.98]"
+          >
+            Edit
+          </Link>
+          {/* Only show profile share if user has at least one public/unlisted list */}
+          {(() => {
+            const shareableList = typedLists.find(
+              (l) => l.visibility === "public" || l.visibility === "unlisted"
+            );
+            return shareableList ? (
+              <ShareProfileButton
+                shareToken={shareableList.share_token}
+                userName={user.email?.split("@")[0] || "My Profile"}
+              />
+            ) : null;
+          })()}
+        </div>
       </div>
 
-      {/* Lists */}
+      {/* Lists or Empty State */}
       {typedLists.length === 0 ? (
-        <GlassCard className="text-center py-12">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60 dark:bg-slate-800/60">
-            <svg
-              className="h-8 w-8 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
+        <>
+          {/* Empty State Card */}
+          <GlassCard className="w-full max-w-[940px] px-10 py-14 text-center">
+            <h3 className="font-asul text-3xl font-medium text-[#2b2b2b]">
+              Only you know what you want!
+            </h3>
+            <Link
+              href="/app/lists/new"
+              className="mt-8 inline-block rounded-full bg-[#D4D7C2] px-7 py-3.5 text-lg font-semibold text-[#2b2b2f] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98]"
+              style={{ fontFamily: "Urbanist" }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
-              />
-            </svg>
+              Create your first wishlist
+            </Link>
+          </GlassCard>
+
+          {/* Popular Gift Ideas Section */}
+          <div className="mt-6 w-full flex justify-center">
+            <PopularGiftIdeas />
           </div>
-          <h3 className="mt-4 text-lg font-medium text-[#343338] dark:text-white">
-            No lists yet
-          </h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Create your first wishlist to start organizing gifts.
-          </p>
-          <Link href="/app/lists/new" className="inline-block mt-6">
-            <GlassButton variant="primary" size="md">
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
-                />
-              </svg>
-              Create your first list
-            </GlassButton>
-          </Link>
-        </GlassCard>
+        </>
       ) : (
-        <div className="grid gap-4">
-          {typedLists.map((list) => (
-            <ListCard key={list.id} list={list} userId={user.id} />
-          ))}
+        /* 3-card grid layout - aligned with action bar */
+        <div className="w-full max-w-[1100px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center" style={{ rowGap: '2px', fontFamily: 'Urbanist' }}>
+            {typedLists.map((list) => {
+              const listItems = itemsByList[list.id] || [];
+              const totalWishes = listItems.length;
+              const receivedCount = listItems.filter((i) => i.status === "received").length;
+              
+              return (
+                <ListCardWrapper
+                  key={list.id}
+                  list={list}
+                  items={listItems.slice(0, 4)}
+                  totalWishes={totalWishes}
+                  receivedCount={receivedCount}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
-  );
-}
-
-function ListCard({ list, userId }: { list: ListRow; userId: string }): React.ReactElement {
-  const shareUrl = `/u/${list.share_token}`;
-  const isOwner = list.owner_id === userId;
-
-  const visibilityVariant =
-    list.visibility === "private"
-      ? "private"
-      : list.visibility === "public"
-      ? "public"
-      : "unlisted";
-
-  const visibilityLabel =
-    list.visibility === "private"
-      ? "Private"
-      : list.visibility === "public"
-      ? "Public"
-      : "Unlisted";
-
-  return (
-    <GlassCard variant="interactive">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-[#343338] dark:text-white">
-              {list.title}
-            </h3>
-            <BadgeChip variant={visibilityVariant}>{visibilityLabel}</BadgeChip>
-            {!isOwner && (
-              <BadgeChip variant="unlisted">Shared with me</BadgeChip>
-            )}
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                />
-              </svg>
-              {list.recipient_type === "person"
-                ? "Individual"
-                : list.recipient_type === "shared"
-                ? "Collaborative"
-                : "Group"}
-            </span>
-            {list.occasion && (
-              <span className="flex items-center gap-1.5">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75-1.5.75a3.354 3.354 0 0 1-3 0 3.354 3.354 0 0 0-3 0 3.354 3.354 0 0 1-3 0 3.354 3.354 0 0 0-3 0 3.354 3.354 0 0 1-3 0L3 16.5m18-4.5a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                  />
-                </svg>
-                {list.occasion}
-              </span>
-            )}
-            {list.event_date && (
-              <span className="flex items-center gap-1.5">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-                  />
-                </svg>
-                {new Date(list.event_date).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={shareUrl} target="_blank">
-            <GlassButton variant="ghost" size="sm">
-              View
-            </GlassButton>
-          </Link>
-          <Link href={`/app/lists/${list.id}`}>
-            <GlassButton variant="secondary" size="sm">
-              Manage
-            </GlassButton>
-          </Link>
-        </div>
-      </div>
-    </GlassCard>
   );
 }

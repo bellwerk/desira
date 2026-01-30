@@ -23,11 +23,11 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2026-01-25
+- Date: 2026-01-28
 - Current branch: master
-- What we're building now: M8 — Adaptive Design (mobile-ready web)
+- What we're building now: M9 — UI/UX Polish (Phase 1)
 - What's blocked: None
-- Next after M8: PWA foundation (manifest, service worker, installability)
+- Next after M9: PWA foundation (manifest, service worker, installability)
 
 ---
 
@@ -97,7 +97,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [x] `profiles` (id, handle, display_name, avatar_url, created_at, updated_at)
 - [x] `lists` (id, owner_id, title, recipient_type, visibility, allow_reservations, allow_contributions, allow_anonymous, currency, share_token, occasion, event_date)
 - [x] `list_members` (list_id, user_id, role: `owner|member`, status) — migration: `002_list_members.sql`
-- [x] `items` (id, list_id, title, image_url, price_cents, target_amount_cents, note_public, note_private, product_url, merchant, status, sort_order) — *renamed from `wishes`*
+- [x] `items` (id, list_id, title, image_url, price_cents, target_amount_cents, note_public, note_private, product_url, merchant, status, sort_order, quantity, most_desired) — *renamed from `wishes`*
 - [x] `reservations` (id, item_id, status, reserved_by_name, reserved_by_email, cancel_token_hash, created_at, canceled_at)
 - [x] `contributions` (id, item_id, amount_cents, fee_cents, total_cents, currency, contributor_name, message, is_anonymous, payment_status, provider, provider_payment_intent_id)
 - [x] `payment_accounts` (owner_id, provider, provider_account_id, charges_enabled, payouts_enabled, details_submitted) — *Stripe Connect*
@@ -333,6 +333,99 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 
 ---
 
+### M9 — UI/UX Polish
+
+**Goal:** Improve clarity, consistency, and delight across all pages. Fix visual hierarchy gaps, unify styling between authenticated and public pages, and add missing micro-interactions.
+
+#### Phase 1: Foundation (Critical)
+
+##### Public Pages — Brand Consistency
+- [x] Apply glassmorphism (`glass-1`) styling to `/u/[token]` public list page
+- [x] Add Desira logo/branding in public page header
+- [x] Use `GlassCard` component for public item cards (replace plain borders)
+- [x] Use `ProgressBar` component for contribution progress (replace inline styles)
+- [x] Add "Powered by Desira" footer with link to landing page
+- [x] Hide "Enable Payouts" button from visitors (owner-only concern)
+
+##### Sidebar — Active States & Accessibility
+- [ ] Fix active/inactive state contrast (currently both use same bg color)
+- [ ] Add tooltip labels on hover (smooth fade, 200ms delay)
+- [ ] Add subtle hover scale (1.05) for feedback
+- [ ] Move "Suggest a Feature" to settings page or remove
+
+##### Color Token Audit
+- [ ] Unify `GlassButton` primary color with CSS `--primary` variable
+- [ ] Add `danger` variant to `GlassButton` (for delete actions)
+- [ ] Add `shared` variant to `BadgeChip` (different color from visibility badges)
+- [ ] Remove inline color overrides (e.g., `!from-red-500` in ItemCard)
+
+#### Phase 2: Core UX
+
+##### Dashboard (`/app`)
+- [ ] Show existing lists summary for returning users (not just creation cards)
+- [ ] Remove or hide "Popular gift ideas" section (static placeholder data)
+- [ ] Add upcoming events countdown (use `event_date` from lists)
+- [ ] Pass list type to `/app/lists/new` via query param (`?type=wishlist`)
+- [ ] Add time-based greeting ("Good morning, Tony")
+
+##### App Header
+- [ ] Rename toggle to "New List" / "My Lists" (clarify action vs view)
+- [ ] Increase profile text size (10px → 12px) for readability
+- [ ] Add notification badge (red dot) when unread notifications exist
+
+##### Lists Page (`/app/lists`)
+- [ ] Make list title larger and bolder (`text-xl font-semibold`)
+- [ ] Add search/filter when user has >5 lists
+- [ ] Use different badge color for "Shared with me" (blue vs gray)
+- [ ] Add list thumbnail/icon based on type
+
+##### List Detail Page (`/app/lists/[id]`)
+- [ ] Collapse share link into expandable section (de-emphasize after first use)
+- [ ] Move Add Item form below items OR make it a floating "+" button
+- [ ] Add drag handles for item reordering (sort_order already exists)
+- [ ] Larger back navigation with icon
+
+#### Phase 3: Polish
+
+##### Create List Page (`/app/lists/new`)
+- [ ] Place cursor at end of template text (not beginning)
+- [ ] Make list type cards horizontal pills on mobile
+- [ ] Default "Gift controls" section to open on desktop
+- [ ] Show mini preview of list as user configures
+
+##### Login Page
+- [ ] Add "Forgot password?" link
+- [ ] Add password visibility toggle (eye icon)
+- [ ] Add loading shimmer to OAuth buttons while pending
+
+##### Settings Page (`/app/settings`)
+- [ ] Add display name editing
+- [ ] Add avatar upload
+- [ ] Add dark mode toggle (CSS already supports it)
+- [ ] Add Stripe Connect status section
+- [ ] Replace "coming soon" with grayed-out section headers
+
+##### Component Library
+- [ ] Create `PageHeader` component (duplicated in 5+ places)
+- [ ] Create `EmptyState` component (duplicated pattern)
+- [ ] Create `IconButton` component for consistent icon-only buttons
+
+#### Phase 4: Delight
+
+##### Micro-interactions
+- [ ] Item added: slide-in animation + toast
+- [ ] List created: success animation (checkmark or confetti)
+- [ ] Reservation made: card pulses briefly to confirm
+- [ ] Copy link: button shows checkmark for 2s before reset
+- [ ] Delete confirmation: consider modal for destructive actions
+
+##### Mobile Responsiveness (complements M8)
+- [ ] Dashboard cards: responsive width (`w-full sm:w-[230px]`)
+- [ ] Public list: single column grid on phones
+- [ ] Bottom navigation for mobile (coordinate with M8)
+
+---
+
 ## Mobile App Roadmap (PWA → App Stores)
 
 **Strategy:** PWA-first approach, with intention to publish to App Stores (iOS + Android) via Capacitor wrapper.
@@ -401,6 +494,17 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Progress log (optional, 2–5 lines per session)
+- 2026-01-28:
+  - Done: M9 Phase 1 (Public Pages) complete:
+    - `/u/[token]` layout: Added glassmorphism header with Desira logo, sign-in button, footer with "Powered by Desira"
+    - `/u/[token]` page: Replaced plain borders with GlassCard, added BadgeChip for status, ProgressBar for contributions
+    - `/u/[token]/contribute`, `/pay`, `/thanks`, `/cancel`, `/reserve`: All updated with glass styling
+    - `ItemActions` component: Updated to use GlassButton instead of plain buttons
+    - `ContributeForm` component: Full glass treatment with glass-2 summary cards
+    - Removed EnablePayoutsButton from public view (owner-only concern)
+  - UI/UX audit completed earlier. Created M9 milestone with 4 phases.
+  - Next: Phase 1 continued — sidebar active states and color token audit
+  - Blockers: None
 - 2026-01-05:
   - Done: Skimlinks affiliate link integration fully implemented:
     - `src/lib/affiliate.ts` — Skimlinks URL generation utility

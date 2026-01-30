@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./SettingsForm";
 import { InvitesSection } from "./InvitesSection";
 
+// Force dynamic rendering - this page requires authentication
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };

@@ -5,6 +5,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { acceptInvite } from "../../lists/actions";
 import { GlassCard, GlassButton } from "@/components/ui";
 
+// Force dynamic rendering - this page requires authentication
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ token: string }>;
 };

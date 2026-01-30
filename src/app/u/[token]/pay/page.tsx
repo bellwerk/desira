@@ -2,6 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { GlassCard, GlassButton, Spinner } from "@/components/ui";
 
 type Draft = {
   item_id: string;
@@ -22,7 +23,7 @@ type State =
   | { status: "ready"; draft: Draft }
   | { status: "submitting"; draft: Draft };
 
-function centsToPretty(cents: number, currency: string) {
+function centsToPretty(cents: number, currency: string): string {
   const dollars = cents / 100;
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -31,7 +32,7 @@ function centsToPretty(cents: number, currency: string) {
   }).format(dollars);
 }
 
-export default function PayPage() {
+export default function PayPage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
@@ -89,7 +90,7 @@ export default function PayPage() {
     }
   }, [itemId, draftKey]);
 
-  async function pay() {
+  async function pay(): Promise<void> {
     if (state.status !== "ready") return;
 
     const draft = state.draft;
@@ -132,71 +133,119 @@ export default function PayPage() {
   const draft = showDraft ? state.draft : null;
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
-        <h1 className="text-xl font-semibold tracking-tight">Checkout</h1>
+    <GlassCard className="mx-auto max-w-md">
+      {/* Payment icon */}
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#9D8DF1]/20">
+        <svg
+          className="h-8 w-8 text-[#9D8DF1]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+          />
+        </svg>
+      </div>
 
-        {state.status === "loading" ? (
-          <p className="mt-2 text-sm text-neutral-600">Loading…</p>
-        ) : state.status === "missing" ? (
-          <p className="mt-2 text-sm text-neutral-600">Missing item.</p>
-        ) : state.status === "error" ? (
-          <>
-            <p className="mt-2 text-sm text-red-600">{state.message}</p>
-            <button
-              className="mt-4 w-full rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white"
+      <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
+        Checkout
+      </h1>
+
+      {state.status === "loading" ? (
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#62748e]">
+          <Spinner size="sm" />
+          <span>Loading...</span>
+        </div>
+      ) : state.status === "missing" ? (
+        <>
+          <p className="mt-2 text-sm text-[#62748e] text-center">
+            Missing item reference.
+          </p>
+          <div className="mt-5">
+            <GlassButton
+              variant="primary"
+              size="md"
               onClick={() => router.push(`/u/${token}`)}
+              className="w-full justify-center"
             >
               Back to list
-            </button>
-          </>
-        ) : draft ? (
-          <>
-            <div className="mt-4 rounded-2xl border bg-neutral-50 p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-700">Contribution</span>
-                <span className="font-medium">
-                  {centsToPretty(draft.amount_cents, draft.currency)}
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-neutral-700">Desira service fee</span>
-                <span className="font-medium">
-                  {centsToPretty(draft.fee_cents, draft.currency)}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="font-medium text-neutral-900">Total charged</span>
-                <span className="font-semibold text-neutral-900">
-                  {centsToPretty(draft.total_cents, draft.currency)}
-                </span>
-              </div>
-
-              <div className="mt-2 text-xs text-neutral-600">
-                Payments processed by Stripe. Desira doesn’t store card details.
-              </div>
+            </GlassButton>
+          </div>
+        </>
+      ) : state.status === "error" ? (
+        <>
+          <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
+            {state.message}
+          </div>
+          <div className="mt-5">
+            <GlassButton
+              variant="primary"
+              size="md"
+              onClick={() => router.push(`/u/${token}`)}
+              className="w-full justify-center"
+            >
+              Back to list
+            </GlassButton>
+          </div>
+        </>
+      ) : draft ? (
+        <>
+          {/* Summary */}
+          <div className="mt-4 rounded-2xl glass-2 p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#62748e]">Contribution</span>
+              <span className="font-medium text-[#2B2B2B]">
+                {centsToPretty(draft.amount_cents, draft.currency)}
+              </span>
             </div>
 
-            <div className="mt-5 flex gap-2">
-              <button
-                className="flex-1 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-                disabled={state.status === "submitting"}
-                onClick={pay}
-              >
-                {state.status === "submitting" ? "Redirecting…" : "Pay"}
-              </button>
-              <button
-                className="flex-1 rounded-xl bg-white px-3 py-2 text-sm font-medium text-neutral-900 ring-1 ring-inset ring-neutral-300"
-                onClick={() => router.push(`/u/${token}/contribute?item=${draft.item_id}`)}
-              >
-                Back
-              </button>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-[#62748e]">Desira service fee</span>
+              <span className="font-medium text-[#2B2B2B]">
+                {centsToPretty(draft.fee_cents, draft.currency)}
+              </span>
             </div>
-          </>
-        ) : null}
-      </div>
-    </main>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/30 pt-3 text-sm">
+              <span className="font-medium text-[#2B2B2B]">Total charged</span>
+              <span className="font-semibold text-[#2B2B2B]">
+                {centsToPretty(draft.total_cents, draft.currency)}
+              </span>
+            </div>
+
+            <div className="mt-2 text-xs text-[#62748e]">
+              Payments processed by Stripe. Desira doesn&apos;t store card details.
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-5 flex gap-2">
+            <GlassButton
+              variant="primary"
+              size="md"
+              onClick={pay}
+              loading={state.status === "submitting"}
+              className="flex-1 justify-center"
+            >
+              {state.status === "submitting" ? "Redirecting..." : "Pay"}
+            </GlassButton>
+            <GlassButton
+              variant="secondary"
+              size="md"
+              onClick={() =>
+                router.push(`/u/${token}/contribute?item=${draft.item_id}`)
+              }
+              className="flex-1 justify-center"
+            >
+              Back
+            </GlassButton>
+          </div>
+        </>
+      ) : null}
+    </GlassCard>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { GlassButton } from "@/components/ui";
 
 export function ItemActions(props: {
   token: string;
@@ -10,7 +11,7 @@ export function ItemActions(props: {
   contributeDisabled: boolean;
   canReserve: boolean;
   isReserved: boolean;
-}) {
+}): React.ReactElement {
   const router = useRouter();
   const { token, itemId, contributeDisabled, canReserve } = props;
 
@@ -23,7 +24,7 @@ export function ItemActions(props: {
     }
   });
 
-  async function reserve() {
+  async function reserve(): Promise<void> {
     const res = await fetch("/api/reservations", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -50,45 +51,53 @@ export function ItemActions(props: {
     router.refresh();
   }
 
-  async function cancel() {
+  function cancel(): void {
     // Go to cancel page (which validates ticket + cancels)
     router.push(`/u/${token}/cancel?item=${itemId}`);
   }
 
   return (
-    <div className="mt-4 flex gap-2">
-      <Link
-        href={`/u/${token}/contribute?item=${itemId}`}
-        className={`flex-1 rounded-xl px-3 py-2 text-center text-sm font-medium ${
-          contributeDisabled
-            ? "pointer-events-none bg-neutral-200 text-neutral-500"
-            : "bg-neutral-900 text-white"
-        }`}
-      >
-        Contribute
-      </Link>
+    <div className="flex gap-2 pt-3 border-t border-white/20">
+      {contributeDisabled ? (
+        <GlassButton
+          variant="primary"
+          size="sm"
+          className="flex-1 justify-center"
+          disabled
+        >
+          Contribute
+        </GlassButton>
+      ) : (
+        <Link href={`/u/${token}/contribute?item=${itemId}`} className="flex-1">
+          <GlassButton
+            variant="primary"
+            size="sm"
+            className="w-full justify-center"
+          >
+            Contribute
+          </GlassButton>
+        </Link>
+      )}
 
       {hasTicket ? (
-        <button
-          type="button"
+        <GlassButton
+          variant="secondary"
+          size="sm"
           onClick={cancel}
-          className="flex-1 rounded-xl bg-white px-3 py-2 text-sm font-medium text-neutral-900 ring-1 ring-inset ring-neutral-300"
+          className="flex-1 justify-center"
         >
           Cancel
-        </button>
+        </GlassButton>
       ) : (
-        <button
-          type="button"
+        <GlassButton
+          variant="secondary"
+          size="sm"
           onClick={reserve}
           disabled={!canReserve}
-          className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${
-            canReserve
-              ? "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-300"
-              : "bg-neutral-200 text-neutral-500"
-          }`}
+          className="flex-1 justify-center"
         >
           Reserve
-        </button>
+        </GlassButton>
       )}
     </div>
   );

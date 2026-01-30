@@ -16,7 +16,7 @@ const variantClasses: Record<GlassButtonVariant, string> = {
   secondary:
     "glass-1 text-slate-800 dark:text-slate-100 hover:bg-white/80 dark:hover:bg-white/10 active:scale-[0.98]",
   ghost:
-    "bg-transparent text-slate-700 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 active:scale-[0.98]",
+    "bg-transparent text-[#2b2b2b]/80 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 active:scale-[0.98]",
 };
 
 const sizeClasses: Record<GlassButtonSize, string> = {

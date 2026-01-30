@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ContributeForm } from "@/components/ContributeForm";
+import { GlassCard } from "@/components/ui";
 
+// Force dynamic rendering and nodejs runtime for server-side operations
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type PageProps = {
@@ -8,16 +11,18 @@ type PageProps = {
   searchParams: Promise<{ item?: string }>;
 };
 
-export default async function ContributePage({ params, searchParams }: PageProps) {
+export default async function ContributePage({ params, searchParams }: PageProps): Promise<React.ReactElement> {
   const { token } = await params;
   const { item } = await searchParams;
 
   if (!item) {
     return (
-      <main style={{ padding: 24, fontFamily: "system-ui" }}>
-        <h1>Missing item</h1>
-        <p>Go back and tap Contribute from the list.</p>
-      </main>
+      <GlassCard className="mx-auto max-w-md text-center py-8">
+        <h1 className="text-lg font-semibold text-[#2B2B2B]">Missing item</h1>
+        <p className="mt-2 text-sm text-[#62748e]">
+          Go back and tap Contribute from the list.
+        </p>
+      </GlassCard>
     );
   }
 
@@ -30,18 +35,23 @@ export default async function ContributePage({ params, searchParams }: PageProps
 
   if (listErr || !list) {
     return (
-      <main style={{ padding: 24, fontFamily: "system-ui" }}>
-        <h1>List not found</h1>
-      </main>
+      <GlassCard className="mx-auto max-w-md text-center py-8">
+        <h1 className="text-lg font-semibold text-[#2B2B2B]">List not found</h1>
+        <p className="mt-2 text-sm text-[#62748e]">
+          That link may be invalid or expired.
+        </p>
+      </GlassCard>
     );
   }
 
   if (!list.allow_contributions) {
     return (
-      <main style={{ padding: 24, fontFamily: "system-ui" }}>
-        <h1>Contributions disabled</h1>
-        <p>This list doesn’t accept contributions.</p>
-      </main>
+      <GlassCard className="mx-auto max-w-md text-center py-8">
+        <h1 className="text-lg font-semibold text-[#2B2B2B]">Contributions disabled</h1>
+        <p className="mt-2 text-sm text-[#62748e]">
+          This list doesn&apos;t accept contributions.
+        </p>
+      </GlassCard>
     );
   }
 
@@ -54,9 +64,12 @@ export default async function ContributePage({ params, searchParams }: PageProps
 
   if (itemErr || !itemRow || itemRow.list_id !== list.id) {
     return (
-      <main style={{ padding: 24, fontFamily: "system-ui" }}>
-        <h1>Item not found</h1>
-      </main>
+      <GlassCard className="mx-auto max-w-md text-center py-8">
+        <h1 className="text-lg font-semibold text-[#2B2B2B]">Item not found</h1>
+        <p className="mt-2 text-sm text-[#62748e]">
+          This item may have been removed.
+        </p>
+      </GlassCard>
     );
   }
 

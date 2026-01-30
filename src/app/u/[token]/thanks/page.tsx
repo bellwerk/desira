@@ -2,8 +2,9 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GlassCard, GlassButton, Spinner } from "@/components/ui";
 
-function centsToPretty(cents: number, currency: string) {
+function centsToPretty(cents: number, currency: string): string {
   const dollars = cents / 100;
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -24,7 +25,7 @@ type State =
       totalCents: number;
     };
 
-export default function ThanksPage() {
+export default function ThanksPage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
@@ -47,13 +48,13 @@ export default function ThanksPage() {
       // ignore
     }
 
-    async function run() {
+    async function run(): Promise<void> {
       if (!sessionId) {
         queueMicrotask(() =>
           setState({
             status: "error",
             message:
-              "Missing session id. Payment succeeded, but it can’t be recorded automatically.",
+              "Missing session id. Payment succeeded, but it can't be recorded automatically.",
           })
         );
         return;
@@ -115,71 +116,103 @@ export default function ThanksPage() {
   }, [itemId, sessionId]);
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
-        <h1 className="text-xl font-semibold tracking-tight">Thank you</h1>
-
-        {state.status === "loading" ? (
-          <p className="mt-2 text-sm text-neutral-600">Confirming…</p>
-        ) : state.status === "missing" ? (
-          <p className="mt-2 text-sm text-neutral-600">
-            Payment succeeded, but item is missing.
-          </p>
-        ) : state.status === "error" ? (
-          <p className="mt-2 text-sm text-red-600">{state.message}</p>
-        ) : (
-          <>
-            <p className="mt-2 text-sm text-neutral-600">
-              {state.status === "already" ? "Recorded (already)." : "Recorded."}
-            </p>
-
-            <div className="mt-4 rounded-2xl border bg-neutral-50 p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-700">Contribution (to recipient)</span>
-                <span className="font-medium">
-                  {centsToPretty(state.contributionCents, state.currency)}
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-neutral-700">Desira service fee</span>
-                <span className="font-medium">
-                  {centsToPretty(state.feeCents, state.currency)}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="font-medium text-neutral-900">Total charged</span>
-                <span className="font-semibold text-neutral-900">
-                  {centsToPretty(state.totalCents, state.currency)}
-                </span>
-              </div>
-
-              <div className="mt-2 text-xs text-neutral-600">
-                Recipient receives the contribution amount. Fee helps cover payment
-                processing.
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="mt-5 flex gap-2">
-          <button
-            className="flex-1 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white"
-            onClick={() => router.push(`/u/${token}`)}
+    <GlassCard className="mx-auto max-w-md">
+      {/* Success icon */}
+      {(state.status === "ok" || state.status === "already") && (
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100/80">
+          <svg
+            className="h-8 w-8 text-emerald-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
           >
-            Back to list
-          </button>
-          <button
-            className="flex-1 rounded-xl bg-white px-3 py-2 text-sm font-medium text-neutral-900 ring-1 ring-inset ring-neutral-300"
-            onClick={() =>
-              navigator.clipboard.writeText(window.location.origin + `/u/${token}`)
-            }
-          >
-            Copy link
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
+          </svg>
         </div>
+      )}
+
+      <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
+        Thank you
+      </h1>
+
+      {state.status === "loading" ? (
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#62748e]">
+          <Spinner size="sm" />
+          <span>Confirming payment...</span>
+        </div>
+      ) : state.status === "missing" ? (
+        <p className="mt-2 text-sm text-[#62748e] text-center">
+          Payment succeeded, but item is missing.
+        </p>
+      ) : state.status === "error" ? (
+        <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
+          {state.message}
+        </div>
+      ) : (
+        <>
+          <p className="mt-2 text-sm text-[#62748e] text-center">
+            {state.status === "already"
+              ? "Your contribution has been recorded."
+              : "Your contribution has been recorded."}
+          </p>
+
+          {/* Receipt summary */}
+          <div className="mt-4 rounded-2xl glass-2 p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#62748e]">Contribution (to recipient)</span>
+              <span className="font-medium text-[#2B2B2B]">
+                {centsToPretty(state.contributionCents, state.currency)}
+              </span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-[#62748e]">Desira service fee</span>
+              <span className="font-medium text-[#2B2B2B]">
+                {centsToPretty(state.feeCents, state.currency)}
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/30 pt-3 text-sm">
+              <span className="font-medium text-[#2B2B2B]">Total charged</span>
+              <span className="font-semibold text-[#2B2B2B]">
+                {centsToPretty(state.totalCents, state.currency)}
+              </span>
+            </div>
+
+            <div className="mt-2 text-xs text-[#62748e]">
+              Recipient receives the contribution amount. Fee helps cover payment
+              processing.
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Actions */}
+      <div className="mt-5 flex gap-2">
+        <GlassButton
+          variant="primary"
+          size="md"
+          onClick={() => router.push(`/u/${token}`)}
+          className="flex-1 justify-center"
+        >
+          Back to list
+        </GlassButton>
+        <GlassButton
+          variant="secondary"
+          size="md"
+          onClick={() =>
+            navigator.clipboard.writeText(window.location.origin + `/u/${token}`)
+          }
+          className="flex-1 justify-center"
+        >
+          Copy link
+        </GlassButton>
       </div>
-    </main>
+    </GlassCard>
   );
 }
