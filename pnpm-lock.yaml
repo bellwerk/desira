@@ -6,7 +6,7 @@ settings:
 
 overrides:
   qs: '>=6.14.1'
-  tar: '>=7.5.4'
+  tar: '>=7.5.7'
   '@smithy/config-resolver': '>=4.4.0'
 
 importers:
@@ -3674,8 +3674,8 @@ packages:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
     engines: {node: '>=6'}
 
-  tar@7.5.6:
-    resolution: {integrity: sha512-xqUeu2JAIJpXyvskvU3uvQW8PAmHrtXp2KDuMJwQqW8Sqq0CaZBAQ+dKS3RBXVhU4wC5NjAdKrmh84241gO9cA==}
+  tar@7.5.7:
+    resolution: {integrity: sha512-fov56fJiRuThVFXD6o6/Q354S7pnWMJIVlDBYijsTNx6jKSE4pvrDTs6lUnmGvNyfJwFQQwWy3owKz1ucIhveQ==}
     engines: {node: '>=18'}
 
   terser@5.16.9:
@@ -8551,7 +8551,7 @@ snapshots:
       bin-links: 6.0.0
       https-proxy-agent: 7.0.6
       node-fetch: 3.3.2
-      tar: 7.5.6
+      tar: 7.5.7
     transitivePeerDependencies:
       - supports-color
 
@@ -8567,7 +8567,7 @@ snapshots:
 
   tapable@2.3.0: {}
 
-  tar@7.5.6:
+  tar@7.5.7:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
