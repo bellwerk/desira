@@ -43,7 +43,8 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   }
 
   // Ensure profile exists (fallback if trigger didn't create one)
-  await supabase.from("profiles").upsert(
+  // Use admin client to bypass RLS and guarantee the insert succeeds
+  const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
     {
       id: user.id,
       display_name:
@@ -51,6 +52,11 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     },
     { onConflict: "id", ignoreDuplicates: true }
   );
+
+  if (profileError) {
+    console.error("Failed to ensure profile exists:", profileError.message);
+    return { success: false, error: "Failed to create user profile" };
+  }
 
   const raw = {
     title: formData.get("title"),
