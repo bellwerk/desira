@@ -43,18 +43,34 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   }
 
   // Ensure profile exists (fallback if trigger didn't create one)
-  // Use admin client to bypass RLS and guarantee the insert succeeds
-  const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
-    {
-      id: user.id,
-      display_name:
-        user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-    },
-    { onConflict: "id", ignoreDuplicates: true }
-  );
+  // First check if profile exists, if not create it
+  try {
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .single();
 
-  if (profileError) {
-    console.error("Failed to ensure profile exists:", profileError.message);
+    if (!existingProfile) {
+      // Profile doesn't exist, create it
+      const { error: insertError } = await supabaseAdmin.from("profiles").insert({
+        id: user.id,
+        display_name:
+          user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+      });
+
+      if (insertError) {
+        // Ignore duplicate key error (race condition: trigger created it)
+        if (insertError.code !== "23505") {
+          console.error("Failed to create profile:", insertError.message, insertError.code, insertError.details);
+          return { success: false, error: "Failed to create user profile" };
+        }
+      }
+    }
+  } catch (err) {
+    // Catch errors from getSupabaseAdmin() (e.g., missing env var)
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Supabase admin client error:", message);
     return { success: false, error: "Failed to create user profile" };
   }
 
