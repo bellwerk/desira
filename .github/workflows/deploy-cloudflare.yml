@@ -53,3 +53,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Sync env vars to Cloudflare
+        run: |
+          echo "Setting NEXT_PUBLIC_SUPABASE_URL..."
+          echo "${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" | pnpm exec wrangler secret put NEXT_PUBLIC_SUPABASE_URL
+          echo "Setting NEXT_PUBLIC_SUPABASE_ANON_KEY..."
+          echo "${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" | pnpm exec wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+          echo "Setting NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY..."
+          echo "${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}" | pnpm exec wrangler secret put NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
