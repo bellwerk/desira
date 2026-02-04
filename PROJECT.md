@@ -23,7 +23,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Current status (update every session)
-- Date: 2026-01-28
+- Date: 2026-02-03
 - Current branch: master
 - What we're building now: M9 — UI/UX Polish (Phase 1)
 - What's blocked: None
@@ -348,10 +348,10 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [x] Hide "Enable Payouts" button from visitors (owner-only concern)
 
 ##### Sidebar — Active States & Accessibility
-- [ ] Fix active/inactive state contrast (currently both use same bg color)
-- [ ] Add tooltip labels on hover (smooth fade, 200ms delay)
-- [ ] Add subtle hover scale (1.05) for feedback
-- [ ] Move "Suggest a Feature" to settings page or remove
+- [x] Fix active/inactive state contrast (currently both use same bg color)
+- [x] Add tooltip labels on hover (smooth fade, 200ms delay)
+- [x] Add subtle hover scale (1.05) for feedback
+- [x] Move "Suggest a Feature" to settings page or remove
 
 ##### Color Token Audit
 - [ ] Unify `GlassButton` primary color with CSS `--primary` variable

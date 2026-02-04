@@ -45,11 +45,17 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   // Ensure profile exists (fallback if trigger didn't create one)
   // First check if profile exists, if not create it
   try {
-    const { data: existingProfile } = await supabaseAdmin
+    const { data: existingProfile, error: queryError } = await supabaseAdmin
       .from("profiles")
       .select("id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
+
+    if (queryError && queryError.code !== "PGRST116") {
+      // Unexpected error (not "no rows" error)
+      console.error("Failed to query profile:", queryError.message, queryError.code);
+      return { success: false, error: "Failed to create user profile" };
+    }
 
     if (!existingProfile) {
       // Profile doesn't exist, create it

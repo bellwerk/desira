@@ -67,53 +67,62 @@ const navItems: NavItem[] = [
   },
 ];
 
+function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
+  return (
+    <Link
+      href={item.href}
+      className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${
+        isActive
+          ? "bg-[#2B2B2B] text-white shadow-md"
+          : "border border-[#2B2B2B]/20 bg-transparent text-[#2B2B2B] hover:scale-105 hover:border-[#2B2B2B]/40 hover:bg-[#2B2B2B]/10"
+      }`}
+    >
+      {item.icon}
+      {/* Tooltip */}
+      <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-[#2B2B2B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 delay-200 group-hover:opacity-100">
+        {item.label}
+        {/* Arrow */}
+        <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2B2B2B]" />
+      </span>
+    </Link>
+  );
+}
+
 export function Sidebar(): React.ReactElement {
   const pathname = usePathname();
 
   return (
-    <>
-      <aside className="fixed left-4 top-1/2 z-50 -translate-y-1/2 flex flex-col items-center rounded-2xl bg-white/80 py-3 px-2 dark:bg-[#eaeaea]/80">
-        {/* Navigation icons */}
-        <nav className="flex flex-col items-center gap-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || 
-              (item.href !== "/app" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={item.label}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
-                  isActive
-                    ? "bg-[#2B2B2B] text-white shadow-md"
-                    : "bg-[#2B2B2B] text-white hover:bg-[#3a3a3a]"
-                }`}
-              >
-                {item.icon}
-              </Link>
-            );
-          })}
-        </nav>
+    <aside className="fixed left-4 top-1/2 z-50 -translate-y-1/2 flex flex-col items-center rounded-2xl bg-white/80 py-3 px-2 dark:bg-[#eaeaea]/80">
+      {/* Navigation icons */}
+      <nav className="flex flex-col items-center gap-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href || 
+            (item.href !== "/app" && pathname.startsWith(item.href));
+          return (
+            <NavLink key={item.href} item={item} isActive={isActive} />
+          );
+        })}
+      </nav>
 
-        {/* Divider */}
-        <div className="my-2 h-px w-8 bg-slate-200/70 dark:bg-slate-700/50" />
+      {/* Divider */}
+      <div className="my-2 h-px w-8 bg-slate-200/70 dark:bg-slate-700/50" />
 
-        {/* Create new button */}
+      {/* Create new button */}
+      <div className="group relative">
         <Link
           href="/app/lists/new"
-          title="Create New List"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9d8df1] text-[#343338] transition-all hover:bg-[#8a7ae0]"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9d8df1] text-[#343338] transition-all duration-200 hover:scale-105 hover:bg-[#8a7ae0]"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         </Link>
-      </aside>
-
-      {/* Suggest a Feature button - fixed below sidebar */}
-      <button className="fixed bottom-6 left-4 z-50 flex items-center gap-1.5 rounded-full border border-[#2b2b2b] bg-[#EAEAEA] px-2.5 py-1 font-inter text-[10px] font-normal text-[#2b2b2b] transition-all hover:bg-[#e0e0e0]">
-        <span>Suggest a Feature</span>
-      </button>
-    </>
+        {/* Tooltip */}
+        <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-[#2B2B2B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 delay-200 group-hover:opacity-100">
+          Create New List
+          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2B2B2B]" />
+        </span>
+      </div>
+    </aside>
   );
 }
