@@ -21,28 +21,48 @@ function LoginFormFallback(): React.ReactElement {
   );
 }
 
+function ErrorDisplay({ title, message }: { title: string; message: string }): React.ReactElement {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-rose-100 to-purple-100 px-4">
+      <div className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur-sm max-w-md">
+        <h1 className="mb-4 text-2xl font-bold text-red-600">{title}</h1>
+        <p className="text-slate-700 whitespace-pre-wrap break-words">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 export default async function LoginPage(): Promise<React.ReactElement> {
   // Check if Supabase is configured before trying to use it
   if (!isSupabaseConfigured()) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-rose-100 to-purple-100 px-4">
-        <div className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur-sm">
-          <h1 className="mb-4 text-2xl font-bold text-red-600">Configuration Error</h1>
-          <p className="text-slate-700">
-            Supabase environment variables are not configured.
-            <br />
-            Please set <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-            <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
-          </p>
-        </div>
-      </div>
+      <ErrorDisplay
+        title="Configuration Error"
+        message={`Supabase environment variables are not configured.\n\nPlease set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.`}
+      />
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error("Auth getUser error:", error);
+      // Don't throw, just continue with no user (show login form)
+    } else {
+      user = data.user;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Login page error:", message);
+    return (
+      <ErrorDisplay
+        title="Server Error"
+        message={`Failed to initialize: ${message}`}
+      />
+    );
+  }
 
   // Already logged in? Redirect to app
   if (user) {
