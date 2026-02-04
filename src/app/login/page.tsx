@@ -1,68 +1,29 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
-
-function LoginFormFallback(): React.ReactElement {
-  return (
-    <div className="space-y-4 sm:space-y-5">
-      <div className="h-12 w-full animate-pulse rounded-xl bg-white/30" />
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-white/30" />
-        <span className="text-[13px] font-medium text-white/80">or</span>
-        <div className="h-px flex-1 bg-white/30" />
-      </div>
-      <div className="space-y-2.5">
-        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
-        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
-        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
-      </div>
-    </div>
-  );
-}
-
-function ErrorDisplay({ title, message }: { title: string; message: string }): React.ReactElement {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-rose-100 to-purple-100 px-4">
-      <div className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur-sm max-w-md">
-        <h1 className="mb-4 text-2xl font-bold text-red-600">{title}</h1>
-        <p className="text-slate-700 whitespace-pre-wrap break-words">{message}</p>
-      </div>
-    </div>
-  );
-}
 
 export default async function LoginPage(): Promise<React.ReactElement> {
   // Check if Supabase is configured before trying to use it
   if (!isSupabaseConfigured()) {
     return (
-      <ErrorDisplay
-        title="Configuration Error"
-        message={`Supabase environment variables are not configured.\n\nPlease set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.`}
-      />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-rose-100 to-purple-100 px-4">
+        <div className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+          <h1 className="mb-4 text-2xl font-bold text-red-600">Configuration Error</h1>
+          <p className="text-slate-700">
+            Supabase environment variables are not configured.
+            <br />
+            Please set <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+            <code className="rounded bg-slate-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
+          </p>
+        </div>
+      </div>
     );
   }
 
-  let user = null;
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error("Auth getUser error:", error);
-      // Don't throw, just continue with no user (show login form)
-    } else {
-      user = data.user;
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Login page error:", message);
-    return (
-      <ErrorDisplay
-        title="Server Error"
-        message={`Failed to initialize: ${message}`}
-      />
-    );
-  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Already logged in? Redirect to app
   if (user) {
@@ -189,9 +150,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
             }}
           />
           <div className="relative z-10">
-            <Suspense fallback={<LoginFormFallback />}>
-              <LoginForm />
-            </Suspense>
+            <LoginForm />
           </div>
         </section>
 

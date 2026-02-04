@@ -28,33 +28,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       } = await supabase.auth.getUser();
 
       if (user) {
-        try {
-          // Check if profile exists
-          const { data: existingProfile, error: checkErr } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          // If no profile exists, create it
-          if (!existingProfile && !checkErr) {
-            const { error: insertErr } = await supabase
-              .from("profiles")
-              .insert({
-                id: user.id,
-                display_name:
-                  user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-              });
-
-            // 23505 is duplicate key error - profile already exists, which is fine
-            if (insertErr && insertErr.code !== "23505") {
-              console.error("Failed to create profile in auth callback:", insertErr);
-            }
-          }
-        } catch (err) {
-          console.error("Error ensuring profile exists:", err);
-          // Don't block auth flow for profile creation failure
-        }
+        // Upsert profile: create if missing, ignore if exists
+        await supabase.from("profiles").upsert(
+          {
+            id: user.id,
+            display_name:
+              user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+          },
+          { onConflict: "id", ignoreDuplicates: true }
+        );
       }
 
       return NextResponse.redirect(`${origin}${next}`);
