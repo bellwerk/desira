@@ -1,6 +1,25 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
+
+function LoginFormFallback(): React.ReactElement {
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <div className="h-12 w-full animate-pulse rounded-xl bg-white/30" />
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/30" />
+        <span className="text-[13px] font-medium text-white/80">or</span>
+        <div className="h-px flex-1 bg-white/30" />
+      </div>
+      <div className="space-y-2.5">
+        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
+        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
+        <div className="h-12 w-full animate-pulse rounded-xl bg-white/20" />
+      </div>
+    </div>
+  );
+}
 
 export default async function LoginPage(): Promise<React.ReactElement> {
   // Check if Supabase is configured before trying to use it
@@ -150,7 +169,9 @@ export default async function LoginPage(): Promise<React.ReactElement> {
             }}
           />
           <div className="relative z-10">
-            <LoginForm />
+            <Suspense fallback={<LoginFormFallback />}>
+              <LoginForm />
+            </Suspense>
           </div>
         </section>
 
