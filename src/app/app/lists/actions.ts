@@ -53,25 +53,38 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
 
   if (profileError && profileError.code !== "23505") {
-    // Fallback to admin client if available (e.g., RLS/session edge cases)
-    try {
-      const { error: adminError } = await supabaseAdmin
-        .from("profiles")
-        .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+    // Best-effort profile creation: don't block list creation
+    console.error(
+      "Failed to create profile (user session):",
+      profileError.message,
+      profileError.code,
+      profileError.details
+    );
 
-      if (adminError && adminError.code !== "23505") {
-        console.error(
-          "Failed to create profile (admin fallback):",
-          adminError.message,
-          adminError.code,
-          adminError.details
-        );
-        return { success: false, error: "Failed to create user profile" };
+    // Fallback to admin client if available (e.g., RLS/session edge cases)
+    const hasAdminEnv = Boolean(
+      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) &&
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    if (hasAdminEnv) {
+      try {
+        const { error: adminError } = await supabaseAdmin
+          .from("profiles")
+          .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+
+        if (adminError && adminError.code !== "23505") {
+          console.error(
+            "Failed to create profile (admin fallback):",
+            adminError.message,
+            adminError.code,
+            adminError.details
+          );
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Supabase admin client error:", message);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("Supabase admin client error:", message);
-      return { success: false, error: "Failed to create user profile" };
     }
   }
 
