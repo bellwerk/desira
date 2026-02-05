@@ -43,22 +43,36 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   }
 
   // Ensure profile exists (fallback if trigger didn't create one)
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-    },
-    { onConflict: "id", ignoreDuplicates: true }
-  );
+  const profilePayload = {
+    id: user.id,
+    display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+  };
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
 
   if (profileError && profileError.code !== "23505") {
-    console.error(
-      "Failed to create profile:",
-      profileError.message,
-      profileError.code,
-      profileError.details
-    );
-    return { success: false, error: "Failed to create user profile" };
+    // Fallback to admin client if available (e.g., RLS/session edge cases)
+    try {
+      const { error: adminError } = await supabaseAdmin
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+
+      if (adminError && adminError.code !== "23505") {
+        console.error(
+          "Failed to create profile (admin fallback):",
+          adminError.message,
+          adminError.code,
+          adminError.details
+        );
+        return { success: false, error: "Failed to create user profile" };
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Supabase admin client error:", message);
+      return { success: false, error: "Failed to create user profile" };
+    }
   }
 
   const raw = {
