@@ -42,50 +42,68 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "Not authenticated" };
   }
 
-  // Ensure profile exists (fallback if trigger didn't create one)
+  // Ensure profile exists (required for lists.owner_id FK constraint).
+  // Use admin client first (bypasses RLS), then fall back to user client.
   const profilePayload = {
     id: user.id,
     display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
   };
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+  let profileReady = false;
 
-  if (profileError && profileError.code !== "23505") {
-    // Best-effort profile creation: don't block list creation
-    console.error(
-      "Failed to create profile (user session):",
-      profileError.message,
-      profileError.code,
-      profileError.details
-    );
+  // Try admin client first (most reliable — bypasses RLS)
+  try {
+    const { error: adminError } = await supabaseAdmin
+      .from("profiles")
+      .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
 
-    // Fallback to admin client if available (e.g., RLS/session edge cases)
-    const hasAdminEnv = Boolean(
-      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    if (hasAdminEnv) {
-      try {
-        const { error: adminError } = await supabaseAdmin
-          .from("profiles")
-          .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
-
-        if (adminError && adminError.code !== "23505") {
-          console.error(
-            "Failed to create profile (admin fallback):",
-            adminError.message,
-            adminError.code,
-            adminError.details
-          );
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error("Supabase admin client error:", message);
-      }
+    if (!adminError || adminError.code === "23505") {
+      profileReady = true;
+    } else {
+      console.error(
+        "Failed to create profile (admin):",
+        adminError.message,
+        adminError.code
+      );
     }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Supabase admin client error:", message);
+  }
+
+  // Fall back to user client if admin failed
+  if (!profileReady) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+
+    if (!profileError || profileError.code === "23505") {
+      profileReady = true;
+    } else {
+      console.error(
+        "Failed to create profile (user session):",
+        profileError.message,
+        profileError.code
+      );
+    }
+  }
+
+  // Verify profile exists before attempting list insert (FK constraint)
+  if (!profileReady) {
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    profileReady = !!existingProfile;
+  }
+
+  if (!profileReady) {
+    return {
+      success: false,
+      error: "Failed to create user profile. Please try again or re-login.",
+    };
   }
 
   const raw = {
