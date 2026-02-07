@@ -50,77 +50,57 @@ export async function createList(formData: FormData): Promise<ActionResult> {
   }
 
   // Ensure profile exists (required for lists.owner_id FK constraint).
-  // Use admin client first (bypasses RLS), then fall back to user client.
-  const profilePayload = {
-    id: user.id,
-    display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-  };
+  // Step 1: Check if profile already exists (most common case — trigger creates it at signup)
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  let profileReady = false;
-
-  // Try admin client first (most reliable — bypasses RLS)
-  try {
-    const { error: adminError } = await supabaseAdmin
-      .from("profiles")
-      .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
-
-    if (!adminError || adminError.code === "23505") {
-      profileReady = true;
-    } else {
-      console.error(
-        "[createList] Profile upsert (admin) failed:",
-        adminError.message,
-        adminError.code
-      );
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[createList] Admin client error:", message);
-  }
-
-  // Fall back to user client if admin failed
-  if (!profileReady) {
-    try {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
-
-      if (!profileError || profileError.code === "23505") {
-        profileReady = true;
-      } else {
-        console.error(
-          "[createList] Profile upsert (user) failed:",
-          profileError.message,
-          profileError.code
-        );
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[createList] User client profile error:", message);
-    }
-  }
-
-  // Verify profile exists before attempting list insert (FK constraint)
-  if (!profileReady) {
-    try {
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-
-      profileReady = !!existingProfile;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[createList] Profile check error:", message);
-    }
-  }
-
-  if (!profileReady) {
-    return {
-      success: false,
-      error: "Failed to create user profile. Please try again or re-login.",
+  if (!existingProfile) {
+    // Step 2: Profile missing — try to create it
+    const profilePayload = {
+      id: user.id,
+      display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
     };
+
+    // Try user client first (respects RLS — user can insert own profile)
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert(profilePayload);
+
+    if (insertError && insertError.code !== "23505") {
+      // 23505 = unique violation = profile was created between our check and insert (race condition, fine)
+      console.error("[createList] Profile insert failed:", insertError.message, insertError.code);
+
+      // Fallback: try admin client (bypasses RLS)
+      try {
+        const { error: adminError } = await supabaseAdmin
+          .from("profiles")
+          .insert(profilePayload);
+
+        if (adminError && adminError.code !== "23505") {
+          console.error("[createList] Profile insert (admin) failed:", adminError.message, adminError.code);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[createList] Admin client error:", message);
+      }
+    }
+
+    // Final check: verify profile now exists
+    const { data: verifyProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!verifyProfile) {
+      return {
+        success: false,
+        error: "Failed to create user profile. Please try again or re-login.",
+      };
+    }
   }
 
   const raw = {
