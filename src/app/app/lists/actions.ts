@@ -32,7 +32,14 @@ const createListSchema = z.object({
 });
 
 export async function createList(formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[createList] Failed to create Supabase client:", msg);
+    return { success: false, error: "Server configuration error. Please try again." };
+  }
 
   const {
     data: { user },
@@ -61,42 +68,52 @@ export async function createList(formData: FormData): Promise<ActionResult> {
       profileReady = true;
     } else {
       console.error(
-        "Failed to create profile (admin):",
+        "[createList] Profile upsert (admin) failed:",
         adminError.message,
         adminError.code
       );
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("Supabase admin client error:", message);
+    console.error("[createList] Admin client error:", message);
   }
 
   // Fall back to user client if admin failed
   if (!profileReady) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+    try {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
 
-    if (!profileError || profileError.code === "23505") {
-      profileReady = true;
-    } else {
-      console.error(
-        "Failed to create profile (user session):",
-        profileError.message,
-        profileError.code
-      );
+      if (!profileError || profileError.code === "23505") {
+        profileReady = true;
+      } else {
+        console.error(
+          "[createList] Profile upsert (user) failed:",
+          profileError.message,
+          profileError.code
+        );
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[createList] User client profile error:", message);
     }
   }
 
   // Verify profile exists before attempting list insert (FK constraint)
   if (!profileReady) {
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", user.id)
-      .single();
+    try {
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .single();
 
-    profileReady = !!existingProfile;
+      profileReady = !!existingProfile;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[createList] Profile check error:", message);
+    }
   }
 
   if (!profileReady) {
@@ -116,6 +133,9 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     allow_contributions: formData.get("allow_contributions") === "true",
     allow_anonymous: formData.get("allow_anonymous") === "true",
   };
+
+  // Debug: log form values to help diagnose issues
+  console.log("[createList] Form data:", JSON.stringify(raw));
 
   const parsed = createListSchema.safeParse(raw);
 
@@ -144,7 +164,13 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     .single();
 
   if (error) {
+    console.error("[createList] List insert error:", error.message, error.code, error.details);
     return { success: false, error: error.message };
+  }
+
+  if (!list) {
+    console.error("[createList] Insert returned no data and no error");
+    return { success: false, error: "Failed to create list. Please try again." };
   }
 
   redirect(`/app/lists/${list.id}`);
