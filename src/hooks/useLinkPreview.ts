@@ -23,6 +23,21 @@ export interface LinkPreviewData {
   normalizedUrl: string;
 }
 
+function formatPreviewError(code?: string, message?: string): string {
+  switch (code) {
+    case "NO_METADATA":
+      return "This site doesn't expose preview data. You can still add the item manually.";
+    case "FETCH_BLOCKED":
+      return "This site blocked the preview request. Try another link or add details manually.";
+    case "TIMEOUT":
+      return "Preview request timed out. Try again or add details manually.";
+    case "INVALID_URL":
+      return "That link doesn’t look valid yet. Please paste a full URL.";
+    default:
+      return message ?? "Failed to fetch preview.";
+  }
+}
+
 interface UseLinkPreviewResult {
   status: LinkPreviewStatus;
   data: LinkPreviewData | null;
@@ -158,7 +173,8 @@ export function useLinkPreview(): UseLinkPreviewResult {
         } else {
           setStatus("error");
           setData(null);
-          setError(result.error?.message ?? "Failed to fetch preview");
+          const errorCode = typeof result.error?.code === "string" ? result.error.code : undefined;
+          setError(formatPreviewError(errorCode, result.error?.message));
         }
       } catch (err) {
         // Ignore abort errors

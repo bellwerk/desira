@@ -44,12 +44,20 @@ export default function SharedListLayout({
               desira
             </span>
           </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-[#2B2B2B] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#3a3a3a]"
-          >
-            Sign in
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="rounded-full px-4 py-2 text-sm font-medium text-[#2B2B2B] transition-all hover:bg-white/50"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/login?signup=true"
+              className="rounded-full bg-[#2B2B2B] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#3a3a3a]"
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </header>
 

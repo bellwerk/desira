@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { GlassButton } from "@/components/ui";
 
 export function ItemActions(props: {
   token: string;
@@ -57,47 +56,37 @@ export function ItemActions(props: {
   }
 
   return (
-    <div className="flex gap-2 pt-3 border-t border-white/20">
+    <div className="flex items-center gap-2">
       {contributeDisabled ? (
-        <GlassButton
-          variant="primary"
-          size="sm"
-          className="flex-1 justify-center"
+        <button
           disabled
+          className="flex-1 rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#3a3a3a]"
         >
           Contribute
-        </GlassButton>
+        </button>
       ) : (
         <Link href={`/u/${token}/contribute?item=${itemId}`} className="flex-1">
-          <GlassButton
-            variant="primary"
-            size="sm"
-            className="w-full justify-center"
-          >
+          <button className="w-full rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98]">
             Contribute
-          </GlassButton>
+          </button>
         </Link>
       )}
 
       {hasTicket ? (
-        <GlassButton
-          variant="secondary"
-          size="sm"
+        <button
           onClick={cancel}
-          className="flex-1 justify-center"
+          className="flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98]"
         >
           Cancel
-        </GlassButton>
+        </button>
       ) : (
-        <GlassButton
-          variant="secondary"
-          size="sm"
+        <button
           onClick={reserve}
           disabled={!canReserve}
-          className="flex-1 justify-center"
+          className="flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Reserve
-        </GlassButton>
+        </button>
       )}
     </div>
   );

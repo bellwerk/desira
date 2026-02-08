@@ -52,6 +52,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
   const {
     status: previewStatus,
     data: previewData,
+    error: previewError,
     reset: resetPreview,
     fetch: fetchPreview,
   } = useLinkPreview();
@@ -278,6 +279,17 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
               <span className="font-[family-name:var(--font-urbanist)]">
                 Loading product details...
               </span>
+            </div>
+          </div>
+        )}
+
+        {previewStatus === "error" && previewError && (
+          <div className="mb-5 rounded-xl bg-amber-500/20 px-4 py-3 text-sm text-amber-200">
+            <div className="flex items-start gap-2">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+              <span>{previewError}</span>
             </div>
           </div>
         )}

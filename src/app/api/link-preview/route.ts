@@ -14,6 +14,11 @@ import {
 // when connecting to a resolved IP while maintaining virtual hosting.
 export const runtime = "nodejs";
 
+// Use a modern browser-like UA to reduce bot blocks on major retailers.
+const PREVIEW_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
+const PREVIEW_ACCEPT_LANGUAGE = "en-CA,en-US;q=0.9,en;q=0.8";
+
 // Request timeout in milliseconds
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -206,9 +211,9 @@ async function safeFetch(
   // Build the fetch URL and headers
   let fetchUrl: string;
   const headers: Record<string, string> = {
-    "User-Agent": "Desira/1.0 LinkPreview (+https://desira.io)",
+    "User-Agent": PREVIEW_USER_AGENT,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Language": PREVIEW_ACCEPT_LANGUAGE,
   };
 
   if (isHttps) {

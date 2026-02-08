@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   title: "Desira - Gift Coordination Made Simple",
   description:
     "Coordinate gifts with friends and family. Create wishlists, reserve items, and contribute to gifts without duplicates.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

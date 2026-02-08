@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { ItemActions } from "@/components/ItemActions";
-import { GlassCard, BadgeChip, ProgressBar } from "@/components/ui";
+import Link from "next/link";
+import { GlassCard } from "@/components/ui";
+import { PublicListClient } from "./PublicListClient";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,12 +29,8 @@ type ItemRow = {
   note_public: string | null;
   status: "active" | "funded" | "received" | "archived";
   sort_order: number | null;
+  most_desired: boolean | null;
 };
-
-function formatCents(n: number | null | undefined): string {
-  if (!n) return "0";
-  return (n / 100).toFixed(0);
-}
 
 export default async function PublicListPage({ params }: PageProps): Promise<React.ReactElement> {
   const { token } = await params;
@@ -51,7 +48,8 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
       allow_contributions,
       allow_anonymous,
       currency,
-      visibility
+      visibility,
+      owner_id
     `
     )
     .eq("share_token", token)
@@ -85,6 +83,16 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
     );
   }
 
+  // Fetch owner's display name and avatar
+  const { data: owner, error: ownerErr } = await supabaseAdmin
+    .from("profiles")
+    .select("display_name,avatar_url")
+    .eq("id", list.owner_id)
+    .single();
+
+  const ownerName = ownerErr || !owner ? "User" : owner.display_name || "User";
+  const ownerAvatar = ownerErr || !owner ? null : owner.avatar_url;
+
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("items")
     .select(
@@ -96,7 +104,8 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
       target_amount_cents,
       note_public,
       status,
-      sort_order
+      sort_order,
+      most_desired
     `
     )
     .eq("list_id", list.id)
@@ -141,45 +150,85 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
       {/* List Header */}
       <GlassCard>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-[#2B2B2B]">
-              {list.title}
-            </h1>
-
-            {(list.occasion || list.event_date) && (
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#62748e]">
-                {list.occasion && <span>{list.occasion}</span>}
-                {list.occasion && list.event_date && <span>·</span>}
-                {list.event_date && (
-                  <span>
-                    {(() => {
-                      // Parse as local date to avoid UTC timezone shift
-                      const [y, m, d] = String(list.event_date).split("-").map(Number);
-                      return new Date(y, m - 1, d).toLocaleDateString();
-                    })()}
+          {/* Left: Avatar + Title + Details */}
+          <div className="min-w-0 flex-1 flex flex-col gap-3">
+            {/* Avatar + Name */}
+            <div className="flex items-center gap-3">
+              {ownerAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={ownerAvatar}
+                  alt={ownerName}
+                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover border-2 border-[#2B2B2B]/10"
+                />
+              ) : (
+                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-[#b8a8ff] to-[#3a3a3a] flex items-center justify-center border-2 border-[#2B2B2B]/10">
+                  <span className="text-sm sm:text-base font-bold text-white">
+                    {ownerName.charAt(0).toUpperCase()}
                   </span>
-                )}
+                </div>
+              )}
+              <div>
+                <p className="text-xs sm:text-sm text-[#62748e]">Wishlist for</p>
+                <h1 className="font-asul text-xl sm:text-2xl font-semibold tracking-tight text-[#2B2B2B]">
+                  {ownerName}
+                </h1>
+              </div>
+            </div>
+
+            {/* Occasion + Date with countdown */}
+            {(list.occasion || list.event_date) && (
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-[#62748e]">
+                  {list.occasion && (
+                    <span className="font-medium text-[#2B2B2B]">{list.occasion}</span>
+                  )}
+                  {list.occasion && list.event_date && <span>·</span>}
+                  {list.event_date && (
+                    <span>
+                      {(() => {
+                        // Parse as local date to avoid UTC timezone shift
+                        const [y, m, d] = String(list.event_date)
+                          .split("-")
+                          .map(Number);
+                        const eventDate = new Date(y, m - 1, d);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const daysUntil = Math.ceil(
+                          (eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+                        );
+
+                        if (daysUntil < 0)
+                          return `${eventDate.toLocaleDateString()} (passed)`;
+                        if (daysUntil === 0) return "Today!";
+                        if (daysUntil === 1) return "Tomorrow";
+                        return `${eventDate.toLocaleDateString()} (in ${daysUntil} days)`;
+                      })()}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
-            <p className="mt-3 text-sm text-[#62748e]">
+            <p className="mt-2 text-sm text-[#62748e]">
               Reserved gifts stay anonymous · Contributions go to the recipient
             </p>
           </div>
 
+          {/* Right: Badge */}
           <div className="flex items-center gap-2">
-            <BadgeChip variant="neutral" className="capitalize">
+            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-[#2B2B2B] capitalize whitespace-nowrap">
               {list.recipient_type === "person"
                 ? "Individual"
                 : list.recipient_type === "shared"
                 ? "Collaborative"
                 : "Group"}
-            </BadgeChip>
+            </span>
           </div>
         </div>
       </GlassCard>
 
-      {/* Empty State */}
+      {/* Empty State - No items at all */}
       {typedItems.length === 0 ? (
         <GlassCard className="text-center py-12">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60">
@@ -197,113 +246,45 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
               />
             </svg>
           </div>
-          <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">No items yet</h2>
+          <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">
+            {ownerName} hasn&apos;t added any items yet
+          </h2>
           <p className="mt-2 text-sm text-[#62748e]">
-            Check back later — items will appear here.
+            Check back soon — items will appear here.
           </p>
         </GlassCard>
       ) : (
-        /* Items Grid */
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {typedItems.map((item) => {
-            const isReserved = Boolean(reservedMap.get(item.id));
-            const funded = fundedMap.get(item.id) ?? 0;
-            const target = item.target_amount_cents ?? item.price_cents ?? undefined;
-            const isReceived = item.status === "received";
-            const isFunded =
-              item.status === "funded" || (target ? funded >= target : false);
-            const isComplete = isReceived || isFunded;
-
-            const statusVariant = isReceived
-              ? "received"
-              : isFunded
-              ? "funded"
-              : isReserved
-              ? "reserved"
-              : "available";
-            const statusLabel = isReceived
-              ? "Received"
-              : isFunded
-              ? "Funded"
-              : isReserved
-              ? "Reserved"
-              : "Available";
-
-            const contributeDisabled =
-              !list.allow_contributions || isComplete || isReserved;
-            const reserveDisabled =
-              !list.allow_reservations || isReserved || isComplete;
-
-            const pct =
-              target && target > 0
-                ? Math.min(100, Math.round((funded / target) * 100))
-                : 0;
-
-            return (
-              <GlassCard key={item.id} className="overflow-hidden p-0">
-                {/* Image */}
-                <div className="aspect-square w-full bg-slate-100/50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      item.image_url ??
-                      "https://picsum.photos/seed/fallback/600/600"
-                    }
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-
-                {/* Content */}
-                <div className="space-y-3 p-4">
-                  {/* Title + Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="line-clamp-2 font-medium text-[#2B2B2B]">
-                      {item.title}
-                    </h2>
-                    <BadgeChip variant={statusVariant}>{statusLabel}</BadgeChip>
-                  </div>
-
-                  {/* Price */}
-                  {target && (
-                    <p className="text-sm font-medium text-[#2B2B2B]">
-                      ${formatCents(target)} {list.currency ?? "CAD"}
-                    </p>
-                  )}
-
-                  {/* Progress bar (if contributions enabled and has target) */}
-                  {list.allow_contributions && target && (
-                    <ProgressBar
-                      value={pct}
-                      label={
-                        isReceived
-                          ? "Received"
-                          : isFunded
-                          ? "Fully funded"
-                          : `$${formatCents(funded)} of $${formatCents(target)}`
-                      }
-                    />
-                  )}
-
-                  {/* Public note */}
-                  {item.note_public && (
-                    <p className="text-sm text-[#62748e]">{item.note_public}</p>
-                  )}
-
-                  {/* Actions */}
-                  <ItemActions
-                    token={token}
-                    itemId={item.id}
-                    contributeDisabled={contributeDisabled}
-                    canReserve={!reserveDisabled}
-                    isReserved={isReserved}
-                  />
-                </div>
-              </GlassCard>
-            );
-          })}
-        </section>
+        /* Items Grid with Sort/Filter - Client Component */
+        <PublicListClient
+          token={token}
+          items={typedItems}
+          reservedMap={reservedMap}
+          fundedMap={fundedMap}
+          listAllowReservations={list.allow_reservations ?? true}
+          listAllowContributions={list.allow_contributions ?? true}
+          currency={list.currency ?? "CAD"}
+        />
       )}
+
+      {/* CTA Section */}
+      <GlassCard className="mt-8 space-y-4 bg-gradient-to-br from-[#2B2B2B]/5 to-[#2B2B2B]/10 p-8 text-center">
+        <div>
+          <h2 className="font-asul text-2xl font-semibold text-[#2B2B2B]">
+            Create and share your own wishlist for free
+          </h2>
+          <p className="mt-2 text-sm text-[#62748e]">
+            Receive gifts and contributions from friends and family
+          </p>
+        </div>
+        <div className="flex justify-center pt-4">
+          <Link
+            href="/login?redirect=/app/lists/new"
+            className="rounded-full bg-[#2B2B2B] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#3a3a3a]"
+          >
+            Create a wishlist
+          </Link>
+        </div>
+      </GlassCard>
     </div>
   );
 }
