@@ -4,6 +4,16 @@ import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
 import type { Metadata } from "next";
 
+/** Check if an error is a Next.js redirect (must be re-thrown, never swallowed) */
+function isNextRedirect(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    "digest" in error &&
+    typeof error.digest === "string" &&
+    error.digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 /**
  * App layout — authenticated area
  *
@@ -59,13 +69,15 @@ export default async function AppLayout({
         .select("display_name, avatar_url")
         .eq("id", userData.user.id)
         .maybeSingle();
-      
+
       if (profileError) {
         console.error("[AppLayout] Profile fetch error:", profileError.message, profileError.code, profileError.details);
       } else {
         profile = data;
       }
     } catch (err) {
+      // Don't swallow redirect errors from inner code
+      if (isNextRedirect(err)) throw err;
       console.error("[AppLayout] Profile fetch exception:", err);
     }
 
@@ -77,8 +89,8 @@ export default async function AppLayout({
       <div className="min-h-screen bg-[#EAEAEA] dark:bg-[#eaeaea]">
         <Sidebar />
         <div className="flex flex-col min-h-screen">
-          <AppHeader 
-            displayName={displayName} 
+          <AppHeader
+            displayName={displayName}
             username={username}
             avatarUrl={profile?.avatar_url}
           />
@@ -87,9 +99,10 @@ export default async function AppLayout({
       </div>
     );
   } catch (error) {
-    // Log the actual error for debugging
+    // Let Next.js redirect errors pass through — never swallow them
+    if (isNextRedirect(error)) throw error;
     console.error("[AppLayout] Unexpected error:", error);
-    // Re-throw to trigger error boundary
-    throw error;
+    // Safest fallback: send to login
+    redirect("/login");
   }
 }

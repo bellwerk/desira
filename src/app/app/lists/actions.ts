@@ -32,7 +32,14 @@ const createListSchema = z.object({
 });
 
 export async function createList(formData: FormData): Promise<ActionResult> {
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[createList] Failed to create Supabase client:", msg);
+    return { success: false, error: "Server configuration error. Please try again." };
+  }
 
   const {
     data: { user },
@@ -42,49 +49,57 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "Not authenticated" };
   }
 
-  // Ensure profile exists (fallback if trigger didn't create one)
-  const profilePayload = {
-    id: user.id,
-    display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-  };
-
-  const { error: profileError } = await supabase
+  // Ensure profile exists (required for lists.owner_id FK constraint).
+  // Step 1: Check if profile already exists (most common case — trigger creates it at signup)
+  const { data: existingProfile } = await supabase
     .from("profiles")
-    .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (profileError && profileError.code !== "23505") {
-    // Best-effort profile creation: don't block list creation
-    console.error(
-      "Failed to create profile (user session):",
-      profileError.message,
-      profileError.code,
-      profileError.details
-    );
+  if (!existingProfile) {
+    // Step 2: Profile missing — try to create it
+    const profilePayload = {
+      id: user.id,
+      display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+    };
 
-    // Fallback to admin client if available (e.g., RLS/session edge cases)
-    const hasAdminEnv = Boolean(
-      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    // Try user client first (respects RLS — user can insert own profile)
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert(profilePayload);
 
-    if (hasAdminEnv) {
+    if (insertError && insertError.code !== "23505") {
+      // 23505 = unique violation = profile was created between our check and insert (race condition, fine)
+      console.error("[createList] Profile insert failed:", insertError.message, insertError.code);
+
+      // Fallback: try admin client (bypasses RLS)
       try {
         const { error: adminError } = await supabaseAdmin
           .from("profiles")
-          .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
+          .insert(profilePayload);
 
         if (adminError && adminError.code !== "23505") {
-          console.error(
-            "Failed to create profile (admin fallback):",
-            adminError.message,
-            adminError.code,
-            adminError.details
-          );
+          console.error("[createList] Profile insert (admin) failed:", adminError.message, adminError.code);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error("Supabase admin client error:", message);
+        console.error("[createList] Admin client error:", message);
       }
+    }
+
+    // Final check: verify profile now exists
+    const { data: verifyProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!verifyProfile) {
+      return {
+        success: false,
+        error: "Failed to create user profile. Please try again or re-login.",
+      };
     }
   }
 
@@ -98,6 +113,9 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     allow_contributions: formData.get("allow_contributions") === "true",
     allow_anonymous: formData.get("allow_anonymous") === "true",
   };
+
+  // Debug: log form values to help diagnose issues
+  console.log("[createList] Form data:", JSON.stringify(raw));
 
   const parsed = createListSchema.safeParse(raw);
 
@@ -126,7 +144,13 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     .single();
 
   if (error) {
+    console.error("[createList] List insert error:", error.message, error.code, error.details);
     return { success: false, error: error.message };
+  }
+
+  if (!list) {
+    console.error("[createList] Insert returned no data and no error");
+    return { success: false, error: "Failed to create list. Please try again." };
   }
 
   redirect(`/app/lists/${list.id}`);
