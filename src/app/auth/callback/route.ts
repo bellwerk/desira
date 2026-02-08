@@ -5,18 +5,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const rawNext = searchParams.get("next");
-  const nextPath =
-    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//")
-      ? rawNext
-      : "/app";
+  const next = searchParams.get("next") ?? "/app";
 
   // Check if Supabase is configured
   if (!isSupabaseConfigured()) {
     console.error("Auth callback: Supabase not configured");
-    const loginUrl = new URL("/login", origin);
-    loginUrl.searchParams.set("error", "config_error");
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(`${origin}/login?error=config_error`);
   }
 
   if (code) {
@@ -26,9 +20,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
       if (error) {
         console.error("Auth callback error:", error.message, error);
-        const loginUrl = new URL("/login", origin);
-        loginUrl.searchParams.set("error", "auth_callback_error");
-        return NextResponse.redirect(loginUrl);
+        return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
       }
 
       // Ensure profile exists (fallback if trigger didn't create one)
@@ -67,17 +59,13 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
       }
 
-      return NextResponse.redirect(new URL(nextPath, origin));
+      return NextResponse.redirect(`${origin}${next}`);
     } catch (err) {
       console.error("Auth callback exception:", err);
-      const loginUrl = new URL("/login", origin);
-      loginUrl.searchParams.set("error", "auth_callback_error");
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
     }
   }
 
   // No code provided
-  const loginUrl = new URL("/login", origin);
-  loginUrl.searchParams.set("error", "auth_callback_error");
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
 }
