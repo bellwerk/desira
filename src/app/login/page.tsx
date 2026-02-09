@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
+
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage(): Promise<React.ReactElement> {
   // Check if Supabase is configured before trying to use it
@@ -160,7 +163,9 @@ export default async function LoginPage(): Promise<React.ReactElement> {
             }}
           />
           <div className="relative z-10">
-            <LoginForm />
+            <Suspense fallback={null}>
+              <LoginForm />
+            </Suspense>
           </div>
         </section>
 
