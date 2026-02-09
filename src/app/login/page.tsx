@@ -20,13 +20,23 @@ export default async function LoginPage(): Promise<React.ReactElement> {
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let shouldRedirect = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      shouldRedirect = true;
+    }
+  } catch (err: unknown) {
+    // Log the real error so it appears in Cloudflare observability logs
+    console.error("[LoginPage] Supabase error:", err instanceof Error ? err.message : String(err), err);
+    // Fall through to render the login form anyway
+  }
 
-  // Already logged in? Redirect to app
-  if (user) {
+  // redirect() throws internally — must be called outside try/catch
+  if (shouldRedirect) {
     redirect("/app");
   }
 
