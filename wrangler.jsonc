@@ -11,7 +11,17 @@
   },
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "desira" }
-  ]
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    }
+  }
   // NOTE: Runtime secrets must be set via Cloudflare Dashboard or `wrangler secret put`:
   // - NEXT_PUBLIC_SUPABASE_URL
   // - NEXT_PUBLIC_SUPABASE_ANON_KEY
