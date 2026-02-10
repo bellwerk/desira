@@ -1,51 +1,96 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
+
+function supabaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.SUPABASE_URL ??
+    ""
+  );
+}
+
+function supabaseAnonKey(): string {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.SUPABASE_ANON_KEY ??
+    ""
+  );
+}
 
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/app";
 
-  // Check if Supabase is configured
   if (!isSupabaseConfigured()) {
     console.error("Auth callback: Supabase not configured");
     return NextResponse.redirect(`${origin}/login?error=config_error`);
   }
 
-  if (code) {
-    try {
-      const supabase = await createClient();
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (error) {
-        console.error("Auth callback error:", error.message, error);
-        return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
-      }
-
-      // Ensure profile exists (fallback if trigger didn't create one)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        // Upsert profile: create if missing, ignore if exists
-        await supabase.from("profiles").upsert(
-          {
-            id: user.id,
-            display_name:
-              user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
-          },
-          { onConflict: "id", ignoreDuplicates: true }
-        );
-      }
-
-      return NextResponse.redirect(`${origin}${next}`);
-    } catch (err) {
-      console.error("Auth callback exception:", err);
-      return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
-    }
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
   }
 
-  // No code provided
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+  const url = supabaseUrl();
+  const key = supabaseAnonKey();
+  if (!url || !key) {
+    return NextResponse.redirect(`${origin}/login?error=config_error`);
+  }
+
+  const cookieStore = await cookies();
+  const cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[] = [];
+
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(toSet) {
+        toSet.forEach((c) => cookiesToSet.push(c));
+        try {
+          toSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // Route Handler: ensure cookies are on our redirect response below
+        }
+      },
+    },
+  });
+
+  try {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error("Auth callback error:", error.message, error);
+      return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await supabase.from("profiles").upsert(
+        {
+          id: user.id,
+          display_name:
+            user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+        },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
+    }
+
+    const response = NextResponse.redirect(`${origin}${next}`);
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options as Record<string, unknown>);
+    });
+    return response;
+  } catch (err) {
+    console.error("Auth callback exception:", err);
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+  }
 }
