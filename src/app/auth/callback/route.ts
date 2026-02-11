@@ -94,12 +94,14 @@ export async function GET(request: Request): Promise<NextResponse> {
         email: user.email,
         metadataName: user.user_metadata?.name,
       });
+      const handle =
+        profileIdentity.handle?.trim() ? profileIdentity.handle : `user_${user.id.slice(0, 8)}`;
 
       await supabase.from("profiles").upsert(
         {
           id: user.id,
           display_name: profileIdentity.display_name,
-          handle: profileIdentity.handle,
+          handle,
         },
         { onConflict: "id", ignoreDuplicates: true }
       );

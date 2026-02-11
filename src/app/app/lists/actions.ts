@@ -65,11 +65,13 @@ export async function createList(formData: FormData): Promise<ActionResult> {
       email: user.email,
       metadataName: user.user_metadata?.name,
     });
+    const handle =
+      profileIdentity.handle?.trim() ? profileIdentity.handle : `user_${user.id.slice(0, 8)}`;
 
     const profilePayload = {
       id: user.id,
       display_name: profileIdentity.display_name,
-      handle: profileIdentity.handle,
+      handle,
     };
 
     // Try user client first (respects RLS — user can insert own profile)
