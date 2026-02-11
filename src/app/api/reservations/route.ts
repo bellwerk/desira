@@ -143,6 +143,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    reservation_id: created.id,
     reservation: created,
     cancel_token: cancelToken,
   });

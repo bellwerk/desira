@@ -24,8 +24,8 @@ export default async function AcceptInvitePage({
 
   // If not logged in, redirect to login with return URL
   if (!user) {
-    const returnUrl = encodeURIComponent(`/app/invite/${token}`);
-    redirect(`/login?returnUrl=${returnUrl}`);
+    const next = encodeURIComponent(`/app/invite/${token}`);
+    redirect(`/login?next=${next}`);
   }
 
   // Validate the invite token exists

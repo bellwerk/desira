@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,14 @@ const BodySchema = z.object({
 
 export async function POST(req: Request) {
   const stripe = getStripe();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
   const json = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(json);
@@ -38,6 +47,10 @@ export async function POST(req: Request) {
 
   if (!list) {
     return NextResponse.json({ error: "List not found" }, { status: 404 });
+  }
+
+  if (list.owner_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Ensure payment account row exists

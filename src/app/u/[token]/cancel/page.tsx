@@ -6,7 +6,7 @@ import { GlassCard, GlassButton, Spinner } from "@/components/ui";
 
 type State =
   | { status: "loading" }
-  | { status: "ready"; cancelTicket: string }
+  | { status: "ready"; reservationId: string; cancelToken: string }
   | { status: "missing" }
   | { status: "error"; message: string };
 
@@ -27,8 +27,8 @@ export default function CancelPage(): React.ReactElement {
     }
 
     try {
-      const t = localStorage.getItem(ticketKey);
-      if (!t) {
+      const raw = localStorage.getItem(ticketKey);
+      if (!raw) {
         queueMicrotask(() =>
           setState({
             status: "error",
@@ -38,7 +38,29 @@ export default function CancelPage(): React.ReactElement {
         return;
       }
 
-      queueMicrotask(() => setState({ status: "ready", cancelTicket: t }));
+      const parsed = JSON.parse(raw) as {
+        reservation_id?: string;
+        cancel_token?: string;
+      };
+      const reservationId = parsed?.reservation_id;
+      const cancelToken = parsed?.cancel_token;
+      if (!reservationId || !cancelToken) {
+        queueMicrotask(() =>
+          setState({
+            status: "error",
+            message: "Cancel ticket is invalid.",
+          })
+        );
+        return;
+      }
+
+      queueMicrotask(() =>
+        setState({
+          status: "ready",
+          reservationId,
+          cancelToken,
+        })
+      );
     } catch {
       queueMicrotask(() =>
         setState({ status: "error", message: "Cannot access localStorage." })
@@ -52,12 +74,11 @@ export default function CancelPage(): React.ReactElement {
     setIsSubmitting(true);
 
     const res = await fetch("/api/reservations", {
-      method: "DELETE",
+      method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        token,
-        item_id: itemId,
-        cancel_ticket: state.cancelTicket,
+        reservation_id: state.reservationId,
+        cancel_token: state.cancelToken,
       }),
     });
 

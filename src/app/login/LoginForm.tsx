@@ -12,7 +12,8 @@ import {
 
 export function LoginForm(): React.ReactElement {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("next") ?? "/app";
+  const redirectTo =
+    searchParams.get("next") ?? searchParams.get("returnUrl") ?? "/app";
   const errorParam = searchParams.get("error");
 
   const [isPending, startTransition] = useTransition();

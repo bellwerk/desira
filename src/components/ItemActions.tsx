@@ -37,10 +37,16 @@ export function ItemActions(props: {
       return;
     }
 
-    // ticket is stored by the API response (we store here too to be safe)
-    if (json?.cancel_ticket) {
+    // Store cancel credentials locally so this browser can cancel later.
+    if (json?.reservation_id && json?.cancel_token) {
       try {
-        localStorage.setItem(`desira_cancel_${itemId}`, String(json.cancel_ticket));
+        localStorage.setItem(
+          `desira_cancel_${itemId}`,
+          JSON.stringify({
+            reservation_id: json.reservation_id,
+            cancel_token: json.cancel_token,
+          })
+        );
         setHasTicket(true);
       } catch {
         // ignore
