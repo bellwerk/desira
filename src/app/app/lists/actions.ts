@@ -10,6 +10,7 @@ import {
   getListMemberIdsExcept,
   NotificationType,
 } from "@/lib/notifications";
+import { buildProfileIdentity } from "@/lib/profile";
 
 export type ActionResult = {
   success: boolean;
@@ -59,9 +60,16 @@ export async function createList(formData: FormData): Promise<ActionResult> {
 
   if (!existingProfile) {
     // Step 2: Profile missing — try to create it
+    const profileIdentity = buildProfileIdentity({
+      userId: user.id,
+      email: user.email,
+      metadataName: user.user_metadata?.name,
+    });
+
     const profilePayload = {
       id: user.id,
-      display_name: user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+      display_name: profileIdentity.display_name,
+      handle: profileIdentity.handle,
     };
 
     // Try user client first (respects RLS — user can insert own profile)
@@ -77,7 +85,7 @@ export async function createList(formData: FormData): Promise<ActionResult> {
       try {
         const { error: adminError } = await supabaseAdmin
           .from("profiles")
-          .insert(profilePayload);
+          .upsert(profilePayload, { onConflict: "id", ignoreDuplicates: true });
 
         if (adminError && adminError.code !== "23505") {
           console.error("[createList] Profile insert (admin) failed:", adminError.message, adminError.code);

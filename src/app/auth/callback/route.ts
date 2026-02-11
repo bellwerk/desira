@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { buildProfileIdentity } from "@/lib/profile";
 
 function supabaseUrl(): string {
   return (
@@ -88,11 +89,17 @@ export async function GET(request: Request): Promise<NextResponse> {
     console.log("[AuthCallback] user:", user?.id ?? "null");
 
     if (user) {
+      const profileIdentity = buildProfileIdentity({
+        userId: user.id,
+        email: user.email,
+        metadataName: user.user_metadata?.name,
+      });
+
       await supabase.from("profiles").upsert(
         {
           id: user.id,
-          display_name:
-            user.user_metadata?.name ?? user.email?.split("@")[0] ?? null,
+          display_name: profileIdentity.display_name,
+          handle: profileIdentity.handle,
         },
         { onConflict: "id", ignoreDuplicates: true }
       );
