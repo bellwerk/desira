@@ -424,6 +424,21 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [ ] Public list: single column grid on phones
 - [ ] Bottom navigation for mobile (coordinate with M8)
 
+#### Focused Correction Pass (current)
+- [ ] Mobile nav correction: move app menu bar to bottom on mobile (`< md`), keep desktop sidebar behavior
+- [ ] Returning-user landing: when user has existing wishlist(s), route `/app` to `/app/lists`
+- [ ] Purple `+` global add flow:
+  - [ ] Sidebar `+` opens product-first flow, then user chooses wishlist
+  - [ ] `/app/lists` add action uses the same flow
+  - [ ] If user has no wishlists, prompt/create-list path first
+- [ ] Amazon link preview reliability:
+  - [ ] Correctly parse Amazon product URLs for `amazon.com` and `amazon.ca` (canonical product URL handling)
+  - [ ] Ensure metadata extraction returns title/image/price when available
+- [ ] Validation pass for this correction set:
+  - [ ] `pnpm lint`
+  - [ ] `pnpm build`
+  - [ ] Manual sanity checks (mobile nav, login landing, add flow branches, Amazon previews)
+
 ---
 
 ## Mobile App Roadmap (PWA → App Stores)
