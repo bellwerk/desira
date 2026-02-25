@@ -127,10 +127,41 @@ export async function GET(): Promise<NextResponse> {
     );
   }
 
+  // 5) Optional: mark owner as Stripe-ready for gated E2E checkout smoke tests
+  // Enabled only when a real Stripe test connected account id is provided.
+  const connectedAccountId = process.env.E2E_STRIPE_CONNECTED_ACCOUNT_ID?.trim();
+  let stripeReady = false;
+
+  if (connectedAccountId) {
+    const { error: paymentErr } = await supabaseAdmin
+      .from("payment_accounts")
+      .upsert(
+        {
+          owner_id: userId,
+          provider: "stripe",
+          provider_account_id: connectedAccountId,
+          charges_enabled: true,
+          payouts_enabled: true,
+          details_submitted: true,
+        },
+        { onConflict: "owner_id" }
+      );
+
+    if (paymentErr) {
+      return NextResponse.json(
+        { error: "Failed to create Stripe payment account seed", details: paymentErr },
+        { status: 500 }
+      );
+    }
+
+    stripeReady = true;
+  }
+
   return NextResponse.json({
     ok: true,
     share_token: list.share_token,
     public_url: `http://localhost:3000/u/${list.share_token}`,
     demo_owner: { email, password },
+    stripe_ready: stripeReady,
   });
 }

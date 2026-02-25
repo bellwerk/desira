@@ -209,9 +209,9 @@ export function ItemCard({
             <div className="w-full h-full flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src="/logo-hollow.svg" 
+                src="/logo.svg" 
                 alt="" 
-                className="h-24 w-24 opacity-20"
+                className="h-24 w-24 opacity-35"
               />
             </div>
           )}

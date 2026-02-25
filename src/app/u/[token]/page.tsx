@@ -2,6 +2,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui";
 import { PublicListClient } from "./PublicListClient";
+import { CreateWishlistButton } from "./CreateWishlistButton";
+import { SharedPageTracker } from "./SharedPageTracker";
+import { getExperimentVariant } from "@/lib/experiments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,8 +35,19 @@ type ItemRow = {
   most_desired: boolean | null;
 };
 
+function formatEventDate(rawDate: string): string {
+  const [y, m, d] = rawDate.split("-").map(Number);
+  const eventDate = new Date(y, m - 1, d);
+  return eventDate.toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default async function PublicListPage({ params }: PageProps): Promise<React.ReactElement> {
   const { token } = await params;
+  const heroVariant = getExperimentVariant(token, "shared-hero-subtitle");
+  const actionLabelVariant = getExperimentVariant(token, "shared-action-labels");
 
   const { data: list, error: listErr } = await supabaseAdmin
     .from("lists")
@@ -144,94 +158,61 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
 
   const reservedMap = new Map(reservedFlags.map((r) => [r.item_id, r.is_reserved]));
   const fundedMap = new Map(totals.map((t) => [t.item_id, t.funded_amount_cents]));
+  const recipientTypeLabel =
+    list.recipient_type === "person"
+      ? "Personal List"
+      : list.recipient_type === "shared"
+      ? "Shared List"
+      : "Group List";
+  const eventDateLabel = list.event_date ? formatEventDate(String(list.event_date)) : null;
 
   return (
-    <div className="space-y-8">
-      {/* List Header */}
-      <GlassCard>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          {/* Left: Avatar + Title + Details */}
-          <div className="min-w-0 flex-1 flex flex-col gap-3">
-            {/* Avatar + Name */}
-            <div className="flex items-center gap-3">
-              {ownerAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={ownerAvatar}
-                  alt={ownerName}
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover border-2 border-[#2B2B2B]/10"
-                />
-              ) : (
-                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-[#b8a8ff] to-[#3a3a3a] flex items-center justify-center border-2 border-[#2B2B2B]/10">
-                  <span className="text-sm sm:text-base font-bold text-white">
-                    {ownerName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
-                <p className="text-xs sm:text-sm text-[#62748e]">Wishlist for</p>
-                <h1 className="font-asul text-xl sm:text-2xl font-semibold tracking-tight text-[#2B2B2B]">
-                  {ownerName}
-                </h1>
-              </div>
-            </div>
+    <div className="flex flex-col pb-8 pt-0 sm:pb-10 sm:pt-0">
+      <SharedPageTracker
+        listId={list.id}
+        heroVariant={heroVariant}
+        actionLabelVariant={actionLabelVariant}
+      />
 
-            {/* Occasion + Date with countdown */}
-            {(list.occasion || list.event_date) && (
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2 text-sm text-[#62748e]">
-                  {list.occasion && (
-                    <span className="font-medium text-[#2B2B2B]">{list.occasion}</span>
-                  )}
-                  {list.occasion && list.event_date && <span>·</span>}
-                  {list.event_date && (
-                    <span>
-                      {(() => {
-                        // Parse as local date to avoid UTC timezone shift
-                        const [y, m, d] = String(list.event_date)
-                          .split("-")
-                          .map(Number);
-                        const eventDate = new Date(y, m - 1, d);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const daysUntil = Math.ceil(
-                          (eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-                        );
+      <div className="mb-0 flex justify-center sm:mb-0 sm:justify-end">
+        <span className="shared-tip-pill inline-flex h-11 w-full max-w-[500px] items-center justify-center gap-1 rounded-full px-3 text-sm font-normal font-[family-name:var(--font-urbanist)] sm:text-[15px]">
+          <span aria-hidden>&#10024;</span> Tip: You can reserve a gift or contribute toward a big-ticket item!
+        </span>
+      </div>
 
-                        if (daysUntil < 0)
-                          return `${eventDate.toLocaleDateString()} (passed)`;
-                        if (daysUntil === 0) return "Today!";
-                        if (daysUntil === 1) return "Tomorrow";
-                        return `${eventDate.toLocaleDateString()} (in ${daysUntil} days)`;
-                      })()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <p className="mt-2 text-sm text-[#62748e]">
-              Reserved gifts stay anonymous · Contributions go to the recipient
-            </p>
+      <header className="mb-8 flex flex-col items-center text-center sm:mb-10">
+        {ownerAvatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={ownerAvatar}
+            alt={ownerName}
+            className="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20"
+          />
+        ) : (
+          <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-white">
+            <svg width="57" height="70" viewBox="0 0 57 70" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 sm:h-11 sm:w-11">
+              <path d="M46 37L56.5 46.5L56.5 63L47.5 63L47.3577 51.0001L41.5 45.5L40 42.5L46 37Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M11.5 36.5L0.499999 47.5L0.5 63L10 63L10 50.5L15.4545 45.327L18.5 42.5L11.5 36.5Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M10.5 51.0017L47 51.0017L52.4998 42.9998L45.9978 36.6255L39.9978 42.3125L18.4981 42.3125L11.4975 36.6255L6 43L10.5 51.0017Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M48.6475 11.3386L37.1475 0.500001L24.6475 0.5L24.6475 9.248L33.3091 9.248L39.2465 15.4133L39.2465 20L48.6475 20L48.6475 11.3386Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M8.64746 27.1614L20.1475 38L32.6475 38L32.6475 29.252L23.9858 29.252L18.0484 23.0867L18.0484 18.5L8.64746 18.5L8.64746 27.1614Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M8.64746 11.0886L20.1475 0.500001L32.6475 0.5L32.6475 9.5L24.1475 9.5L18.0484 15.1633L18.0484 19.75L8.64746 19.75L8.64746 11.0886Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+              <path d="M48.6475 27.4114L37.1475 38L24.6475 38L24.6475 29L33.1475 29L39.2465 23.3367L39.2465 18.75L48.6475 18.75L48.6475 27.4114Z" fill="#2B2B2B" stroke="#2B2B2B"/>
+            </svg>
           </div>
+        )}
 
-          {/* Right: Badge */}
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-[#2B2B2B] capitalize whitespace-nowrap">
-              {list.recipient_type === "person"
-                ? "Individual"
-                : list.recipient_type === "shared"
-                ? "Collaborative"
-                : "Group"}
-            </span>
-          </div>
-        </div>
-      </GlassCard>
+        <h1 className="mt-3 font-asul text-[30px] leading-[1.05] tracking-tight text-[#2b2b2b] sm:mt-4 sm:text-[42px] lg:text-[52px]">
+          {list.title}
+        </h1>
+        <p className="mt-2 text-sm font-medium text-[#6b6b6b] font-[family-name:var(--font-urbanist)] sm:text-base">
+          Reservations are anonymous , contributions go to recipient directly.
+        </p>
+      </header>
 
-      {/* Empty State - No items at all */}
       {typedItems.length === 0 ? (
-        <GlassCard className="text-center py-12">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60">
+        <GlassCard className="rounded-[28px] border border-white/50 bg-white/55 py-8 text-center shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:py-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/70">
             <svg
               className="h-8 w-8 text-slate-400"
               fill="none"
@@ -250,41 +231,50 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
             {ownerName} hasn&apos;t added any items yet
           </h2>
           <p className="mt-2 text-sm text-[#62748e]">
-            Check back soon — items will appear here.
+            Check back soon, or start your own wishlist in under 2 minutes.
           </p>
+          <div className="mt-4">
+            <Link
+              href="/login?next=/app/lists/new"
+              className="rounded-full border border-[#2B2B2B]/20 px-4 py-2 text-sm font-medium text-[#2B2B2B] transition-all hover:bg-white/70"
+            >
+              Create your own wishlist
+            </Link>
+          </div>
         </GlassCard>
       ) : (
-        /* Items Grid with Sort/Filter - Client Component */
         <PublicListClient
           token={token}
+          listId={list.id}
           items={typedItems}
           reservedMap={reservedMap}
           fundedMap={fundedMap}
           listAllowReservations={list.allow_reservations ?? true}
           listAllowContributions={list.allow_contributions ?? true}
           currency={list.currency ?? "CAD"}
+          actionLabelVariant={actionLabelVariant}
+          occasion={list.occasion}
+          recipientTypeLabel={recipientTypeLabel}
+          eventDateLabel={eventDateLabel}
         />
       )}
 
-      {/* CTA Section */}
-      <GlassCard className="mt-8 space-y-4 bg-gradient-to-br from-[#2B2B2B]/5 to-[#2B2B2B]/10 p-8 text-center">
-        <div>
-          <h2 className="font-asul text-2xl font-semibold text-[#2B2B2B]">
-            Create and share your own wishlist for free
-          </h2>
-          <p className="mt-2 text-sm text-[#62748e]">
-            Receive gifts and contributions from friends and family
+      <div className="shared-footer-cta mt-8 rounded-full p-1.5 sm:mt-10 sm:p-2">
+        <div className="flex flex-col items-center justify-between gap-3 px-4 py-2 sm:flex-row sm:gap-4 sm:px-6">
+          <p className="text-center text-xl font-medium text-white font-asul sm:text-left sm:text-2xl">
+            Get the gifts you really want
           </p>
-        </div>
-        <div className="flex justify-center pt-4">
-          <Link
-            href="/login?redirect=/app/lists/new"
-            className="rounded-full bg-[#2B2B2B] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#3a3a3a]"
+          <CreateWishlistButton
+            href="/login?next=/app/lists/new"
+            listId={list.id}
+            heroVariant={heroVariant}
+            actionLabelVariant={actionLabelVariant}
+            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-4 text-base font-semibold text-[#2b2b2b] transition-colors hover:bg-[#f2f2f2] sm:w-auto sm:px-6 font-[family-name:var(--font-urbanist)]"
           >
-            Create a wishlist
-          </Link>
+            Create your list
+          </CreateWishlistButton>
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 }

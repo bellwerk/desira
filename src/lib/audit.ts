@@ -1,37 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-
-/**
- * Audit event types for consistent logging.
- */
-export const AuditEventType = {
-  // List events
-  LIST_CREATED: "list.created",
-  LIST_UPDATED: "list.updated",
-  LIST_DELETED: "list.deleted",
-
-  // Item events
-  ITEM_CREATED: "item.created",
-  ITEM_UPDATED: "item.updated",
-  ITEM_DELETED: "item.deleted",
-
-  // Reservation events
-  RESERVATION_CREATED: "reservation.created",
-  RESERVATION_CANCELED: "reservation.canceled",
-
-  // Contribution events
-  CONTRIBUTION_CREATED: "contribution.created",
-  CONTRIBUTION_SUCCEEDED: "contribution.succeeded",
-  CONTRIBUTION_FAILED: "contribution.failed",
-
-  // Invite events
-  INVITE_CREATED: "invite.created",
-  INVITE_ACCEPTED: "invite.accepted",
-
-  // Auth events
-  AUTH_LOGIN: "auth.login",
-  AUTH_LOGOUT: "auth.logout",
-} as const;
-
+import { AuditEventType as AuditEventTypes } from "@/lib/audit-events";
+export const AuditEventType = AuditEventTypes;
 export type AuditEventType = (typeof AuditEventType)[keyof typeof AuditEventType];
 
 export type ActorType = "user" | "guest" | "system" | "webhook";

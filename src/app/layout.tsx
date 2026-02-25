@@ -38,7 +38,15 @@ export default function RootLayout({
       <body
         className={`${urbanist.variable} ${asul.variable} font-[family-name:var(--font-urbanist)] antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1">{children}</main>
+            <footer className="px-4 py-3 text-center font-[family-name:var(--font-urbanist)] text-[14px] text-white/65">
+              We may earn a commission for sales made through links on our
+              site.
+            </footer>
+          </div>
+        </Providers>
       </body>
     </html>
   );

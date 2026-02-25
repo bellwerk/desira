@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { AuditEventType, getClientIP, logAuditEvent } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -267,6 +268,23 @@ export async function POST(req: Request) {
       message: body.message ?? "",
       is_anonymous: body.is_anonymous ? "1" : "0",
     },
+  });
+
+  void logAuditEvent({
+    eventType: AuditEventType.CONTRIBUTION_CREATED,
+    actorType: user ? "user" : "guest",
+    actorId: user?.id ?? null,
+    resourceType: "item",
+    resourceId: item.id,
+    metadata: {
+      list_id: list.id,
+      checkout_session_id: session.id,
+      contribution_cents: contributionCents,
+      fee_cents: feeCents,
+      total_cents: totalCents,
+      source: "shared_page",
+    },
+    ipAddress: getClientIP(req),
   });
 
   return NextResponse.json({ ok: true, url: session.url });

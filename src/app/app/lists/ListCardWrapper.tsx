@@ -81,7 +81,7 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
                       <div className="h-full w-full bg-white flex items-center justify-center" style={{ borderRadius }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
-                          src="/logo-hollow.svg" 
+                          src="/logo.svg" 
                           alt="" 
                           className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12"
                           style={{ opacity: 0.6 }}

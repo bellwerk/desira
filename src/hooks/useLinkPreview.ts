@@ -32,7 +32,7 @@ function formatPreviewError(code?: string, message?: string): string {
     case "TIMEOUT":
       return "Preview request timed out. Try again or add details manually.";
     case "INVALID_URL":
-      return "That link doesn’t look valid yet. Please paste a full URL.";
+      return "That link doesn't look valid yet. Please paste a full URL.";
     default:
       return message ?? "Failed to fetch preview.";
   }

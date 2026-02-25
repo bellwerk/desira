@@ -434,6 +434,17 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [ ] Amazon link preview reliability:
   - [ ] Correctly parse Amazon product URLs for `amazon.com` and `amazon.ca` (canonical product URL handling)
   - [ ] Ensure metadata extraction returns title/image/price when available
+  - [ ] Configure Amazon Associates + PA-API credentials
+    - [ ] Enable Product Advertising API access in Amazon Associates
+    - [ ] Generate PA-API access key + secret key
+    - [ ] Set env vars in local + production: `AMAZON_PAAPI_ACCESS_KEY`, `AMAZON_PAAPI_SECRET_KEY`, `AMAZON_PAAPI_PARTNER_TAG`
+  - [ ] Verify Amazon preview behavior end-to-end
+    - [ ] Confirm `amazon.com` and `amazon.ca` links autofill title/image/price in Add Item
+    - [ ] Confirm graceful fallback when PA-API credentials are missing/invalid
+    - [ ] Confirm saved cards render correctly in owner + public views
+  - [ ] Decide Amazon affiliate routing strategy
+    - [ ] Option A: keep Skimlinks for all merchants (including Amazon)
+    - [ ] Option B: use direct Amazon Associates tag for Amazon links, keep Skimlinks for non-Amazon
 - [ ] Validation pass for this correction set:
   - [ ] `pnpm lint`
   - [ ] `pnpm build`

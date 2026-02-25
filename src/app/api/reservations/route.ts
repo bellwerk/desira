@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
+import { AuditEventType, getClientIP, logAuditEvent } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -140,6 +141,20 @@ export async function POST(req: Request) {
       { status: 409 }
     );
   }
+
+  void logAuditEvent({
+    eventType: AuditEventType.RESERVATION_CREATED,
+    actorType: user ? "user" : "guest",
+    actorId: user?.id ?? null,
+    resourceType: "reservation",
+    resourceId: created.id,
+    metadata: {
+      item_id: item_id,
+      list_id: item.list_id,
+      source: "shared_page",
+    },
+    ipAddress: getClientIP(req),
+  });
 
   return NextResponse.json({
     ok: true,

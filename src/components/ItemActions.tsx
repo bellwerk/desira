@@ -3,18 +3,35 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuditEventType } from "@/lib/audit-events";
+import type { ExperimentVariant } from "@/lib/experiments";
 
 export function ItemActions(props: {
   token: string;
   itemId: string;
+  listId: string;
   contributeDisabled: boolean;
+  contributeDisabledReason?: string;
   canReserve: boolean;
-  isReserved: boolean;
+  reserveDisabledReason?: string;
+  actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
   const router = useRouter();
-  const { token, itemId, contributeDisabled, canReserve } = props;
+  const {
+    token,
+    itemId,
+    listId,
+    contributeDisabled,
+    contributeDisabledReason,
+    canReserve,
+    reserveDisabledReason,
+    actionLabelVariant,
+  } = props;
+  const contributeLabel = "Contribute";
+  const reserveLabel = "Buy this gift";
+  const [openHelper, setOpenHelper] = useState<"contribute" | "reserve" | null>(null);
 
-  // ✅ lazy init instead of useEffect setState
+  // Lazy init instead of useEffect setState.
   const [hasTicket, setHasTicket] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem(`desira_cancel_${itemId}`));
@@ -23,7 +40,26 @@ export function ItemActions(props: {
     }
   });
 
+  function track(eventType: string): void {
+    void fetch("/api/public-events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        event_type: eventType,
+        list_id: listId,
+        item_id: itemId,
+        placement: "item_card",
+        action_label_variant: actionLabelVariant,
+      }),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore analytics failures.
+    });
+  }
+
   async function reserve(): Promise<void> {
+    track(AuditEventType.SHARED_ITEM_RESERVE_CLICKED);
+
     const res = await fetch("/api/reservations", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -61,39 +97,141 @@ export function ItemActions(props: {
     router.push(`/u/${token}/cancel?item=${itemId}`);
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      {contributeDisabled ? (
-        <button
-          disabled
-          className="flex-1 rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#3a3a3a]"
-        >
-          Contribute
-        </button>
-      ) : (
-        <Link href={`/u/${token}/contribute?item=${itemId}`} className="flex-1">
-          <button className="w-full rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98]">
-            Contribute
-          </button>
-        </Link>
-      )}
+  function toggleHelper(which: "contribute" | "reserve"): void {
+    setOpenHelper((prev) => (prev === which ? null : which));
+  }
 
-      {hasTicket ? (
-        <button
-          onClick={cancel}
-          className="flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98]"
-        >
-          Cancel
-        </button>
-      ) : (
-        <button
-          onClick={reserve}
-          disabled={!canReserve}
-          className="flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Reserve
-        </button>
-      )}
+  const arrowIcon = (
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white">
+      <svg
+        className="h-4 w-4 text-[#111111]"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 17 17 7m0 0H9m8 0v8"
+        />
+      </svg>
+    </span>
+  );
+
+  const contributeHelperText = contributeDisabled && contributeDisabledReason
+    ? contributeDisabledReason
+    : "Chip in with friends.";
+  const reserveHelperText = hasTicket
+    ? "You reserved this from this browser."
+    : canReserve
+      ? "Claim this gift anonymously."
+      : (reserveDisabledReason ?? "Not available right now.");
+
+  return (
+    <div className="grid grid-cols-2 items-start gap-2 sm:gap-2.5">
+      <div className="relative">
+        {contributeDisabled ? (
+          <button
+            disabled
+            className="peer flex h-11 w-full items-center justify-center rounded-full bg-[#b4a0f2] px-3 text-sm font-medium text-white opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:text-base"
+          >
+            {contributeLabel}
+          </button>
+        ) : (
+          <Link
+            href={`/u/${token}/contribute?item=${itemId}`}
+            className="peer block"
+            onClick={() => {
+              setOpenHelper(null);
+              track(AuditEventType.SHARED_ITEM_CONTRIBUTE_CLICKED);
+            }}
+          >
+            <span className="flex h-11 w-full items-center justify-center rounded-full bg-[#b4a0f2] px-3 text-sm font-medium text-white transition-colors hover:bg-[#a68ce8] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base">
+              {contributeLabel}
+            </span>
+          </Link>
+        )}
+        <div className="mt-1 flex justify-end sm:hidden">
+          <button
+            type="button"
+            onClick={() => toggleHelper("contribute")}
+            aria-expanded={openHelper === "contribute"}
+            aria-controls={`helper-contribute-${itemId}`}
+            aria-label="Show contribute helper text"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b6b6b6] text-[11px] font-semibold text-[#7c7c7c]"
+          >
+            i
+          </button>
+        </div>
+        {openHelper === "contribute" && (
+          <p
+            id={`helper-contribute-${itemId}`}
+            className="mt-1 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-[10px] leading-tight text-[#5f5f5f] shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:hidden"
+          >
+            {contributeHelperText}
+          </p>
+        )}
+        <p className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-center text-[10px] font-normal leading-tight text-[#5f5f5f] opacity-0 shadow-[0_6px_18px_rgba(0,0,0,0.08)] transition-opacity duration-150 sm:inline-flex sm:peer-hover:opacity-100 sm:peer-focus-visible:opacity-100">
+          {contributeHelperText}
+        </p>
+      </div>
+
+      <div className="relative">
+        {hasTicket ? (
+          <button
+            onClick={() => {
+              setOpenHelper(null);
+              cancel();
+            }}
+            className="peer flex h-11 w-full items-center justify-center rounded-full border border-[#202020] bg-white px-3 text-center text-sm font-medium text-[#202020] transition-colors hover:bg-[#f4f4f4] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base"
+          >
+            Cancel
+          </button>
+        ) : canReserve ? (
+          <button
+            onClick={() => {
+              setOpenHelper(null);
+              void reserve();
+            }}
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+          >
+            <span className="flex-1 truncate pr-2 text-center">{reserveLabel}</span>
+            <span className="shrink-0">{arrowIcon}</span>
+          </button>
+        ) : (
+          <button
+            disabled
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+          >
+            <span className="flex-1 truncate pr-2 text-center">{reserveLabel}</span>
+            <span className="shrink-0">{arrowIcon}</span>
+          </button>
+        )}
+        <div className="mt-1 flex justify-end sm:hidden">
+          <button
+            type="button"
+            onClick={() => toggleHelper("reserve")}
+            aria-expanded={openHelper === "reserve"}
+            aria-controls={`helper-reserve-${itemId}`}
+            aria-label="Show reserve helper text"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b6b6b6] text-[11px] font-semibold text-[#7c7c7c]"
+          >
+            i
+          </button>
+        </div>
+        {openHelper === "reserve" && (
+          <p
+            id={`helper-reserve-${itemId}`}
+            className="mt-1 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-[10px] leading-tight text-[#5f5f5f] shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:hidden"
+          >
+            {reserveHelperText}
+          </p>
+        )}
+        <p className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-center text-[10px] font-normal leading-tight text-[#5f5f5f] opacity-0 shadow-[0_6px_18px_rgba(0,0,0,0.08)] transition-opacity duration-150 sm:inline-flex sm:peer-hover:opacity-100 sm:peer-focus-visible:opacity-100">
+          {reserveHelperText}
+        </p>
+      </div>
     </div>
   );
 }

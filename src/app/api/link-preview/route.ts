@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { lookup } from "dns/promises";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { fetchAmazonPreview, parseAmazonProductUrl } from "@/lib/amazon-paapi";
 import {
   normalizeUrl,
   extractDomain,
@@ -27,6 +28,8 @@ const DOH_TIMEOUT_MS = 5000;
 
 // Max response size in bytes (2MB)
 const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+// Max bytes to read when only extracting metadata from very large pages.
+const METADATA_READ_LIMIT = 512 * 1024;
 
 // Max redirects to follow
 const MAX_REDIRECTS = 5;
@@ -275,42 +278,55 @@ async function safeFetch(
       return { ok: false, error: `HTTP ${response.status}`, code: "FETCH_ERROR" };
     }
 
-    // Check content length
     const contentLength = response.headers.get("content-length");
-    if (contentLength && parseInt(contentLength, 10) > MAX_RESPONSE_SIZE) {
-      return { ok: false, error: "Response too large", code: "FETCH_ERROR" };
-    }
+    const parsedContentLength = contentLength ? parseInt(contentLength, 10) : NaN;
+    const readMetadataOnly = Number.isFinite(parsedContentLength) && parsedContentLength > MAX_RESPONSE_SIZE;
 
-    // Read body with size limit
+    // Read body with size limit (or partial read for oversized pages)
     const reader = response.body?.getReader();
     if (!reader) {
       return { ok: false, error: "No response body", code: "FETCH_ERROR" };
     }
 
-    const chunks: Uint8Array[] = [];
+    const decoder = new TextDecoder();
+    let html = "";
     let totalSize = 0;
+    let metadataSize = 0;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       totalSize += value.length;
-      if (totalSize > MAX_RESPONSE_SIZE) {
-        reader.cancel();
-        return { ok: false, error: "Response too large", code: "FETCH_ERROR" };
+
+      if (!readMetadataOnly && totalSize > MAX_RESPONSE_SIZE) {
+        // Response is bigger than allowed; stop reading and parse what we already captured.
+        await reader.cancel();
+        break;
       }
 
-      chunks.push(value);
+      if (readMetadataOnly) {
+        const remaining = METADATA_READ_LIMIT - metadataSize;
+        if (remaining <= 0) {
+          await reader.cancel();
+          break;
+        }
+
+        const chunkToDecode = value.length > remaining ? value.subarray(0, remaining) : value;
+        html += decoder.decode(chunkToDecode, { stream: true });
+        metadataSize += chunkToDecode.length;
+
+        // Most metadata lives in <head>; stop early once we have it.
+        if (metadataSize >= METADATA_READ_LIMIT || /<\/head>/i.test(html)) {
+          await reader.cancel();
+          break;
+        }
+      } else {
+        html += decoder.decode(value, { stream: true });
+      }
     }
 
-    const html = new TextDecoder().decode(
-      chunks.reduce((acc, chunk) => {
-        const merged = new Uint8Array(acc.length + chunk.length);
-        merged.set(acc);
-        merged.set(chunk, acc.length);
-        return merged;
-      }, new Uint8Array())
-    );
+    html += decoder.decode();
 
     return { ok: true, html, finalUrl: urlString };
   } catch (err) {
@@ -684,10 +700,13 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
     );
   }
 
+  // Parse Amazon links early so we can use canonical /dp/{ASIN} URLs for cache keys.
+  const amazonProduct = parseAmazonProductUrl(rawUrl);
+
   // Normalize URL
   let normalizedUrl: string;
   try {
-    normalizedUrl = normalizeUrl(rawUrl);
+    normalizedUrl = normalizeUrl(amazonProduct?.canonicalUrl ?? rawUrl);
   } catch {
     return NextResponse.json(
       { ok: false, error: { code: "INVALID_URL" as const, message: "Could not normalize URL" } },
@@ -707,6 +726,29 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       cached: true,
       data: cached,
     });
+  }
+
+  // Amazon pages frequently block generic metadata fetches. Use PA-API first when possible.
+  if (amazonProduct) {
+    const amazonPreview = await fetchAmazonPreview(amazonProduct);
+    if (amazonPreview.ok) {
+      const amazonData: LinkPreviewData = {
+        ...amazonPreview.data,
+        favicon: getFaviconWithFallback(null, domain),
+      };
+
+      if (amazonData.title || amazonData.description || amazonData.image) {
+        await cachePreview(normalizedUrl, amazonData, "ok", 200);
+
+        return NextResponse.json({
+          ok: true,
+          normalizedUrl,
+          domain,
+          cached: false,
+          data: amazonData,
+        });
+      }
+    }
   }
 
   // Fetch and parse

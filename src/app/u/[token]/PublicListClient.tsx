@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GlassCard } from "@/components/ui";
 import { ItemActions } from "@/components/ItemActions";
+import type { ExperimentVariant } from "@/lib/experiments";
 
 type ItemRow = {
   id: string;
@@ -18,33 +19,48 @@ type ItemRow = {
 
 type PublicListClientProps = {
   token: string;
+  listId: string;
   items: ItemRow[];
   reservedMap: Map<string, boolean>;
   fundedMap: Map<string, number>;
   listAllowReservations: boolean;
   listAllowContributions: boolean;
   currency: string;
+  actionLabelVariant: ExperimentVariant;
+  occasion: string | null;
+  recipientTypeLabel: string;
+  eventDateLabel: string | null;
 };
 
 type SortOption = "default" | "price-low" | "price-high" | "most-desired";
 type FilterOption = "all" | "available" | "reserved" | "funded";
 
-function formatCents(n: number | null | undefined): string {
-  if (!n) return "0";
-  return (n / 100).toFixed(0);
+function formatCurrency(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
 }
 
 export function PublicListClient({
   token,
+  listId,
   items: initialItems,
   reservedMap,
   fundedMap,
   listAllowReservations,
   listAllowContributions,
   currency,
+  actionLabelVariant,
+  occasion,
+  recipientTypeLabel,
+  eventDateLabel,
 }: PublicListClientProps): React.ReactElement {
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   // Apply filtering
   const filteredItems = initialItems.filter((item) => {
@@ -83,36 +99,29 @@ export function PublicListClient({
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
   });
 
-  // Separate most desired items
-  const mostDesiredItems = sortedItems.filter((item) => item.most_desired);
-  const otherItems = sortedItems.filter((item) => !item.most_desired);
+  async function copyShareLink(): Promise<void> {
+    try {
+      const shareUrl = `${window.location.origin}/u/${token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1800);
+    } catch {
+      setCopyState("idle");
+    }
+  }
 
   return (
     <>
-      {/* Sort/Filter Controls */}
       {initialItems.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#62748e]">Sort</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="rounded-full border border-[#2B2B2B]/20 bg-white px-3 py-1.5 text-xs font-medium text-[#2B2B2B] transition-all hover:border-[#2B2B2B]/40 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/30"
-              >
-                <option value="default">Default</option>
-                <option value="most-desired">Most Desired</option>
-                <option value="price-low">Price (Low-High)</option>
-                <option value="price-high">Price (High-Low)</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[#62748e]">Filter</label>
+        <div className="mb-6 flex flex-col gap-3 sm:mb-8 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+          <div className="h-11 w-full max-w-[240px] overflow-hidden rounded-[30px] bg-white px-3 font-[family-name:var(--font-urbanist)] sm:w-[240px]">
+            <div className="flex h-full w-full items-center gap-2 text-sm font-medium text-[#6f6f6f] sm:text-base">
+              <span className="shrink-0 text-sm sm:text-base">Sort</span>
               <select
                 value={filterBy}
                 onChange={(e) => setFilterBy(e.target.value as FilterOption)}
-                className="rounded-full border border-[#2B2B2B]/20 bg-white px-3 py-1.5 text-xs font-medium text-[#2B2B2B] transition-all hover:border-[#2B2B2B]/40 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/30"
+                aria-label="Filter items"
+                className="min-w-0 max-w-[120px] flex-none truncate appearance-none bg-transparent p-0 !pl-0 !pr-0 text-sm font-semibold text-[#202020] outline-none sm:max-w-[140px] sm:text-base"
               >
                 <option value="all">All Items ({initialItems.length})</option>
                 <option value="available">
@@ -122,68 +131,84 @@ export function PublicListClient({
                   Reserved ({initialItems.filter((i) => reservedMap.get(i.id)).length})
                 </option>
                 <option value="funded">
-                  Fully Funded ({initialItems.filter((i) => i.status === "funded" || ((i.target_amount_cents ?? i.price_cents ?? 0) > 0 && (fundedMap.get(i.id) ?? 0) >= (i.target_amount_cents ?? i.price_cents ?? 0))).length})
+                  Funded ({initialItems.filter((i) => i.status === "funded" || ((i.target_amount_cents ?? i.price_cents ?? 0) > 0 && (fundedMap.get(i.id) ?? 0) >= (i.target_amount_cents ?? i.price_cents ?? 0))).length})
                 </option>
+              </select>
+              <span className="shrink-0 text-[#a0a0a0]">|</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                aria-label="Sort items"
+                className="min-w-0 flex-1 truncate appearance-none bg-transparent p-0 text-sm font-semibold text-[#2b2b2b] outline-none sm:text-base"
+              >
+                <option value="default">Default</option>
+                <option value="most-desired">Most Desired</option>
+                <option value="price-low">Price (Low-High)</option>
+                <option value="price-high">Price (High-Low)</option>
               </select>
             </div>
           </div>
 
-          {/* Results count */}
-          <div className="text-xs text-[#62748e]">
-            Showing {filteredItems.length} of {initialItems.length} items
+          <div className="flex w-full flex-wrap items-center justify-center gap-2.5 lg:w-auto lg:justify-self-center">
+            <div className="flex h-11 min-w-0 max-w-full items-center justify-center rounded-[30px] bg-white px-5 text-sm font-medium text-[#5f5f5f] font-[family-name:var(--font-urbanist)] sm:text-base">
+              <span className="truncate text-center">{initialItems.length} items</span>
+            </div>
+            <div className="flex h-11 min-w-0 max-w-full items-center justify-center rounded-[30px] bg-white px-5 text-sm font-medium text-[#5f5f5f] font-[family-name:var(--font-urbanist)] sm:max-w-[260px] sm:text-base">
+              <span className="truncate text-center">{occasion?.trim() || recipientTypeLabel}</span>
+            </div>
+            <div className="flex h-11 min-w-0 max-w-full items-center justify-center rounded-[30px] bg-white px-5 text-sm font-medium text-[#5f5f5f] font-[family-name:var(--font-urbanist)] sm:max-w-[260px] sm:text-base">
+              <span className="truncate text-center">{eventDateLabel ?? recipientTypeLabel}</span>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Items - Most Desired Section */}
-      {mostDesiredItems.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <svg
-              className="h-5 w-5 text-[#f5a623]"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex w-full justify-center lg:w-auto lg:justify-end lg:justify-self-end">
+            <button
+              type="button"
+              onClick={() => {
+                void copyShareLink();
+              }}
+              className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border-0 bg-[#d4d7c2] px-4 text-sm font-semibold text-[#2b2b2b] transition-colors hover:bg-[#d4d7c2] font-[family-name:var(--font-urbanist)] sm:w-[140px] sm:text-base"
             >
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
-            <h2 className="font-asul text-lg font-semibold text-[#2B2B2B]">
-              Top Picks
-            </h2>
-            <span className="text-xs font-medium text-[#62748e]">
-              {mostDesiredItems.length} item{mostDesiredItems.length !== 1 ? "s" : ""}
-            </span>
+              {copyState === "copied" ? (
+                "Copied"
+              ) : (
+                <>
+                  <span>Share List</span>
+                  <svg
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 17 17 7m0 0H9m8 0v8"
+                    />
+                  </svg>
+                </>
+              )}
+            </button>
           </div>
-
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {mostDesiredItems.map((item) => (
-              <ItemCardComponent
-                key={item.id}
-                item={item}
-                token={token}
-                reservedMap={reservedMap}
-                fundedMap={fundedMap}
-                listAllowReservations={listAllowReservations}
-                listAllowContributions={listAllowContributions}
-                currency={currency}
-              />
-            ))}
-          </section>
         </div>
       )}
 
-      {/* Items - Other Items Section */}
-      {otherItems.length > 0 && (
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {otherItems.map((item) => (
+      {sortedItems.length > 0 && (
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          {sortedItems.map((item) => (
             <ItemCardComponent
               key={item.id}
               item={item}
               token={token}
+              listId={listId}
               reservedMap={reservedMap}
               fundedMap={fundedMap}
               listAllowReservations={listAllowReservations}
               listAllowContributions={listAllowContributions}
               currency={currency}
+              actionLabelVariant={actionLabelVariant}
             />
           ))}
         </section>
@@ -191,7 +216,7 @@ export function PublicListClient({
 
       {/* Empty State */}
       {filteredItems.length === 0 && (
-        <GlassCard className="text-center py-12">
+        <GlassCard className="py-8 text-center sm:py-12">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60">
             <svg
               className="h-8 w-8 text-slate-400"
@@ -207,165 +232,181 @@ export function PublicListClient({
               />
             </svg>
           </div>
-          <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">No items match</h2>
+          <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">
+            No gifts match this filter
+          </h2>
           <p className="mt-2 text-sm text-[#62748e]">
-            Try adjusting your filters or sort order.
+            Try a different filter, or show all gifts again.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              setFilterBy("all");
+              setSortBy("default");
+            }}
+            className="mt-4 rounded-full border border-[#2B2B2B]/20 px-4 py-2 text-sm font-medium text-[#2B2B2B] transition-all hover:bg-white/70"
+          >
+            Show all gifts
+          </button>
         </GlassCard>
       )}
     </>
   );
 }
 
-/**
- * ItemCardComponent - Single product card for public list
- */
 function ItemCardComponent({
   item,
   token,
+  listId,
   reservedMap,
   fundedMap,
   listAllowReservations,
   listAllowContributions,
   currency,
+  actionLabelVariant,
 }: {
   item: ItemRow;
   token: string;
+  listId: string;
   reservedMap: Map<string, boolean>;
   fundedMap: Map<string, number>;
   listAllowReservations: boolean;
   listAllowContributions: boolean;
   currency: string;
+  actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
   const isReserved = Boolean(reservedMap.get(item.id));
   const funded = fundedMap.get(item.id) ?? 0;
-  const target = item.target_amount_cents ?? item.price_cents ?? undefined;
+  const target = item.target_amount_cents ?? item.price_cents ?? 0;
   const isReceived = item.status === "received";
   const isFunded =
-    item.status === "funded" || (target ? funded >= target : false);
+    item.status === "funded" || (target > 0 && funded >= target);
   const isComplete = isReceived || isFunded;
 
   const contributeDisabled =
     !listAllowContributions || isComplete || isReserved;
   const reserveDisabled =
     !listAllowReservations || isReserved || isComplete;
+  const contributeDisabledReason = !listAllowContributions
+    ? "Contributions are off for this item."
+    : isReserved
+      ? "Reserved by another friend."
+      : isComplete
+        ? "This gift is fully funded."
+        : undefined;
+  const reserveDisabledReason = !listAllowReservations
+    ? "Reservations are off for this item."
+    : isReserved
+      ? "Reserved by another friend."
+      : isComplete
+        ? "This gift is fully funded."
+        : undefined;
 
   const pct =
-    target && target > 0
+    target > 0
       ? Math.min(100, Math.round((funded / target) * 100))
       : 0;
 
   return (
-    <GlassCard
-      className="rounded-[20px] sm:rounded-[24px] p-2 sm:p-[10px] md:p-3 group bg-[#c5c5c5] overflow-hidden"
-    >
-      {/* White container for image with rounded corners */}
-      <div className="relative bg-white rounded-[16px] sm:rounded-[20px] mb-2 sm:mb-3 overflow-hidden aspect-square">
-        {/* Most Desired Badge */}
-        {item.most_desired && (
-          <div className="absolute top-2 right-2 z-10">
-            <div className="flex items-center gap-1 bg-[#f5a623] px-2 py-1 rounded-full">
-              <svg
-                className="h-3.5 w-3.5 text-[#2b2b2b]"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              <span className="text-[9px] sm:text-[10px] font-bold text-[#2b2b2b]">
-                Top Pick
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Product image - covers entire container */}
-        {item.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.image_url}
-            alt={item.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-hollow.svg"
-              alt=""
-              className="h-24 w-24 opacity-20"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        {/* Title and Price on same line */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-[10px] sm:text-xs md:text-sm font-bold text-[#2b2b2b] leading-tight line-clamp-2">
-              {item.title}
-            </h3>
-          </div>
-
-          {/* Price with favicon */}
-          {target && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Favicon placeholder - rounded square representing website icon */}
-              <div className="h-4 w-4 sm:h-5 sm:w-5 rounded border border-[#2b2b2b]/20 bg-[#f5f5f5] flex items-center justify-center">
-                <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-sm bg-[#2b2b2b]/30" />
+    <div className="stagger-item">
+      <GlassCard
+        variant="default"
+        className="group rounded-[20px] bg-[#c5c5c5] p-2.5 sm:rounded-[24px] sm:p-3"
+      >
+        <div className="relative mb-1.5 aspect-square overflow-hidden rounded-[16px] bg-white sm:mb-2 sm:rounded-[20px]">
+          {item.most_desired && (
+            <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 z-10">
+              <div className="flex items-center gap-1 rounded-full bg-[#f5a623] px-2 py-0.5 text-[10px] font-semibold text-[#2b2b2b] sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+                <div className="flex h-3 w-3 items-center justify-center rounded-full border-2 border-[#2b2b2b] bg-white sm:h-3.5 sm:w-3.5">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#2b2b2b]" />
+                </div>
+                <span className="max-w-[90px] truncate sm:max-w-none">Most Desired</span>
               </div>
-              <span className="text-xs sm:text-sm md:text-base font-bold text-[#2b2b2b]">
-                ${formatCents(target)} {currency ?? "CAD"}
-              </span>
+            </div>
+          )}
+
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt={item.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.svg"
+                alt=""
+                className="h-24 w-24 opacity-35"
+              />
             </div>
           )}
         </div>
 
-        {/* Funding status with progress bar */}
-        {/* Only show when there's a target amount (price or target set) */}
-        {target && (
-          <div className="space-y-1.5">
-            {/* Funding text */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] md:text-xs text-[#505050]">
-                <span className="font-medium">
-                  ${formatCents(funded)} funded
-                </span>
-                <span>•</span>
-                <span className="font-medium">
-                  {/* Clamp remaining to 0 when overfunded */}
-                  ${formatCents(Math.max(0, target - funded))} left
+        <div className="space-y-[6px] font-[family-name:var(--font-urbanist)]">
+          <div className="flex items-start justify-between gap-2 sm:gap-2.5">
+            <div className="flex-1 min-w-0">
+              <h3 className="line-clamp-2 text-xs font-bold leading-tight text-[#2b2b2b] sm:text-sm md:text-base">
+                {item.title}
+              </h3>
+            </div>
+
+            {target > 0 && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <svg className="w-4 h-[2px] text-[#2b2b2b]/40" viewBox="0 0 16 2" fill="none">
+                  <path d="M0 1C4 0 4 2 8 1C12 0 12 2 16 1" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+                <span className="text-xs sm:text-sm md:text-base font-bold text-[#2b2b2b]">
+                  {formatCurrency(target, currency)}
                 </span>
               </div>
-            </div>
-
-            {/* Progress bar with dual colors */}
-            <div className="h-1 w-full rounded-full bg-[#b8a8ff] overflow-hidden flex">
-              <div
-                className="h-full bg-[#3a3a3a] rounded-l-full transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Public note */}
-        {item.note_public && (
-          <p className="text-[10px] sm:text-xs md:text-sm text-[#505050]">
-            {item.note_public}
-          </p>
-        )}
+          {target > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-xs text-[#505050] sm:text-sm">
+                <span className="font-medium">
+                  {formatCurrency(funded, currency)} funded
+                </span>
+                <span>&#8226;</span>
+                <span className="font-medium">
+                  {formatCurrency(Math.max(0, target - funded), currency)} left
+                </span>
+              </div>
 
-        {/* Actions */}
-        <ItemActions
-          token={token}
-          itemId={item.id}
-          contributeDisabled={contributeDisabled}
-          canReserve={!reserveDisabled}
-          isReserved={isReserved}
-        />
-      </div>
-    </GlassCard>
+              <div className="h-1 w-full rounded-full bg-[#3a3a3a] overflow-hidden flex">
+                <div
+                  className="h-full bg-[#b4a0f2] rounded-l-full transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              <div className="text-xs font-semibold text-[#505050] sm:text-sm">
+                {pct}% funded
+              </div>
+            </div>
+          )}
+
+          {item.note_public && (
+            <p className="line-clamp-2 text-xs text-[#505050] sm:text-sm">
+              {item.note_public}
+            </p>
+          )}
+
+          <ItemActions
+            token={token}
+            itemId={item.id}
+            listId={listId}
+            contributeDisabled={contributeDisabled}
+            contributeDisabledReason={contributeDisabledReason}
+            canReserve={!reserveDisabled}
+            reserveDisabledReason={reserveDisabledReason}
+            actionLabelVariant={actionLabelVariant}
+          />
+        </div>
+      </GlassCard>
+    </div>
   );
 }

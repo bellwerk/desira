@@ -33,54 +33,31 @@ export default function SharedListLayout({
   children: ReactNode;
 }): ReactNode {
   return (
-    <div className="min-h-screen bg-[#EAEAEA]">
-      {/* Header with Desira branding */}
-      <header className="sticky top-0 z-10 glass-1 border-b border-white/20">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="" className="h-7 w-7" />
-            <span className="font-asul text-2xl font-semibold tracking-normal text-[#2B2B2B]">
-              desira
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#ececec] text-[#2B2B2B]">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 h-[220px] bg-[radial-gradient(ellipse_at_center,rgba(236,193,203,0.32)_0%,rgba(236,236,236,0)_68%)]"
+      />
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-3 pb-8 sm:px-4 lg:px-6">
+        <header className="flex h-14 items-center justify-end sm:h-16">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/login"
-              className="rounded-full px-4 py-2 text-sm font-medium text-[#2B2B2B] transition-all hover:bg-white/50"
+              className="rounded-full px-5 py-1.5 text-base font-semibold text-[#2B2B2B] transition-colors hover:bg-white/65 sm:py-2"
             >
               Sign in
             </Link>
             <Link
               href="/login?signup=true"
-              className="rounded-full bg-[#2B2B2B] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#3a3a3a]"
+              className="flex h-11 flex-col items-center justify-center rounded-full bg-[#2b2b2b] px-3 text-[11px] font-normal text-white transition-colors hover:bg-[#2b2b2b] sm:px-4 sm:text-xs"
             >
-              Sign up
+              Create your list
             </Link>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main content */}
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-white/20 py-6">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <Link href="/" className="flex items-center gap-2 text-[#2B2B2B]/60 transition-colors hover:text-[#2B2B2B]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="" className="h-5 w-5 opacity-60" />
-              <span className="text-sm">Powered by Desira</span>
-            </Link>
-            <p className="text-xs text-[#2B2B2B]/50">
-              Some links may be affiliate links.
-            </p>
-          </div>
-        </div>
-      </footer>
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
   );
 }

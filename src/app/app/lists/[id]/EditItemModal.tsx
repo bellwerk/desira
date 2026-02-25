@@ -99,20 +99,27 @@ export function EditItemModal({
     [item.id, onClose, router, toast]
   );
 
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={handleBackdropClick}
+    >
 
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-lg glass-1 rounded-[30px] p-6 shadow-2xl animate-modal-in"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl animate-modal-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-modal-title"
@@ -140,14 +147,14 @@ export function EditItemModal({
             </div>
             <h2
               id="edit-modal-title"
-              className="text-lg font-semibold text-[#343338] dark:text-white"
+              className="text-lg font-semibold text-white"
             >
               Edit item
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white"
           >
             <svg
               className="h-5 w-5"
@@ -204,7 +211,7 @@ export function EditItemModal({
           <div>
             <label
               htmlFor="edit-title"
-              className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+              className="mb-1.5 block text-sm font-medium text-white/90"
             >
               Title <span className="text-rose-500">*</span>
             </label>
@@ -224,7 +231,7 @@ export function EditItemModal({
           <div>
             <label
               htmlFor="edit-product_url"
-              className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+              className="mb-1.5 block text-sm font-medium text-white/90"
             >
               Product URL
               <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
@@ -263,7 +270,7 @@ export function EditItemModal({
             <div>
               <label
                 htmlFor="edit-price"
-                className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+                className="mb-1.5 block text-sm font-medium text-white/90"
               >
                 Price (CAD)
                 <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
@@ -291,7 +298,7 @@ export function EditItemModal({
             <div>
               <label
                 htmlFor="edit-image_url"
-                className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+                className="mb-1.5 block text-sm font-medium text-white/90"
               >
                 Image URL
                 <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
@@ -332,7 +339,7 @@ export function EditItemModal({
             <div>
               <label
                 htmlFor="edit-note_public"
-                className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+                className="mb-1.5 block text-sm font-medium text-white/90"
               >
                 Public note
                 <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
@@ -354,7 +361,7 @@ export function EditItemModal({
             <div>
               <label
                 htmlFor="edit-note_private"
-                className="block text-sm font-medium text-[#343338] dark:text-slate-200 mb-1.5"
+                className="mb-1.5 block text-sm font-medium text-white/90"
               >
                 Private note
                 <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
@@ -379,11 +386,11 @@ export function EditItemModal({
           </p>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
+          <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200"
+              className="rounded-full border-2 border-white/20 bg-transparent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-[0.98]"
             >
               Cancel
             </button>
