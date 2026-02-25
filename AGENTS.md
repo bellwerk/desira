@@ -66,3 +66,36 @@ Apply when working on:
 - [ ] Forms/post actions validated with Zod on server.
 - [ ] Public list: no reserver/payment identity exposed.
 - [ ] Lint and build pass; existing routes still work.
+
+---
+
+## Cursor Cloud specific instructions
+
+### Services
+
+This is a single Next.js 16 app (no monorepo). All commands are in `package.json`:
+
+| Command | Purpose |
+|---|---|
+| `pnpm dev` | Start dev server on port 3000 |
+| `pnpm lint` | Run ESLint |
+| `pnpm typecheck` | Run `tsc --noEmit` |
+| `pnpm build` | Production build (also validates types) |
+
+### Environment variables
+
+The app requires a `.env.local` file. Copy from `.env.example` and fill in values. Required secrets for full functionality:
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — Supabase (hosted, no local DB)
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Stripe Connect
+- `NEXT_PUBLIC_SITE_URL` — set to `http://localhost:3000` for local dev
+
+The app starts and renders routes even without real Supabase/Stripe credentials — the login page shows a "Configuration Error" and public list routes show "List not found". This is sufficient for lint/typecheck/build and UI-only work.
+
+### Gotchas
+
+- **No local database**: This project uses hosted Supabase only (no `docker-compose.yml`, no `supabase/config.toml`). Migrations are in `supabase/migrations/` but are applied to a remote instance.
+- **Node 22.x + pnpm 10.x**: Both are declared in `package.json` (`packageManager` field). The VM already has them pre-installed.
+- **`onlyBuiltDependencies`**: `package.json` specifies `pnpm.onlyBuiltDependencies` for `esbuild`, `workerd`, and `supabase`, so `pnpm install` runs non-interactively.
+- **Next.js 16 + React 19 + React Compiler**: The `reactCompiler: true` flag is set in `next.config.ts`. This uses `babel-plugin-react-compiler`.
+- **Cloudflare deployment**: `pnpm build:cloudflare`, `pnpm preview`, `pnpm deploy` are for Cloudflare Workers. Not needed for local dev.
