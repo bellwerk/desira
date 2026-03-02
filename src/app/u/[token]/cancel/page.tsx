@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { GlassCard, GlassButton, Spinner } from "@/components/ui";
+import { ErrorStateCard, GlassCard, GlassButton, Spinner } from "@/components/ui";
 
 type State =
   | { status: "loading" }
@@ -68,6 +68,30 @@ export default function CancelPage(): React.ReactElement {
     }
   }, [itemId, ticketKey]);
 
+  if (state.status === "missing") {
+    return (
+      <ErrorStateCard
+        title="Missing item"
+        message="Missing item reference."
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <ErrorStateCard
+        title="Cancel unavailable"
+        message={state.message}
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
   async function confirmCancel(): Promise<void> {
     if (!itemId || state.status !== "ready") return;
 
@@ -121,7 +145,7 @@ export default function CancelPage(): React.ReactElement {
       </div>
 
       <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
-        Cancel reservation
+        Undo buy mark
       </h1>
 
       {state.status === "loading" ? (
@@ -129,43 +153,12 @@ export default function CancelPage(): React.ReactElement {
           <Spinner size="sm" />
           <span>Loading...</span>
         </div>
-      ) : state.status === "missing" ? (
-        <>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
-            Missing item reference.
-          </p>
-          <div className="mt-5">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="w-full justify-center"
-            >
-              Back to list
-            </GlassButton>
-          </div>
-        </>
-      ) : state.status === "error" ? (
-        <>
-          <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
-            {state.message}
-          </div>
-          <div className="mt-5">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="w-full justify-center"
-            >
-              Back to list
-            </GlassButton>
-          </div>
-        </>
       ) : (
         <>
           <p className="mt-2 text-sm text-[#62748e] text-center">
-            This will free the item so others can reserve it. Only works from the
-            same browser/device that reserved it.
+            This will make the gift available again so others can buy or
+            contribute. This only works from the same browser/device that marked
+            it as bought.
           </p>
 
           <div className="mt-5 flex gap-2">

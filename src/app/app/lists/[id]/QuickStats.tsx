@@ -1,5 +1,7 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
+
 type QuickStatsProps = {
   totalItems: number;
   availableCount: number;
@@ -9,15 +11,6 @@ type QuickStatsProps = {
   totalTargetCents: number;
   currency: string;
 };
-
-function formatCurrency(cents: number, currency: string): string {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
 
 export function QuickStats({
   totalItems,
@@ -60,7 +53,7 @@ export function QuickStats({
           </div>
         )}
 
-        {/* Reserved */}
+        {/* Bought */}
         {reservedCount > 0 && (
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-amber-500" />
@@ -68,7 +61,7 @@ export function QuickStats({
               <span className="font-semibold text-[#343338] dark:text-white">
                 {reservedCount}
               </span>{" "}
-              reserved
+              bought
             </span>
           </div>
         )}
@@ -93,9 +86,16 @@ export function QuickStats({
             <div className="flex items-center gap-2">
               <span className="text-slate-600 dark:text-slate-300">
                 <span className="font-semibold text-[#343338] dark:text-white">
-                  {formatCurrency(totalFundedCents, currency)}
+                  {formatCurrency(totalFundedCents, currency, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
                 </span>{" "}
-                of {formatCurrency(totalTargetCents, currency)}
+                of{" "}
+                {formatCurrency(totalTargetCents, currency, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </span>
               <div className="hidden sm:flex items-center gap-1.5">
                 <div className="h-1.5 w-16 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">

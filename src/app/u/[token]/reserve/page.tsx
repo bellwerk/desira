@@ -2,13 +2,14 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { GlassCard, GlassButton } from "@/components/ui";
+import { ErrorStateCard, GlassCard, GlassButton } from "@/components/ui";
 
 export default function ReservePage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
   const itemId = search.get("item");
+  const shouldRedirectToMerchant = search.get("go") === "1";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,16 +18,30 @@ export default function ReservePage(): React.ReactElement {
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const canSubmit = useMemo(
     () => Boolean(token) && Boolean(itemId) && status !== "submitting",
     [token, itemId, status]
   );
 
+  if (!itemId) {
+    return (
+      <ErrorStateCard
+        title="Missing item"
+        message="Go back and tap Buy this gift from the list."
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
   async function submit(): Promise<void> {
     if (!itemId) return;
     setStatus("submitting");
     setErrorMsg(null);
+    setSuccessMsg(null);
 
     const res = await fetch("/api/reservations", {
       method: "POST",
@@ -43,19 +58,70 @@ export default function ReservePage(): React.ReactElement {
 
     if (!res.ok) {
       setStatus("error");
-      setErrorMsg(json?.error ?? "Failed to reserve");
+      setErrorMsg(json?.error ?? "Failed to mark this gift as bought");
       return;
     }
 
+    const reservationId =
+      typeof json?.reservation_id === "string"
+        ? json.reservation_id
+        : typeof json?.reservation?.id === "string"
+          ? json.reservation.id
+          : null;
+    const cancelToken =
+      typeof json?.cancel_token === "string" ? json.cancel_token : null;
+
     // Store cancel ticket locally (same browser/device can cancel)
-    if (json?.reservation?.id && json?.cancel_token) {
-      localStorage.setItem(
-        `desira_cancel_${itemId}`,
-        JSON.stringify({
-          reservation_id: json.reservation.id,
-          cancel_token: json.cancel_token,
-        })
+    if (reservationId && cancelToken) {
+      try {
+        localStorage.setItem(
+          `desira_cancel_${itemId}`,
+          JSON.stringify({
+            reservation_id: reservationId,
+            cancel_token: cancelToken,
+          })
+        );
+      } catch {
+        // Continue without local cancel credentials if browser storage is unavailable.
+      }
+    }
+
+    if (shouldRedirectToMerchant) {
+      const merchantRedirectPath = `/api/go/${itemId}?token=${encodeURIComponent(token)}`;
+      const resolveRes = await fetch(`${merchantRedirectPath}&resolve=1`, {
+        cache: "no-store",
+      });
+      const resolveJson = await resolveRes.json().catch(() => ({}));
+
+      if (resolveRes.ok && typeof resolveJson?.redirect_url === "string") {
+        setStatus("success");
+        window.location.assign(merchantRedirectPath);
+        return;
+      }
+
+      if (reservationId && cancelToken) {
+        await fetch("/api/reservations", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reservation_id: reservationId,
+            cancel_token: cancelToken,
+          }),
+        }).catch(() => null);
+      }
+
+      try {
+        localStorage.removeItem(`desira_cancel_${itemId}`);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+
+      setStatus("error");
+      setErrorMsg(
+        resolveJson?.error ??
+          "Could not open the merchant link right now. The buy mark was removed, so the gift is still available."
       );
+      return;
     }
 
     setStatus("success");
@@ -64,28 +130,9 @@ export default function ReservePage(): React.ReactElement {
 
   return (
     <GlassCard className="mx-auto max-w-md">
-      {!itemId ? (
+      {status !== "success" ? (
         <>
-          <h1 className="text-xl font-semibold tracking-tight text-[#2B2B2B]">
-            Reserve
-          </h1>
-          <p className="mt-2 text-sm text-[#62748e]">
-            Missing item. Go back and tap Reserve from the list.
-          </p>
-          <div className="mt-5">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="w-full justify-center"
-            >
-              Back to list
-            </GlassButton>
-          </div>
-        </>
-      ) : status !== "success" ? (
-        <>
-          {/* Reserve icon */}
+          {/* Buy-lock icon */}
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#9D8DF1]/20">
             <svg
               className="h-8 w-8 text-[#9D8DF1]"
@@ -103,11 +150,11 @@ export default function ReservePage(): React.ReactElement {
           </div>
 
           <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
-            Reserve this gift
+            Mark gift as bought
           </h1>
           <p className="mt-2 text-sm text-[#62748e] text-center">
-            Reserve this gift so nobody else buys it. You stay anonymous to
-            others.
+            Mark this gift as bought so nobody duplicates it. You stay
+            anonymous to others.
           </p>
 
           <button
@@ -157,7 +204,7 @@ export default function ReservePage(): React.ReactElement {
               loading={status === "submitting"}
               className="flex-1 justify-center"
             >
-              {status === "submitting" ? "Reserving..." : "Confirm reservation"}
+              {status === "submitting" ? "Saving..." : "Confirm buy mark"}
             </GlassButton>
 
             <GlassButton
@@ -190,11 +237,16 @@ export default function ReservePage(): React.ReactElement {
           </div>
 
           <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
-            Reserved
+            Marked as bought
           </h1>
           <p className="mt-2 text-sm text-[#62748e] text-center">
-            Reserved. You stay anonymous to others.
+            This gift is now marked as bought and hidden from other shoppers.
           </p>
+          {successMsg ? (
+            <div className="mt-4 rounded-xl bg-amber-50/80 px-3 py-2 text-sm text-amber-700 text-center">
+              {successMsg}
+            </div>
+          ) : null}
         </>
       )}
     </GlassCard>

@@ -91,21 +91,21 @@ export default async function ListsPage(): Promise<React.ReactElement> {
   }
 
   return (
-    <div className="flex flex-col items-center pt-[60px]">
+    <div className="flex flex-col items-center pt-6 sm:pt-10">
       {/* Tagline */}
       <h2
-        className="mb-10 text-center text-[24px] font-medium leading-[24px] text-[#2b2b2b]"
+        className="mb-6 px-3 text-center text-xl font-medium leading-tight text-[#2b2b2b] sm:mb-8 sm:text-[24px] sm:leading-[24px]"
         style={{ fontFamily: "Urbanist" }}
       >
         Great surprises won&apos;t create themselves!
       </h2>
 
       {/* Action bar */}
-      <div className="mb-8 flex w-full max-w-[1100px] items-center justify-between px-4">
+      <div className="mb-6 flex w-full max-w-[1100px] flex-col items-stretch gap-3 px-0 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         {/* Left: Add New WishList */}
         <Link
           href="/app/lists/new"
-          className="inline-flex items-center gap-2 rounded-full bg-[#D4D7C2] px-5 py-2.5 text-sm font-medium text-[#2b2b2b] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98]"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#D4D7C2] px-5 text-sm font-medium text-[#2b2b2b] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98] sm:w-auto sm:justify-start"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -114,10 +114,10 @@ export default async function ListsPage(): Promise<React.ReactElement> {
         </Link>
 
         {/* Right: Edit and Share Your Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:gap-3">
           <Link
             href="/app/settings"
-            className="inline-flex items-center rounded-full border border-[#2b2b2b]/20 bg-white/50 px-5 py-2.5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-white/80 active:scale-[0.98]"
+            className="inline-flex h-11 items-center rounded-full border border-[#2b2b2b]/20 bg-white/50 px-5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-white/80 active:scale-[0.98]"
           >
             Edit
           </Link>
@@ -140,7 +140,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
       {typedLists.length === 0 ? (
         <>
           {/* Empty State Card */}
-          <GlassCard className="w-full max-w-[940px] px-10 py-14 text-center">
+          <GlassCard className="w-full max-w-[940px] px-5 py-10 text-center sm:px-10 sm:py-14">
             <h3 className="font-asul text-3xl font-medium text-[#2b2b2b]">
               Only you know what you want!
             </h3>
@@ -161,7 +161,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
       ) : (
         /* 3-card grid layout - aligned with action bar */
         <div className="w-full max-w-[1100px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center" style={{ rowGap: '2px', fontFamily: 'Urbanist' }}>
+          <div className="grid grid-cols-1 justify-items-center gap-4 font-[family-name:var(--font-urbanist)] md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {typedLists.map((list) => {
               const listItems = itemsByList[list.id] || [];
               const totalWishes = listItems.length;

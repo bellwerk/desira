@@ -42,8 +42,41 @@ interface UseLinkPreviewResult {
   status: LinkPreviewStatus;
   data: LinkPreviewData | null;
   error: string | null;
+  notice: string | null;
   fetch: (url: string, force?: boolean) => void;
   reset: () => void;
+}
+
+function isAmazonDomain(domain: string): boolean {
+  const normalized = domain.toLowerCase();
+  return (
+    normalized === "amazon.com" ||
+    normalized === "amazon.ca" ||
+    normalized.endsWith(".amazon.com") ||
+    normalized.endsWith(".amazon.ca")
+  );
+}
+
+function getPartialPreviewNotice(data: LinkPreviewData): string | null {
+  const domain = data.domain.toLowerCase();
+  if (!isAmazonDomain(domain)) {
+    return null;
+  }
+
+  const missingImage = !data.image;
+  const missingPrice = !data.price;
+
+  if (missingImage && missingPrice) {
+    return "Amazon blocks some preview fields on many pages. Add image and price manually if needed.";
+  }
+  if (missingImage) {
+    return "Amazon blocked the product image for this link. You can add an image manually.";
+  }
+  if (missingPrice) {
+    return "Amazon blocked the product price for this link. You can add price manually.";
+  }
+
+  return null;
 }
 
 /**
@@ -67,6 +100,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
   const [status, setStatus] = useState<LinkPreviewStatus>("idle");
   const [data, setData] = useState<LinkPreviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Refs for debouncing and request cancellation
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,6 +132,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
     setStatus("idle");
     setData(null);
     setError(null);
+    setNotice(null);
   }, []);
 
   const fetchPreview = useCallback(async (url: string, force = false) => {
@@ -144,6 +179,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
     debounceTimerRef.current = setTimeout(async () => {
       setStatus("loading");
       setError(null);
+      setNotice(null);
 
       // Create new abort controller
       abortControllerRef.current = new AbortController();
@@ -159,8 +195,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
         const result = await response.json();
 
         if (result.ok) {
-          setStatus("success");
-          setData({
+          const nextData: LinkPreviewData = {
             title: result.data.title,
             description: result.data.description,
             image: result.data.image,
@@ -168,13 +203,18 @@ export function useLinkPreview(): UseLinkPreviewResult {
             price: result.data.price,
             domain: result.domain,
             normalizedUrl: result.normalizedUrl,
-          });
+          };
+
+          setStatus("success");
+          setData(nextData);
           setError(null);
+          setNotice(getPartialPreviewNotice(nextData));
         } else {
           setStatus("error");
           setData(null);
           const errorCode = typeof result.error?.code === "string" ? result.error.code : undefined;
           setError(formatPreviewError(errorCode, result.error?.message));
+          setNotice(null);
         }
       } catch (err) {
         // Ignore abort errors
@@ -185,6 +225,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
         setStatus("error");
         setData(null);
         setError((err as Error).message ?? "Network error");
+        setNotice(null);
       }
     }, DEBOUNCE_MS);
   }, [reset, status]);
@@ -193,6 +234,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
     status,
     data,
     error,
+    notice,
     fetch: fetchPreview,
     reset,
   };

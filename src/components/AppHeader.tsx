@@ -11,28 +11,28 @@ interface AppHeaderProps {
 
 export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps): React.ReactElement {
   const pathname = usePathname();
-  
+
   // Determine which tab is active - Create New is default unless on My Lists page
   const isMyLists = pathname === "/app/lists" || (pathname.startsWith("/app/lists/") && pathname !== "/app/lists/new");
   const isCreateNew = !isMyLists;
 
   return (
-    <header className="relative flex h-20 items-center justify-between bg-transparent px-8">
+    <header className="relative flex h-16 items-center justify-between gap-3 bg-transparent px-3 sm:h-20 sm:px-4 md:px-6 lg:px-8">
       {/* Logo */}
       <Link href="/app" className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="" className="h-8 w-8" />
-        <span className="font-asul text-3xl font-semibold tracking-normal text-[#2B2B2B]">
+        <img src="/logo.svg" alt="" className="h-7 w-7 sm:h-8 sm:w-8" />
+        <span className="font-asul text-2xl font-semibold tracking-normal text-[#2B2B2B] sm:text-3xl">
           desira
         </span>
       </Link>
 
       {/* Center navigation - absolutely positioned for true centering */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
         <div className="flex items-center rounded-full bg-[#2B2B2B] p-1 text-[#EAEAEA]">
           <Link
             href="/app/lists/new"
-            className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-center text-sm font-normal transition-all ${
+            className={`flex h-11 items-center gap-2 rounded-full px-5 text-center text-sm font-normal transition-all ${
               isCreateNew
                 ? "bg-[#D4D7C2] text-[#2B2B2B] shadow-none"
                 : "text-[#EAEAEA] hover:text-white"
@@ -45,7 +45,7 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
           </Link>
           <Link
             href="/app/lists"
-            className={`rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
+            className={`flex h-11 items-center rounded-full px-5 text-sm font-medium transition-all ${
               isMyLists
                 ? "bg-[#D4D7C2] text-[#2B2B2B] shadow-none"
                 : "text-[#EAEAEA] hover:text-white"
@@ -57,9 +57,10 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
       </div>
 
       {/* User profile */}
-      <Link 
-        href="/app/settings" 
-        className="group relative flex h-11 items-center gap-3 overflow-hidden rounded-full border border-[#2B2B2B]/20 bg-white/80 pl-4 pr-1.5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-[#2B2B2B]/40 hover:bg-white/90 hover:shadow-md active:scale-[0.98]"
+      <Link
+        href="/app/settings"
+        aria-label="Open settings"
+        className="group relative flex h-11 min-w-11 items-center gap-2 overflow-hidden rounded-full border border-[#2B2B2B]/20 bg-white/80 pl-1.5 pr-1.5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-[#2B2B2B]/40 hover:bg-white/90 hover:shadow-md active:scale-[0.98] sm:gap-3 sm:pl-4"
       >
         {/* Gradient hover effect */}
         <div className="absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -67,7 +68,7 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
         </div>
         
         {/* User info */}
-        <div className="flex flex-col text-right">
+        <div className="hidden flex-col text-right sm:flex">
           <span className="text-xs font-semibold leading-tight tracking-tight text-[#2B2B2B] transition-colors duration-200 group-hover:text-[#1a1a1a]">
             {displayName}
           </span>

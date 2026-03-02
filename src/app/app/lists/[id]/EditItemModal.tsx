@@ -112,14 +112,14 @@ export function EditItemModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4"
       onClick={handleBackdropClick}
     >
 
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl animate-modal-in"
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl animate-modal-in sm:p-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-modal-title"
@@ -154,7 +154,7 @@ export function EditItemModal({
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white"
           >
             <svg
               className="h-5 w-5"
@@ -386,11 +386,11 @@ export function EditItemModal({
           </p>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-4">
+          <div className="flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border-2 border-white/20 bg-transparent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-[0.98]"
+              className="h-11 rounded-full border-2 border-white/20 bg-transparent px-4 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-[0.98]"
             >
               Cancel
             </button>

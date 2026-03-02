@@ -53,21 +53,21 @@ function ListTypeCard({ title, subtitle, icon }: ListTypeCardProps): React.React
   return (
     <Link
       href="/app/lists/new"
-      className="glass-1 group relative flex h-[300px] w-[230px] flex-col items-center justify-center rounded-[30px] px-[21px] text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]"
+      className="glass-1 group relative flex h-[280px] w-full max-w-[260px] flex-col items-center justify-center rounded-[30px] px-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)] sm:h-[290px] sm:max-w-[240px] lg:h-[300px] lg:max-w-[230px]"
     >
       {/* Gradient overlay for visual depth */}
       <div className="absolute inset-0 rounded-[30px] bg-gradient-to-br from-violet-500/5 via-transparent to-rose-500/5 pointer-events-none" />
       
       {/* Title badge */}
-      <div className="absolute top-5 mt-3.5 mb-3.5 rounded-full bg-white/80 px-6 py-2 text-center shadow-sm z-10">
+      <div className="absolute top-4 z-10 mt-3.5 mb-3.5 rounded-full bg-white/80 px-6 py-2 text-center shadow-sm">
         <span className="font-asul text-lg font-semibold tracking-normal text-[#2b2b2b]">{title}</span>
       </div>
       
       {/* Icon */}
-      <div className="relative z-10 mb-2.5 mt-15">{icon}</div>
+      <div className="relative z-10 mb-2.5 mt-12 sm:mt-14">{icon}</div>
       
       {/* Subtitle */}
-      <p className="relative z-10 flex h-fit max-w-[10rem] flex-wrap justify-center text-center text-base leading-tight text-[#2b2b2b] font-[family-name:var(--font-urbanist)]">
+      <p className="relative z-10 flex h-fit max-w-[11rem] flex-wrap justify-center text-center text-base leading-tight text-[#2b2b2b] font-[family-name:var(--font-urbanist)]">
         {subtitle}
       </p>
     </Link>
@@ -101,15 +101,15 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   }
 
   return (
-    <div className="relative mt-[100px] flex min-h-full flex-col items-center justify-start text-[#2b2b2b]">
+    <div className="relative flex min-h-full flex-col items-center justify-start pt-6 text-[#2b2b2b] sm:pt-10">
       {/* Greeting */}
-      <h1 className="mt-8 font-inter text-lg font-medium text-[#2b2b2b]">
+      <h1 className="mt-2 px-2 text-center font-inter text-base font-medium text-[#2b2b2b] sm:mt-4 sm:text-lg">
         Hey {displayName}, let&apos;s make some wishes happen!
       </h1>
 
       {/* List type cards */}
-      <div className="relative mt-14 w-full max-w-6xl">
-        <div className="mx-auto grid w-fit grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-5">
+      <div className="relative mt-8 w-full max-w-6xl sm:mt-10">
+        <div className="mx-auto grid w-full max-w-[760px] grid-cols-1 justify-items-center gap-4 sm:grid-cols-2 sm:gap-5 lg:max-w-none lg:grid-cols-3">
           <ListTypeCard title="Wishlist" subtitle="Birthday gifts, Christmas, etc." icon={<GiftIcon />} />
           <ListTypeCard title="Registry" subtitle="Weddings, baby showers & more" icon={<RegistryIcon />} />
           <ListTypeCard title="Personal" subtitle="Shopping list for personal use" icon={<DocumentIcon />} />

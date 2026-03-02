@@ -154,7 +154,7 @@ export async function POST(req: Request) {
   const { data: contribs, error: sumErr } = contribsResult;
 
   if (rsv) {
-    return NextResponse.json({ error: "Item is reserved." }, { status: 409 });
+    return NextResponse.json({ error: "Item is already marked as bought." }, { status: 409 });
   }
 
   if (targetCents) {

@@ -500,6 +500,192 @@ function getFaviconWithFallback(extractedFavicon: string | null, domain: string)
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
 }
 
+function isAmazonDomain(domain: string): boolean {
+  const normalized = domain.toLowerCase();
+  return (
+    normalized === "amazon.com" ||
+    normalized === "amazon.ca" ||
+    normalized.endsWith(".amazon.com") ||
+    normalized.endsWith(".amazon.ca")
+  );
+}
+
+function decodeEscapedScriptString(value: string): string {
+  return value
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\u003d/gi, "=")
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\\//g, "/")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
+}
+
+function isLikelyImageUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return (
+    lower.startsWith("http://") ||
+    lower.startsWith("https://")
+  ) && (
+    lower.includes("m.media-amazon.com/images/") ||
+    /\.(jpg|jpeg|png|webp)(?:$|\?)/.test(lower)
+  );
+}
+
+function extractAmount(value: string): number | null {
+  const compact = value.replace(/\s+/g, "");
+  const numeric = compact.replace(/[^0-9.,]/g, "");
+  if (!numeric) return null;
+
+  let normalized = numeric;
+  const lastDot = normalized.lastIndexOf(".");
+  const lastComma = normalized.lastIndexOf(",");
+
+  if (lastDot !== -1 && lastComma !== -1) {
+    if (lastDot > lastComma) {
+      normalized = normalized.replace(/,/g, "");
+    } else {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    }
+  } else if (lastComma !== -1 && lastDot === -1) {
+    const decimalDigits = normalized.length - lastComma - 1;
+    normalized = decimalDigits === 2 ? normalized.replace(",", ".") : normalized.replace(/,/g, "");
+  } else {
+    normalized = normalized.replace(/,/g, "");
+  }
+
+  const amount = Number.parseFloat(normalized);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+    return null;
+  }
+  return amount;
+}
+
+function looksLikePriceRange(value: string): boolean {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return /\d\s*[-–—]\s*[$€£]?\s*\d/.test(normalized);
+}
+
+function inferCurrency(value: string, fallbackCurrency: string): string {
+  const upper = value.toUpperCase();
+  if (upper.includes("CAD") || upper.includes("CDN$") || upper.includes("CA$") || upper.includes("C$")) {
+    return "CAD";
+  }
+  if (upper.includes("USD") || upper.includes("US$")) {
+    return "USD";
+  }
+  if (upper.includes("EUR") || upper.includes("€")) {
+    return "EUR";
+  }
+  if (upper.includes("GBP") || upper.includes("£")) {
+    return "GBP";
+  }
+  return fallbackCurrency;
+}
+
+function extractAmazonFallbackData(
+  html: string,
+  finalUrl: string
+): Pick<LinkPreviewData, "image" | "images" | "price"> {
+  const domain = extractDomain(finalUrl);
+  const fallbackCurrency = domain.endsWith(".ca") ? "CAD" : "USD";
+
+  const imageCandidates = new Set<string>();
+  const imagePatterns = [
+    /"(?:hiRes|large|mainUrl|variantHiRes|thumbUrl|imageUrl)"\s*:\s*"([^"]+)"/gi,
+    /(https?:\\\/\\\/m\.media-amazon\.com\\\/images\\\/I\\\/[^"'\\\s]+)/gi,
+    /(https?:\/\/m\.media-amazon\.com\/images\/I\/[^"'\s<]+)/gi,
+  ];
+
+  for (const pattern of imagePatterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(html)) !== null) {
+      const decoded = decodeEscapedScriptString(match[1]);
+      if (isLikelyImageUrl(decoded)) {
+        imageCandidates.add(decoded);
+      }
+    }
+  }
+
+  let bestPrice: { amount: number; currency: string } | null = null;
+  const structuredPricePatterns: Array<{ pattern: RegExp; amountIndex: number; currencyIndex?: number }> = [
+    {
+      pattern: /"priceToPay"\s*:\s*\{[\s\S]{0,180}?"amount"\s*:\s*([0-9]+(?:\.[0-9]+)?)[\s\S]{0,180}?"currencyCode"\s*:\s*"([A-Z]{3})"/gi,
+      amountIndex: 1,
+      currencyIndex: 2,
+    },
+    {
+      pattern: /"priceAmount"\s*:\s*([0-9]+(?:\.[0-9]+)?)/gi,
+      amountIndex: 1,
+    },
+    {
+      pattern: /"displayPrice"\s*:\s*"([^"]+)"/gi,
+      amountIndex: 1,
+    },
+  ];
+
+  for (const { pattern, amountIndex, currencyIndex } of structuredPricePatterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(html)) !== null) {
+      const rawAmount = decodeEscapedScriptString(match[amountIndex] ?? "");
+      if (!currencyIndex && looksLikePriceRange(rawAmount)) {
+        continue;
+      }
+      const amount = extractAmount(rawAmount);
+      if (!amount) continue;
+
+      const rawCurrency = currencyIndex ? decodeEscapedScriptString(match[currencyIndex] ?? "") : rawAmount;
+      const currency = inferCurrency(rawCurrency, fallbackCurrency);
+      bestPrice = { amount, currency };
+      break;
+    }
+    if (bestPrice) break;
+  }
+
+  if (!bestPrice) {
+    const visiblePricePattern =
+      /<span[^>]+class=["'][^"']*a-offscreen[^"']*["'][^>]*>([^<]+)<\/span>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = visiblePricePattern.exec(html)) !== null) {
+      const rawText = decodeEscapedScriptString(match[1] ?? "").trim();
+      const amount = extractAmount(rawText);
+      if (!amount) continue;
+
+      bestPrice = {
+        amount,
+        currency: inferCurrency(rawText, fallbackCurrency),
+      };
+      break;
+    }
+  }
+
+  const images = Array.from(imageCandidates).slice(0, 6);
+  return {
+    image: images[0] ?? null,
+    images,
+    price: bestPrice,
+  };
+}
+
+function mergeWithAmazonFallback(
+  baseData: LinkPreviewData,
+  fallbackData: Pick<LinkPreviewData, "image" | "images" | "price">
+): LinkPreviewData {
+  const mergedImages = [...baseData.images];
+  for (const image of fallbackData.images) {
+    if (!mergedImages.includes(image)) {
+      mergedImages.push(image);
+    }
+  }
+
+  const image = baseData.image ?? fallbackData.image ?? mergedImages[0] ?? null;
+  return {
+    ...baseData,
+    image,
+    images: mergedImages,
+    price: baseData.price ?? fallbackData.price ?? null,
+  };
+}
+
 /**
  * Parse HTML and extract metadata
  */
@@ -715,6 +901,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   }
 
   const domain = extractDomain(normalizedUrl);
+  let amazonPaapiData: LinkPreviewData | null = null;
 
   // Check cache
   const cached = await getCachedPreview(normalizedUrl, force);
@@ -737,16 +924,21 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
         favicon: getFaviconWithFallback(null, domain),
       };
 
-      if (amazonData.title || amazonData.description || amazonData.image) {
-        await cachePreview(normalizedUrl, amazonData, "ok", 200);
+      if (amazonData.title || amazonData.description || amazonData.image || amazonData.price) {
+        amazonPaapiData = amazonData;
 
-        return NextResponse.json({
-          ok: true,
-          normalizedUrl,
-          domain,
-          cached: false,
-          data: amazonData,
-        });
+        // If PA-API already has the key preview fields, return early.
+        if (amazonData.image && amazonData.price) {
+          await cachePreview(normalizedUrl, amazonData, "ok", 200);
+
+          return NextResponse.json({
+            ok: true,
+            normalizedUrl,
+            domain,
+            cached: false,
+            data: amazonData,
+          });
+        }
       }
     }
   }
@@ -755,6 +947,18 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   const fetchResult = await safeFetch(normalizedUrl);
   
   if (!fetchResult.ok) {
+    if (amazonPaapiData) {
+      await cachePreview(normalizedUrl, amazonPaapiData, "ok", 200);
+
+      return NextResponse.json({
+        ok: true,
+        normalizedUrl,
+        domain,
+        cached: false,
+        data: amazonPaapiData,
+      });
+    }
+
     // Cache the error
     await cachePreview(
       normalizedUrl,
@@ -770,10 +974,36 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
     );
   }
 
-  const data = parseHtml(fetchResult.html, fetchResult.finalUrl);
+  let data = parseHtml(fetchResult.html, fetchResult.finalUrl);
+
+  if (amazonProduct && isAmazonDomain(domain)) {
+    if (!data.image || !data.price) {
+      const amazonFallback = extractAmazonFallbackData(fetchResult.html, fetchResult.finalUrl);
+      data = mergeWithAmazonFallback(data, amazonFallback);
+    }
+
+    if (amazonPaapiData) {
+      const mergedImages = [...amazonPaapiData.images];
+      for (const image of data.images) {
+        if (!mergedImages.includes(image)) {
+          mergedImages.push(image);
+        }
+      }
+
+      data = {
+        ...data,
+        title: amazonPaapiData.title ?? data.title,
+        description: amazonPaapiData.description ?? data.description,
+        image: amazonPaapiData.image ?? data.image ?? mergedImages[0] ?? null,
+        images: mergedImages,
+        price: amazonPaapiData.price ?? data.price,
+        favicon: amazonPaapiData.favicon ?? data.favicon,
+      };
+    }
+  }
 
   // Check if we got any useful metadata
-  if (!data.title && !data.description && !data.image) {
+  if (!data.title && !data.description && !data.image && !data.price) {
     await cachePreview(normalizedUrl, data, "error", 200, "NO_METADATA");
     
     return NextResponse.json(

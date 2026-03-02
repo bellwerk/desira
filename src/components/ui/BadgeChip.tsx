@@ -5,7 +5,9 @@ type BadgeVariant =
   | "reserved"
   | "funded"
   | "received"
+  | "unavailable"
   | "owner"
+  | "shared"
   | "private"
   | "unlisted"
   | "public"
@@ -27,8 +29,12 @@ const variantClasses: Record<BadgeVariant, string> = {
     "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   received:
     "bg-sky-100/80 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  unavailable:
+    "bg-slate-200/90 text-slate-700 dark:bg-slate-800/70 dark:text-slate-300",
   owner:
     "bg-violet-100/80 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  shared:
+    "bg-sky-100/80 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
   private:
     "bg-slate-100/80 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400",
   unlisted:
@@ -42,7 +48,7 @@ const variantClasses: Record<BadgeVariant, string> = {
 /**
  * BadgeChip — status and label chips
  *
- * Variants: available, reserved, funded, received, owner, private, unlisted, public, neutral
+ * Variants: available, reserved, funded, received, unavailable, owner, shared, private, unlisted, public, neutral
  *
  * Usage:
  * <BadgeChip variant="reserved">Reserved</BadgeChip>

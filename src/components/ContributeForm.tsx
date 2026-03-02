@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard, GlassButton } from "@/components/ui";
+import { formatCurrency } from "@/lib/currency";
 
 function dollarsToCents(input: string): number | null {
   const clean = input.replace(/[^0-9.]/g, "");
@@ -30,15 +31,6 @@ function sanitizeMoneyInput(raw: string): string {
 function formatCentsInput(cents: number): string {
   const s = (cents / 100).toFixed(2);
   return s.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
-}
-
-function centsToPretty(cents: number, currency: string): string {
-  const dollars = cents / 100;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(dollars);
 }
 
 // Fee rule: 5% with $1 minimum
@@ -108,7 +100,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
       props.closeWhenFunded &&
       contributionCents > leftCents
     ) {
-      return `Max contribution is ${centsToPretty(leftCents, props.currency)}.`;
+      return `Max contribution is ${formatCurrency(leftCents, props.currency)}.`;
     }
 
     return null;
@@ -199,10 +191,10 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
           </div>
           {props.targetCents ? (
             <div className="mt-1 text-xs text-[#62748e]">
-              Target {centsToPretty(props.targetCents, props.currency)} · Funded{" "}
-              {centsToPretty(props.fundedCents, props.currency)}
+              Target {formatCurrency(props.targetCents, props.currency)} · Funded{" "}
+              {formatCurrency(props.fundedCents, props.currency)}
               {leftCents != null
-                ? ` · ${centsToPretty(leftCents, props.currency)} left`
+                ? ` · ${formatCurrency(leftCents, props.currency)} left`
                 : null}
             </div>
           ) : (
@@ -261,19 +253,19 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
           <div className="flex items-center justify-between text-sm">
             <span className="text-[#62748e]">Contribution</span>
             <span className="font-medium text-[#2B2B2B]">
-              {centsToPretty(contributionCents, props.currency)}
+              {formatCurrency(contributionCents, props.currency)}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-[#62748e]">Desira service fee</span>
             <span className="font-medium text-[#2B2B2B]">
-              {centsToPretty(feeCents, props.currency)}
+              {formatCurrency(feeCents, props.currency)}
             </span>
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-white/30 pt-3 text-sm">
             <span className="font-medium text-[#2B2B2B]">Total charged</span>
             <span className="font-semibold text-[#2B2B2B]">
-              {centsToPretty(totalChargeCents, props.currency)}
+              {formatCurrency(totalChargeCents, props.currency)}
             </span>
           </div>
           <div className="mt-2 text-xs text-[#62748e]">

@@ -13,7 +13,7 @@ Non-negotiables:
 - **Content first:** gifts/items are the hero; UI chrome stays quiet.
 - **Glass is consistent:** only 3 elevations (Glass-1/2/3). No custom one-offs.
 - **One backdrop at a time:** gradient OR photo OR neutral grid. Never competing layers.
-- **Privacy by design:** reserver identity + purchase details are never shown to others.
+- **Privacy by design:** buyer identity + purchase details are never shown to others.
 - **Rules are visible in UI:** mutually exclusive actions should be obvious (disabled states + microcopy).
 - **Fast, soft motion:** subtle transitions, springy feel, no flashy effects.
 
@@ -94,19 +94,19 @@ Pick ONE per screen (or per section if clearly separated):
 ## 5) Core Business Rules → UI Rules
 
 ### 5.1 Mutual exclusivity (MVP)
-- If **funded_amount_cents > 0**: **Reserve is disabled** + show why.
-- If **Reserved**: **Contribute is disabled** + show why.
+- If **funded_amount_cents > 0**: **Buy this gift is disabled** + show why.
+- If **Bought**: **Contribute is disabled** + show why.
 
 ### 5.2 Privacy
-- Anyone viewing items sees only: **Available / Reserved / Funded**.
+- Anyone viewing items sees only: **Available / Bought / Funded**.
 - Never show:
-  - who reserved
+  - who marked it as bought
   - “what exactly was bought”
   - checkout/receipt details
 - Owners can optionally see contributor list later (P1); MVP default is minimal.
 
 ### 5.3 Self-gifting prevention
-- List owner view is **read-only** (no Reserve/Contribute CTAs).
+- List owner view is **read-only** (no Buy/Contribute CTAs).
 - Replace actions with a subtle label: “You own this list.”
 
 ---
@@ -141,7 +141,7 @@ States:
 - Disabled must clearly show (lower contrast + no hover).
 
 ### 6.3 BadgeChip
-Used for: `Available`, `Reserved`, `Funded`, `Owner`, `Private`, `Unlisted`.
+Used for: `Available`, `Bought`, `Funded`, `Owner`, `Private`, `Unlisted`.
 
 Rules:
 - Muted colors, small type, pill radius.
@@ -170,7 +170,7 @@ Shows:
 - optional progress bar (funded)
 
 Actions:
-- Non-owner: Reserve / Contribute (depending on state)
+- Non-owner: Buy / Contribute (depending on state)
 - Owner: no actions
 
 ### 6.8 ProgressBar (funded)
@@ -180,7 +180,7 @@ Actions:
 
 ### 6.9 Toast
 - Glass-2 small panel
-- Used for: reserved, contributed, copied link, errors
+- Used for: bought, contributed, copied link, errors
 
 ### 6.10 LinkPreviewCard (M3)
 When URL is pasted:
@@ -211,23 +211,23 @@ Body:
 
 Owner mode:
 - read-only messaging
-- hide Reserve/Contribute CTAs
+- hide Buy/Contribute CTAs
 
 ### 7.4 Public List (`/l/[token]`)
 Backdrop: Photo Cover OR Gradient Field
 Top: Glass header card (title, occasion, date)
 Items: Glass stack
 Actions:
-- Reserve / Contribute available to non-owner
+- Buy / Contribute available to non-owner
 - Privacy preserved
 
-### 7.5 Reserve flow (MVP)
-CTA: “Reserve”
+### 7.5 Buy-lock flow (MVP)
+CTA: “Buy this gift”
 Confirm:
 - minimal form only if needed (name/email optional depending on product choice)
 Result:
-- toast “Reserved”
-- item shows chip “Reserved”
+- toast “Marked as bought”
+- item shows chip “Bought”
 - contribute disabled with helper text
 
 ### 7.6 Contribute flow (Stripe)
@@ -236,7 +236,7 @@ Sheet:
 - amount selector + optional message + anonymity toggle (if enabled)
 Result:
 - toast “Thanks — contribution received”
-- item shows progress + reserve disabled with helper text
+- item shows progress + buy disabled with helper text
 
 ### 7.7 Invite flow
 - “Invite” button → sheet:
@@ -251,7 +251,7 @@ Result:
 Tone: playful but premium. Short sentences. No cringe.
 
 Labels:
-- Reserve
+- Buy this gift
 - Contribute
 - Copy link
 - Share list
@@ -259,8 +259,8 @@ Labels:
 - Private / Unlisted / Public
 
 Helper text (examples):
-- “Can’t reserve — this item already has contributions.”
-- “Can’t contribute — this item is reserved.”
+- “Can’t buy this gift — this item already has contributions.”
+- “Can’t contribute — this gift is already marked as bought.”
 - “You own this list.”
 
 Error style:

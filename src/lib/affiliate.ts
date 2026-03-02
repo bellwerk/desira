@@ -18,6 +18,59 @@ const SKIMLINKS_PUBLISHER_ID = process.env.SKIMLINKS_PUBLISHER_ID ?? "";
  * Skimlinks redirect base URL
  */
 const SKIMLINKS_REDIRECT_BASE = "https://go.redirectingat.com/";
+const SKIMLINKS_SREF = process.env.NEXT_PUBLIC_APP_URL ?? "https://desira.io";
+const WRAPPED_URL_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const WRAPPED_URL_CACHE_MAX_ENTRIES = 500;
+
+type WrappedUrlCacheEntry = {
+  wrappedBaseUrl: string;
+  expiresAtMs: number;
+};
+
+const wrappedUrlCache = new Map<string, WrappedUrlCacheEntry>();
+
+function pruneWrappedUrlCache(nowMs: number): void {
+  for (const [key, entry] of wrappedUrlCache) {
+    if (entry.expiresAtMs <= nowMs) {
+      wrappedUrlCache.delete(key);
+    }
+  }
+
+  while (wrappedUrlCache.size > WRAPPED_URL_CACHE_MAX_ENTRIES) {
+    const oldestKey = wrappedUrlCache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+    wrappedUrlCache.delete(oldestKey);
+  }
+}
+
+function buildBaseAffiliateUrl(originalUrl: string): string {
+  const params = new URLSearchParams({
+    id: SKIMLINKS_PUBLISHER_ID,
+    url: originalUrl,
+    sref: SKIMLINKS_SREF,
+  });
+
+  return `${SKIMLINKS_REDIRECT_BASE}?${params.toString()}`;
+}
+
+function getCachedBaseAffiliateUrl(originalUrl: string): string {
+  const nowMs = Date.now();
+  const cached = wrappedUrlCache.get(originalUrl);
+
+  if (cached && cached.expiresAtMs > nowMs) {
+    return cached.wrappedBaseUrl;
+  }
+
+  const wrappedBaseUrl = buildBaseAffiliateUrl(originalUrl);
+  wrappedUrlCache.set(originalUrl, {
+    wrappedBaseUrl,
+    expiresAtMs: nowMs + WRAPPED_URL_CACHE_TTL_MS,
+  });
+  pruneWrappedUrlCache(nowMs);
+  return wrappedBaseUrl;
+}
 
 /**
  * Check if Skimlinks integration is enabled
@@ -49,19 +102,15 @@ export function generateAffiliateUrl(
     return originalUrl;
   }
 
-  // Build Skimlinks redirect URL
-  const params = new URLSearchParams({
-    id: SKIMLINKS_PUBLISHER_ID,
-    url: originalUrl,
-    sref: process.env.NEXT_PUBLIC_APP_URL ?? "https://desira.io",
-  });
-
-  // Add custom tracking if provided
-  if (xcust) {
-    params.set("xcust", xcust);
+  const wrappedBaseUrl = getCachedBaseAffiliateUrl(originalUrl);
+  if (!xcust) {
+    return wrappedBaseUrl;
   }
 
-  return `${SKIMLINKS_REDIRECT_BASE}?${params.toString()}`;
+  // Keep xcust per-click so item-level tracking remains accurate.
+  const wrappedUrl = new URL(wrappedBaseUrl);
+  wrappedUrl.searchParams.set("xcust", xcust);
+  return wrappedUrl.toString();
 }
 
 /**

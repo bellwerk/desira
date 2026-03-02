@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateList, deleteList, ActionResult } from "../../actions";
-import { useToastActions } from "@/components/ui";
+import { GlassButton, useToastActions } from "@/components/ui";
 import type { ListSettings } from "./page";
 
 type SettingsFormProps = {
@@ -266,10 +266,10 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
               />
               <div>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  Allow reservations
+                    Allow buy marks
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  People can reserve items to avoid duplicates
+                    People can mark gifts as bought to avoid duplicates
                 </p>
               </div>
             </label>
@@ -355,18 +355,20 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
           Danger zone
         </h2>
         <p className="mt-2 text-sm text-red-600 dark:text-red-300">
-          Deleting a list is permanent. All items, reservations, and contributions
+          Deleting a list is permanent. All items, buy marks, and contributions
           will be lost.
         </p>
 
         {!showDeleteConfirm ? (
-          <button
+          <GlassButton
             type="button"
+            variant="danger"
+            size="sm"
             onClick={() => setShowDeleteConfirm(true)}
-            className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 dark:border-red-700 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900"
+            className="mt-4"
           >
             Delete this list
-          </button>
+          </GlassButton>
         ) : (
           <div className="mt-4 space-y-3">
             {deleteError && (
@@ -378,39 +380,15 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
               Are you sure? This cannot be undone.
             </p>
             <div className="flex items-center gap-3">
-              <button
+              <GlassButton
                 type="button"
+                variant="danger"
+                size="sm"
                 onClick={handleDelete}
-                disabled={isDeleting}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                loading={isDeleting}
               >
-                {isDeleting ? (
-                  <>
-                    <svg
-                      className="h-4 w-4 animate-spin"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Deleting...
-                  </>
-                ) : (
-                  <>Yes, delete list</>
-                )}
-              </button>
+                {isDeleting ? "Deleting..." : "Yes, delete list"}
+              </GlassButton>
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}

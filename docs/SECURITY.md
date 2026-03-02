@@ -77,8 +77,8 @@ Desira uses a layered security approach:
 - ✅ Validates item exists and is `active`
 - ✅ Validates list allows reservations
 - ✅ Validates list is not private
-- ✅ Blocks if contributions exist (mutual exclusivity)
-- ✅ Blocks self-gifting (owner cannot reserve own items)
+- ✅ Blocks if contributions exist (buy-lock/contribute mutual exclusivity)
+- ✅ Blocks self-gifting (owner cannot buy-lock own items)
 - ✅ Uses `supabaseAdmin` for insert
 
 ### `/api/reservations` (PATCH - cancel)
@@ -108,18 +108,18 @@ Desira uses a layered security approach:
 
 ## Business Rules Enforcement
 
-### Mutual Exclusivity (Reserve vs Contribute)
-- **Rule:** An item cannot be reserved if it has contributions, and vice versa
+### Mutual Exclusivity (Buy-Lock vs Contribute)
+- **Rule:** An item cannot be buy-locked if it has contributions, and vice versa
 - **Enforcement:**
   1. DB triggers (`check_reservation_before_insert`, `check_contribution_before_insert`)
   2. Server checks in `/api/reservations` and `/api/stripe/checkout`
   3. UI disables buttons based on state
 
 ### Self-Gifting Prevention
-- **Rule:** List owners cannot reserve or contribute to their own list items
+- **Rule:** List owners cannot buy-lock or contribute to their own list items
 - **Enforcement:**
   1. Server checks in `/api/reservations` and `/api/stripe/checkout`
-  2. UI hides reserve/contribute buttons for owners (`ItemActions.tsx`)
+  2. UI hides buy/contribute buttons for owners (`ItemActions.tsx`)
 
 ---
 

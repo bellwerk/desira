@@ -63,7 +63,7 @@ export function ShareModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4"
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
@@ -71,7 +71,7 @@ export function ShareModal({
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-2xl rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl animate-modal-in"
+        className="relative w-full max-w-2xl rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl animate-modal-in sm:p-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-modal-title"
@@ -79,7 +79,7 @@ export function ShareModal({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 hover:text-white hover:bg-[#5a5a5a] transition-colors z-10"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
         >
           <svg
             className="h-4 w-4"

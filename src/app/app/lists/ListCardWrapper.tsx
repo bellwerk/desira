@@ -49,7 +49,7 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
 
   return (
     <>
-      <div className="w-full max-w-[307px] md:max-w-none mx-auto md:mx-0">
+      <div className="w-full min-w-0">
         {/* Card container - glass styling with responsive padding */}
         <GlassCard className="rounded-[21px] p-3 md:p-4 lg:p-5">
           {/* Clickable image grid area */}
@@ -118,7 +118,7 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
           <div className="flex gap-2">
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex-1 rounded-[26px] border-2 border-[#2b2b2b] bg-transparent px-3 py-2 text-center text-[10px] md:text-xs lg:text-sm font-semibold text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98]"
+              className="flex h-11 flex-1 items-center justify-center rounded-[26px] border-2 border-[#2b2b2b] bg-transparent px-3 text-center text-[10px] font-semibold text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] md:text-xs lg:text-sm"
             >
               Settings
             </button>
@@ -127,13 +127,13 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
               <Link
                 href={`/u/${list.share_token}`}
                 target="_blank"
-                className="flex-1 rounded-[26px] bg-[#2b2b2b] px-3 py-2 text-center text-[10px] md:text-xs lg:text-sm font-semibold text-white transition-all hover:bg-[#3a3a3a] active:scale-[0.98]"
+                className="flex h-11 flex-1 items-center justify-center rounded-[26px] bg-[#2b2b2b] px-3 text-center text-[10px] font-semibold text-white transition-all hover:bg-[#3a3a3a] active:scale-[0.98] md:text-xs lg:text-sm"
               >
                 Share
               </Link>
             ) : (
               <span
-                className="flex-1 rounded-[26px] bg-[#2b2b2b]/40 px-3 py-2 text-center text-[10px] md:text-xs lg:text-sm font-semibold text-white/60 cursor-not-allowed"
+                className="flex h-11 flex-1 items-center justify-center rounded-[26px] bg-[#2b2b2b]/40 px-3 text-center text-[10px] font-semibold text-white/60 cursor-not-allowed md:text-xs lg:text-sm"
                 title="Private lists cannot be shared via link"
               >
                 Share

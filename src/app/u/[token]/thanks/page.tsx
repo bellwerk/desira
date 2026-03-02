@@ -2,16 +2,8 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GlassCard, GlassButton, Spinner } from "@/components/ui";
-
-function centsToPretty(cents: number, currency: string): string {
-  const dollars = cents / 100;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(dollars);
-}
+import { ErrorStateCard, GlassCard, GlassButton, Spinner } from "@/components/ui";
+import { formatCurrency } from "@/lib/currency";
 
 type State =
   | { status: "loading" }
@@ -115,6 +107,30 @@ export default function ThanksPage(): React.ReactElement {
     run();
   }, [itemId, sessionId]);
 
+  if (state.status === "missing") {
+    return (
+      <ErrorStateCard
+        title="Missing item"
+        message="Payment succeeded, but item is missing."
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <ErrorStateCard
+        title="Payment confirmation failed"
+        message={state.message}
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
   return (
     <GlassCard className="mx-auto max-w-md">
       {/* Success icon */}
@@ -145,14 +161,6 @@ export default function ThanksPage(): React.ReactElement {
           <Spinner size="sm" />
           <span>Confirming payment...</span>
         </div>
-      ) : state.status === "missing" ? (
-        <p className="mt-2 text-sm text-[#62748e] text-center">
-          Payment succeeded, but item is missing.
-        </p>
-      ) : state.status === "error" ? (
-        <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
-          {state.message}
-        </div>
       ) : (
         <>
           <p className="mt-2 text-sm text-[#62748e] text-center">
@@ -166,21 +174,21 @@ export default function ThanksPage(): React.ReactElement {
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#62748e]">Contribution (to recipient)</span>
               <span className="font-medium text-[#2B2B2B]">
-                {centsToPretty(state.contributionCents, state.currency)}
+                {formatCurrency(state.contributionCents, state.currency)}
               </span>
             </div>
 
             <div className="mt-2 flex items-center justify-between text-sm">
               <span className="text-[#62748e]">Desira service fee</span>
               <span className="font-medium text-[#2B2B2B]">
-                {centsToPretty(state.feeCents, state.currency)}
+                {formatCurrency(state.feeCents, state.currency)}
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-white/30 pt-3 text-sm">
               <span className="font-medium text-[#2B2B2B]">Total charged</span>
               <span className="font-semibold text-[#2B2B2B]">
-                {centsToPretty(state.totalCents, state.currency)}
+                {formatCurrency(state.totalCents, state.currency)}
               </span>
             </div>
 

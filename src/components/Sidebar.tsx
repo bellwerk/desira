@@ -67,11 +67,15 @@ const navItems: NavItem[] = [
   },
 ];
 
-function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
+function isActivePath(pathname: string, href: string): boolean {
+  return pathname === href || (href !== "/app" && pathname.startsWith(href));
+}
+
+function DesktopNavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
   return (
     <Link
       href={item.href}
-      className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${
+      className={`group relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${
         isActive
           ? "bg-[#2B2B2B] text-white shadow-md"
           : "border border-[#2B2B2B]/20 bg-transparent text-[#2B2B2B] hover:scale-105 hover:border-[#2B2B2B]/40 hover:bg-[#2B2B2B]/10"
@@ -88,41 +92,77 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }): Reac
   );
 }
 
+function MobileNavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
+  return (
+    <Link
+      href={item.href}
+      aria-label={item.label}
+      className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${
+        isActive
+          ? "bg-[#2B2B2B] text-white shadow-sm"
+          : "text-[#2B2B2B] hover:bg-[#2B2B2B]/10"
+      }`}
+    >
+      {item.icon}
+      <span className="sr-only">{item.label}</span>
+    </Link>
+  );
+}
+
 export function Sidebar(): React.ReactElement {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-4 top-1/2 z-50 -translate-y-1/2 flex flex-col items-center rounded-2xl bg-white/80 py-3 px-2 dark:bg-[#eaeaea]/80">
-      {/* Navigation icons */}
-      <nav className="flex flex-col items-center gap-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || 
-            (item.href !== "/app" && pathname.startsWith(item.href));
-          return (
-            <NavLink key={item.href} item={item} isActive={isActive} />
-          );
-        })}
-      </nav>
+    <>
+      <aside className="fixed left-4 top-1/2 z-50 hidden -translate-y-1/2 flex-col items-center rounded-2xl bg-white/80 px-2 py-3 dark:bg-[#eaeaea]/80 md:flex">
+        {/* Navigation icons */}
+        <nav className="flex flex-col items-center gap-1">
+          {navItems.map((item) => (
+            <DesktopNavLink key={item.href} item={item} isActive={isActivePath(pathname, item.href)} />
+          ))}
+        </nav>
 
-      {/* Divider */}
-      <div className="my-2 h-px w-8 bg-slate-200/70 dark:bg-slate-700/50" />
+        {/* Divider */}
+        <div className="my-2 h-px w-8 bg-slate-200/70 dark:bg-slate-700/50" />
 
-      {/* Create new button */}
-      <div className="group relative">
+        {/* Create new button */}
+        <div className="group relative">
+          <Link
+            href="/app/lists/new"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#9d8df1] text-[#343338] transition-all duration-200 hover:scale-105 hover:bg-[#8a7ae0]"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </Link>
+          {/* Tooltip */}
+          <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-[#2B2B2B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 delay-200 group-hover:opacity-100">
+            Create New List
+            <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2B2B2B]" />
+          </span>
+        </div>
+      </aside>
+
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-2 bottom-2 z-50 flex items-center justify-between rounded-2xl border border-[#2B2B2B]/15 bg-white/90 px-2 py-2 shadow-lg backdrop-blur md:hidden"
+      >
+        <div className="flex flex-1 items-center justify-evenly">
+          {navItems.map((item) => (
+            <MobileNavLink key={item.href} item={item} isActive={isActivePath(pathname, item.href)} />
+          ))}
+        </div>
         <Link
           href="/app/lists/new"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9d8df1] text-[#343338] transition-all duration-200 hover:scale-105 hover:bg-[#8a7ae0]"
+          aria-label="Create New List"
+          className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#9d8df1] text-[#343338] transition-all duration-200 hover:bg-[#8a7ae0]"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
+          <span className="sr-only">Create New List</span>
         </Link>
-        {/* Tooltip */}
-        <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-[#2B2B2B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 delay-200 group-hover:opacity-100">
-          Create New List
-          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#2B2B2B]" />
-        </span>
-      </div>
-    </aside>
+      </nav>
+    </>
   );
 }

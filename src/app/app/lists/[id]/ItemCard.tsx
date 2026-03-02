@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard, useToastActions } from "@/components/ui";
 import { getItemRedirectPath } from "@/lib/affiliate";
+import { formatCurrency } from "@/lib/currency";
 import { deleteItem, markItemReceived, toggleMostDesired } from "../actions";
 import { EditItemModal } from "./EditItemModal";
 
@@ -34,21 +35,12 @@ type ItemCardProps = {
   listId?: string;
 };
 
-function formatCurrency(cents: number, currency: string): string {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
 /**
  * ItemCard — displays a wish item with glass styling
  * 
  * Features:
  * - Edit and delete icon buttons for owners
- * - Fixed touch targets (32x32 minimum)
+ * - Fixed touch targets (44x44 minimum on mobile)
  * - Proper image placeholder with favicon
  * - Funding progress bar with inline withdraw button
  * - Better private note styling
@@ -71,7 +63,7 @@ export function ItemCard({
   const target = item.target_amount_cents ?? item.price_cents ?? 0;
   const pct = target > 0 ? Math.min(100, Math.round((fundedAmount / target) * 100)) : 0;
 
-  // Business rule: disable reserve if contributions exist
+  // Business rule: disable buy-lock if contributions exist
   const hasContributions = fundedAmount > 0;
   const isReceived = item.status === "received";
 
@@ -285,7 +277,7 @@ export function ItemCard({
           )}
 
           {/* Action buttons - Compact buttons matching mockup */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Owner actions */}
             {isOwner && !isPreview && (
               <>
@@ -293,10 +285,10 @@ export function ItemCard({
                 <button
                   onClick={handleEdit}
                   disabled={isPending}
-                  className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   title="Edit item"
                 >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                   </svg>
                 </button>
@@ -304,10 +296,10 @@ export function ItemCard({
                 <button
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:bg-red-50 hover:border-red-500 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:border-red-500 hover:bg-red-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   title="Delete item"
                 >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                   </svg>
                 </button>
@@ -316,7 +308,7 @@ export function ItemCard({
                 <button
                   onClick={handleMarkReceived}
                   disabled={isPending || isReceived}
-                  className="flex-1 rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#3a3a3a]"
+                  className="h-11 flex-1 rounded-full bg-[#3a3a3a] px-3 text-center text-[10px] font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#3a3a3a] sm:px-4 sm:text-xs md:text-sm"
                   title={isReceived ? "Already marked as received" : "Mark as received"}
                 >
                   {isReceived ? "Received" : "Mark Received"}
@@ -324,35 +316,35 @@ export function ItemCard({
               </>
             )}
 
-            {/* Non-owner actions: Reserve / Contribute */}
+            {/* Non-owner actions: Buy / Contribute */}
             {!isOwner && (
               <>
                 <button
                   disabled={isPreview || isReserved || isFunded || hasContributions}
-                  className="flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 flex-1 rounded-full border border-[#2b2b2b] bg-transparent px-3 text-center text-[10px] font-medium text-[#2b2b2b] transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-xs md:text-sm"
                   title={
                     isPreview
                       ? "Preview mode — use public link to test"
                       : hasContributions
-                      ? "Can't reserve — this item already has contributions"
+                      ? "Can't buy this gift — this item already has contributions"
                       : isReserved
-                      ? "Already reserved"
+                      ? "Already bought"
                       : isFunded
                       ? "Fully funded"
-                      : "Reserve this item"
+                      : "Buy this item"
                   }
                 >
-                  {isReserved ? "Reserved" : "Reserve"}
+                  {isReserved ? "Bought" : "Buy"}
                 </button>
 
                 <button
                   disabled={isPreview || isReserved || isFunded}
-                  className="flex-1 rounded-full bg-[#3a3a3a] px-3 sm:px-4 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs md:text-sm font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 flex-1 rounded-full bg-[#3a3a3a] px-3 text-center text-[10px] font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-xs md:text-sm"
                   title={
                     isPreview
                       ? "Preview mode — use public link to test"
                       : isReserved
-                      ? "Can't contribute — this item is reserved"
+                      ? "Can't contribute — this item is already bought"
                       : isFunded
                       ? "Fully funded"
                       : "Contribute to this item"

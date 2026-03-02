@@ -14,6 +14,7 @@ export function ItemActions(props: {
   contributeDisabledReason?: string;
   canReserve: boolean;
   reserveDisabledReason?: string;
+  hasProductLink: boolean;
   actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
   const router = useRouter();
@@ -25,14 +26,15 @@ export function ItemActions(props: {
     contributeDisabledReason,
     canReserve,
     reserveDisabledReason,
+    hasProductLink,
     actionLabelVariant,
   } = props;
   const contributeLabel = "Contribute";
-  const reserveLabel = "Buy this gift";
-  const [openHelper, setOpenHelper] = useState<"contribute" | "reserve" | null>(null);
+  const buyLabel = "Buy this gift";
+  const [openHelper, setOpenHelper] = useState<"contribute" | "buy" | null>(null);
 
   // Lazy init instead of useEffect setState.
-  const [hasTicket, setHasTicket] = useState<boolean>(() => {
+  const [hasTicket] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem(`desira_cancel_${itemId}`));
     } catch {
@@ -57,39 +59,12 @@ export function ItemActions(props: {
     });
   }
 
-  async function reserve(): Promise<void> {
+  function buy(): void {
     track(AuditEventType.SHARED_ITEM_RESERVE_CLICKED);
-
-    const res = await fetch("/api/reservations", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ share_token: token, item_id: itemId }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(json?.error ?? "Failed to reserve.");
-      return;
-    }
-
-    // Store cancel credentials locally so this browser can cancel later.
-    if (json?.reservation_id && json?.cancel_token) {
-      try {
-        localStorage.setItem(
-          `desira_cancel_${itemId}`,
-          JSON.stringify({
-            reservation_id: json.reservation_id,
-            cancel_token: json.cancel_token,
-          })
-        );
-        setHasTicket(true);
-      } catch {
-        // ignore
-      }
-    }
-
-    router.refresh();
+    const nextUrl = hasProductLink
+      ? `/u/${token}/reserve?item=${itemId}&go=1`
+      : `/u/${token}/reserve?item=${itemId}`;
+    router.push(nextUrl);
   }
 
   function cancel(): void {
@@ -97,7 +72,11 @@ export function ItemActions(props: {
     router.push(`/u/${token}/cancel?item=${itemId}`);
   }
 
-  function toggleHelper(which: "contribute" | "reserve"): void {
+  function reopenMerchant(): void {
+    window.location.assign(`/api/go/${itemId}?token=${encodeURIComponent(token)}`);
+  }
+
+  function toggleHelper(which: "contribute" | "buy"): void {
     setOpenHelper((prev) => (prev === which ? null : which));
   }
 
@@ -119,17 +98,23 @@ export function ItemActions(props: {
     </span>
   );
 
+  const buyEnabled = canReserve;
+  const buyDisabledReason = reserveDisabledReason;
   const contributeHelperText = contributeDisabled && contributeDisabledReason
     ? contributeDisabledReason
     : "Chip in with friends.";
-  const reserveHelperText = hasTicket
-    ? "You reserved this from this browser."
-    : canReserve
-      ? "Claim this gift anonymously."
-      : (reserveDisabledReason ?? "Not available right now.");
+  const buyHelperText = hasTicket
+    ? hasProductLink
+      ? "You can reopen the merchant page or undo your buy mark from this browser."
+      : "You marked this gift as bought from this browser."
+    : buyEnabled
+      ? hasProductLink
+        ? "Review and confirm first, then continue to the merchant page."
+        : "Review and confirm to mark this gift as bought."
+      : (buyDisabledReason ?? "Not available right now.");
 
   return (
-    <div className="grid grid-cols-2 items-start gap-2 sm:gap-2.5">
+    <div className="grid grid-cols-1 items-start gap-2 min-[420px]:grid-cols-2 sm:gap-2.5">
       <div className="relative">
         {contributeDisabled ? (
           <button
@@ -159,7 +144,7 @@ export function ItemActions(props: {
             aria-expanded={openHelper === "contribute"}
             aria-controls={`helper-contribute-${itemId}`}
             aria-label="Show contribute helper text"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b6b6b6] text-[11px] font-semibold text-[#7c7c7c]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#b6b6b6] text-sm font-semibold text-[#7c7c7c]"
           >
             i
           </button>
@@ -178,7 +163,29 @@ export function ItemActions(props: {
       </div>
 
       <div className="relative">
-        {hasTicket ? (
+        {hasTicket ? hasProductLink ? (
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setOpenHelper(null);
+                reopenMerchant();
+              }}
+              className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+            >
+              <span className="flex-1 truncate pr-2 text-center">Open merchant again</span>
+              <span className="shrink-0">{arrowIcon}</span>
+            </button>
+            <button
+              onClick={() => {
+                setOpenHelper(null);
+                cancel();
+              }}
+              className="flex h-11 w-full items-center justify-center rounded-full border border-[#202020] bg-white px-3 text-center text-sm font-medium text-[#202020] transition-colors hover:bg-[#f4f4f4] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base"
+            >
+              Undo buy mark
+            </button>
+          </div>
+        ) : (
           <button
             onClick={() => {
               setOpenHelper(null);
@@ -186,17 +193,17 @@ export function ItemActions(props: {
             }}
             className="peer flex h-11 w-full items-center justify-center rounded-full border border-[#202020] bg-white px-3 text-center text-sm font-medium text-[#202020] transition-colors hover:bg-[#f4f4f4] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base"
           >
-            Cancel
+            Undo buy mark
           </button>
-        ) : canReserve ? (
+        ) : buyEnabled ? (
           <button
             onClick={() => {
               setOpenHelper(null);
-              void reserve();
+              buy();
             }}
             className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
           >
-            <span className="flex-1 truncate pr-2 text-center">{reserveLabel}</span>
+            <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
           </button>
         ) : (
@@ -204,32 +211,32 @@ export function ItemActions(props: {
             disabled
             className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
           >
-            <span className="flex-1 truncate pr-2 text-center">{reserveLabel}</span>
+            <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
           </button>
         )}
         <div className="mt-1 flex justify-end sm:hidden">
           <button
             type="button"
-            onClick={() => toggleHelper("reserve")}
-            aria-expanded={openHelper === "reserve"}
-            aria-controls={`helper-reserve-${itemId}`}
-            aria-label="Show reserve helper text"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b6b6b6] text-[11px] font-semibold text-[#7c7c7c]"
+            onClick={() => toggleHelper("buy")}
+            aria-expanded={openHelper === "buy"}
+            aria-controls={`helper-buy-${itemId}`}
+            aria-label="Show buy helper text"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#b6b6b6] text-sm font-semibold text-[#7c7c7c]"
           >
             i
           </button>
         </div>
-        {openHelper === "reserve" && (
+        {openHelper === "buy" && (
           <p
-            id={`helper-reserve-${itemId}`}
+            id={`helper-buy-${itemId}`}
             className="mt-1 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-[10px] leading-tight text-[#5f5f5f] shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:hidden"
           >
-            {reserveHelperText}
+            {buyHelperText}
           </p>
         )}
         <p className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2.5 py-1 text-center text-[10px] font-normal leading-tight text-[#5f5f5f] opacity-0 shadow-[0_6px_18px_rgba(0,0,0,0.08)] transition-opacity duration-150 sm:inline-flex sm:peer-hover:opacity-100 sm:peer-focus-visible:opacity-100">
-          {reserveHelperText}
+          {buyHelperText}
         </p>
       </div>
     </div>

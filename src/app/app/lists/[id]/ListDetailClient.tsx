@@ -57,25 +57,25 @@ export function ListDetailClient({
 
   return (
     <>
-      <div className="flex flex-col justify-start mt-40">
+      <div className="mt-6 flex flex-col justify-start sm:mt-8 md:mt-10">
         {/* Header section with Add New Wish button and Edit/Share buttons */}
-        <div className="px-12 ml-20 mr-4">
-          <header className="mb-8 flex items-center justify-between">
+        <div>
+          <header className="mb-6 grid grid-cols-1 gap-3 sm:mb-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
             {/* Add New Wish button - left side */}
-            <div className="flex items-center">
+            <div className="flex items-center justify-center lg:justify-start">
               <AddItemForm listId={listId} />
             </div>
 
             {/* Title centered */}
-            <h1 className="text-2xl font-semibold text-[#2b2b2b] flex-1 text-center">
+            <h1 className="text-center text-xl font-semibold text-[#2b2b2b] sm:text-2xl">
               {listTitle}
             </h1>
 
             {/* Settings/Share buttons - right side */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end lg:gap-3">
               <button
                 onClick={() => setIsSettingsModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#D4D7C2] px-5 py-2 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#D4D7C2] px-5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
               >
                 <svg
                   className="h-4 w-4"
@@ -99,7 +99,7 @@ export function ListDetailClient({
               </button>
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#D4D7C2] px-5 py-2 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#D4D7C2] px-5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
               >
                 Share
                 <svg
@@ -124,7 +124,7 @@ export function ListDetailClient({
             ITEMS SECTION
             Grid with drag-to-reorder, filtering, and edit capabilities
         ───────────────────────────────────────────────────────────── */}
-        <section className="px-12 ml-20 mr-4">
+        <section>
           <ItemsGrid
             items={items}
             reservedMap={reservedMap}

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { GlassCard } from "@/components/ui";
+import { BadgeChip, GlassCard } from "@/components/ui";
 import { ItemActions } from "@/components/ItemActions";
+import { formatCurrency } from "@/lib/currency";
 import type { ExperimentVariant } from "@/lib/experiments";
 
 type ItemRow = {
   id: string;
   title: string;
   image_url: string | null;
+  has_product_link: boolean;
   price_cents: number | null;
   target_amount_cents: number | null;
   note_public: string | null;
@@ -33,16 +35,7 @@ type PublicListClientProps = {
 };
 
 type SortOption = "default" | "price-low" | "price-high" | "most-desired";
-type FilterOption = "all" | "available" | "reserved" | "funded";
-
-function formatCurrency(cents: number, currency: string): string {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
-}
+type FilterOption = "all" | "available" | "bought" | "funded";
 
 export function PublicListClient({
   token,
@@ -62,17 +55,26 @@ export function PublicListClient({
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
-  // Apply filtering
-  const filteredItems = initialItems.filter((item) => {
-    const isReserved = reservedMap.get(item.id);
+  function isItemFunded(item: ItemRow): boolean {
     const funded = fundedMap.get(item.id) ?? 0;
     const target = item.target_amount_cents ?? item.price_cents ?? 0;
-    const isFunded = item.status === "funded" || (target > 0 && funded >= target);
+    return item.status === "funded" || (target > 0 && funded >= target);
+  }
+
+  function isItemUnavailable(item: ItemRow): boolean {
+    return item.status === "archived";
+  }
+
+  // Apply filtering
+  const filteredItems = initialItems.filter((item) => {
+    const isReserved = Boolean(reservedMap.get(item.id));
+    const isFunded = isItemFunded(item);
+    const isUnavailable = isItemUnavailable(item);
 
     if (filterBy === "available") {
-      return !isReserved && !isFunded;
+      return !isReserved && !isFunded && !isUnavailable;
     }
-    if (filterBy === "reserved") {
+    if (filterBy === "bought") {
       return isReserved;
     }
     if (filterBy === "funded") {
@@ -125,13 +127,13 @@ export function PublicListClient({
               >
                 <option value="all">All Items ({initialItems.length})</option>
                 <option value="available">
-                  Available ({initialItems.filter((i) => !reservedMap.get(i.id) && !(i.status === "funded" || ((i.target_amount_cents ?? i.price_cents ?? 0) > 0 && (fundedMap.get(i.id) ?? 0) >= (i.target_amount_cents ?? i.price_cents ?? 0)))).length})
+                  Available ({initialItems.filter((i) => !reservedMap.get(i.id) && !isItemFunded(i) && !isItemUnavailable(i)).length})
                 </option>
-                <option value="reserved">
-                  Reserved ({initialItems.filter((i) => reservedMap.get(i.id)).length})
+                <option value="bought">
+                  Bought ({initialItems.filter((i) => reservedMap.get(i.id)).length})
                 </option>
                 <option value="funded">
-                  Funded ({initialItems.filter((i) => i.status === "funded" || ((i.target_amount_cents ?? i.price_cents ?? 0) > 0 && (fundedMap.get(i.id) ?? 0) >= (i.target_amount_cents ?? i.price_cents ?? 0))).length})
+                  Funded ({initialItems.filter((i) => isItemFunded(i)).length})
                 </option>
               </select>
               <span className="shrink-0 text-[#a0a0a0]">|</span>
@@ -279,9 +281,10 @@ function ItemCardComponent({
   const funded = fundedMap.get(item.id) ?? 0;
   const target = item.target_amount_cents ?? item.price_cents ?? 0;
   const isReceived = item.status === "received";
+  const isUnavailable = item.status === "archived";
   const isFunded =
     item.status === "funded" || (target > 0 && funded >= target);
-  const isComplete = isReceived || isFunded;
+  const isComplete = isReceived || isFunded || isUnavailable;
 
   const contributeDisabled =
     !listAllowContributions || isComplete || isReserved;
@@ -289,15 +292,19 @@ function ItemCardComponent({
     !listAllowReservations || isReserved || isComplete;
   const contributeDisabledReason = !listAllowContributions
     ? "Contributions are off for this item."
+    : isUnavailable
+      ? "This gift is unavailable right now."
     : isReserved
-      ? "Reserved by another friend."
+      ? "This gift is already marked as bought."
       : isComplete
         ? "This gift is fully funded."
         : undefined;
   const reserveDisabledReason = !listAllowReservations
-    ? "Reservations are off for this item."
+    ? "Buying is off for this list."
+    : isUnavailable
+      ? "This gift is unavailable right now."
     : isReserved
-      ? "Reserved by another friend."
+      ? "Already bought by another friend."
       : isComplete
         ? "This gift is fully funded."
         : undefined;
@@ -350,6 +357,11 @@ function ItemCardComponent({
               <h3 className="line-clamp-2 text-xs font-bold leading-tight text-[#2b2b2b] sm:text-sm md:text-base">
                 {item.title}
               </h3>
+              {isUnavailable && (
+                <div className="mt-1">
+                  <BadgeChip variant="unavailable">Unavailable</BadgeChip>
+                </div>
+              )}
             </div>
 
             {target > 0 && (
@@ -403,6 +415,7 @@ function ItemCardComponent({
             contributeDisabledReason={contributeDisabledReason}
             canReserve={!reserveDisabled}
             reserveDisabledReason={reserveDisabledReason}
+            hasProductLink={item.has_product_link}
             actionLabelVariant={actionLabelVariant}
           />
         </div>

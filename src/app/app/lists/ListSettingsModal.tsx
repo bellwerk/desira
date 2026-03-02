@@ -3,7 +3,7 @@
 import { useState, useActionState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateList, deleteList, type ActionResult } from "./actions";
-import { useToastActions } from "@/components/ui";
+import { GlassButton, useToastActions } from "@/components/ui";
 
 type ListSettingsModalProps = {
   list: {
@@ -104,14 +104,14 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4"
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 hover:text-white hover:bg-[#5a5a5a] transition-colors z-10"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
         >
           <svg
             className="h-4 w-4"
@@ -168,7 +168,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
             <label className="block text-sm font-medium text-white/90 mb-3">
               Who is this list for?
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
               <label className="relative flex cursor-pointer flex-col items-center rounded-[20px] bg-[#3a3a3a] p-3 hover:bg-[#4a4a4a] transition-colors">
                 <input
                   type="radio"
@@ -274,8 +274,8 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                   className="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Allow reservations</p>
-                  <p className="text-xs text-white/60">People can reserve items to avoid duplicates</p>
+                  <p className="text-sm font-medium text-white">Allow buy marks</p>
+                  <p className="text-xs text-white/60">People can mark gifts as bought to avoid duplicates</p>
                 </div>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
@@ -308,18 +308,18 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           </div>
 
           {/* Submit buttons */}
-          <div className="flex items-center gap-3 pt-4">
+          <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:items-center sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-full border-2 border-white/20 bg-transparent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-[0.98]"
+              className="h-11 flex-1 rounded-full border-2 border-white/20 bg-transparent px-4 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 rounded-full bg-gradient-to-r from-[#9d8df1] to-[#b8a8ff] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 flex-1 rounded-full bg-gradient-to-r from-[#9d8df1] to-[#b8a8ff] px-4 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPending ? (
                 <span className="flex items-center justify-center gap-2">
@@ -340,22 +340,19 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
         <div className="mt-6 rounded-[20px] border p-4" style={{ backgroundColor: 'rgba(255, 111, 89, 0.10)', borderColor: 'rgba(255, 111, 89, 0.30)' }}>
           <h3 className="text-sm font-semibold" style={{ color: '#FF6F59' }}>Danger zone</h3>
           <p className="mt-1 text-base" style={{ color: 'rgba(255, 111, 89, 0.80)' }}>
-            Deleting a list is permanent. All items, reservations, and contributions will be lost.
+            Deleting a list is permanent. All items, buy marks, and contributions will be lost.
           </p>
 
           {!showDeleteConfirm ? (
-            <button
+            <GlassButton
               type="button"
+              variant="danger"
+              size="sm"
               onClick={() => setShowDeleteConfirm(true)}
-              className="mt-3 rounded-full border px-4 py-2 text-xs font-medium transition-colors hover:opacity-90"
-              style={{ 
-                borderColor: 'rgba(255, 111, 89, 0.50)', 
-                backgroundColor: 'rgba(255, 111, 89, 0.15)',
-                color: '#FF6F59'
-              }}
+              className="mt-3"
             >
               Delete this list
-            </button>
+            </GlassButton>
           ) : (
             <div className="mt-3 space-y-2">
               {deleteError && (
@@ -371,15 +368,15 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                 Are you sure? This cannot be undone.
               </p>
               <div className="flex items-center gap-2">
-                <button
+                <GlassButton
                   type="button"
+                  variant="danger"
+                  size="sm"
                   onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="rounded-full px-4 py-2 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{ backgroundColor: '#FF6F59' }}
+                  loading={isDeleting}
                 >
                   {isDeleting ? "Deleting..." : "Yes, delete"}
-                </button>
+                </GlassButton>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}

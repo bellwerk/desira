@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
-type GlassButtonVariant = "primary" | "secondary" | "ghost";
+type GlassButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type GlassButtonSize = "sm" | "md" | "lg";
 
 interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,11 +12,13 @@ interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<GlassButtonVariant, string> = {
   primary:
-    "bg-[#9D8DF1] text-white shadow-lg hover:bg-[#8A7AE0] hover:shadow-xl active:scale-[0.98]",
+    "bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-dark)] hover:shadow-xl active:scale-[0.98]",
   secondary:
     "glass-1 text-slate-800 dark:text-slate-100 hover:bg-white/80 dark:hover:bg-white/10 active:scale-[0.98]",
   ghost:
     "bg-transparent text-[#2b2b2b]/80 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 active:scale-[0.98]",
+  danger:
+    "bg-[#FF6F59] text-white shadow-lg hover:bg-[#E65C48] hover:shadow-xl active:scale-[0.98]",
 };
 
 const sizeClasses: Record<GlassButtonSize, string> = {
@@ -32,6 +34,7 @@ const sizeClasses: Record<GlassButtonSize, string> = {
  * - `primary` — accent-tinted gradient, main CTAs
  * - `secondary` — glass background, secondary actions
  * - `ghost` — text/icon only, subtle hover wash
+ * - `danger` — destructive actions like delete/confirm
  */
 export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
   (

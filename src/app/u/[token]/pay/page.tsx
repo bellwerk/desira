@@ -2,7 +2,8 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { GlassCard, GlassButton, Spinner } from "@/components/ui";
+import { ErrorStateCard, GlassCard, GlassButton, Spinner } from "@/components/ui";
+import { formatCurrency } from "@/lib/currency";
 
 type Draft = {
   item_id: string;
@@ -22,15 +23,6 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; draft: Draft }
   | { status: "submitting"; draft: Draft };
-
-function centsToPretty(cents: number, currency: string): string {
-  const dollars = cents / 100;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(dollars);
-}
 
 export default function PayPage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
@@ -132,6 +124,30 @@ export default function PayPage(): React.ReactElement {
   const showDraft = state.status === "ready" || state.status === "submitting";
   const draft = showDraft ? state.draft : null;
 
+  if (state.status === "missing") {
+    return (
+      <ErrorStateCard
+        title="Missing item"
+        message="Missing item reference."
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <ErrorStateCard
+        title="Checkout unavailable"
+        message={state.message}
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
   return (
     <GlassCard className="mx-auto max-w-md">
       {/* Payment icon */}
@@ -160,38 +176,6 @@ export default function PayPage(): React.ReactElement {
           <Spinner size="sm" />
           <span>Loading...</span>
         </div>
-      ) : state.status === "missing" ? (
-        <>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
-            Missing item reference.
-          </p>
-          <div className="mt-5">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="w-full justify-center"
-            >
-              Back to list
-            </GlassButton>
-          </div>
-        </>
-      ) : state.status === "error" ? (
-        <>
-          <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
-            {state.message}
-          </div>
-          <div className="mt-5">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="w-full justify-center"
-            >
-              Back to list
-            </GlassButton>
-          </div>
-        </>
       ) : draft ? (
         <>
           {/* Summary */}
@@ -199,21 +183,21 @@ export default function PayPage(): React.ReactElement {
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#62748e]">Contribution</span>
               <span className="font-medium text-[#2B2B2B]">
-                {centsToPretty(draft.amount_cents, draft.currency)}
+                {formatCurrency(draft.amount_cents, draft.currency)}
               </span>
             </div>
 
             <div className="mt-2 flex items-center justify-between text-sm">
               <span className="text-[#62748e]">Desira service fee</span>
               <span className="font-medium text-[#2B2B2B]">
-                {centsToPretty(draft.fee_cents, draft.currency)}
+                {formatCurrency(draft.fee_cents, draft.currency)}
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-white/30 pt-3 text-sm">
               <span className="font-medium text-[#2B2B2B]">Total charged</span>
               <span className="font-semibold text-[#2B2B2B]">
-                {centsToPretty(draft.total_cents, draft.currency)}
+                {formatCurrency(draft.total_cents, draft.currency)}
               </span>
             </div>
 

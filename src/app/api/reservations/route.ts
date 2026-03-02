@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
   if (item.status !== "active") {
     return NextResponse.json(
-      { error: "Item is not reservable" },
+      { error: "Item is not available for buying" },
       { status: 409 }
     );
   }
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
   if (!list.allow_reservations) {
     return NextResponse.json(
-      { error: "Reservations disabled" },
+      { error: "Buying is disabled for this list" },
       { status: 403 }
     );
   }
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
   // Self-gifting prevention: check if authenticated user is the list owner
   if (user && list.owner_id === user.id) {
     return NextResponse.json(
-      { error: "Cannot reserve your own list items" },
+      { error: "Cannot mark your own list items as bought" },
       { status: 403 }
     );
   }
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
   if (createErr) {
     return NextResponse.json(
-      { error: "Already reserved", details: createErr.message },
+      { error: "Already marked as bought", details: createErr.message },
       { status: 409 }
     );
   }
@@ -186,11 +186,11 @@ export async function PATCH(req: Request) {
     .single();
 
   if (rErr || !r) {
-    return NextResponse.json({ error: "Reservation not found" }, { status: 404 });
+    return NextResponse.json({ error: "Buy mark not found" }, { status: 404 });
   }
 
   if (r.status !== "reserved") {
-    return NextResponse.json({ error: "Not cancelable" }, { status: 409 });
+    return NextResponse.json({ error: "Buy mark is not cancelable" }, { status: 409 });
   }
 
   if (!r.cancel_token_hash || r.cancel_token_hash !== hash) {
@@ -205,7 +205,7 @@ export async function PATCH(req: Request) {
     .single();
 
   if (upErr || !updated) {
-    return NextResponse.json({ error: "Failed to cancel" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to remove buy mark" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, reservation: updated });

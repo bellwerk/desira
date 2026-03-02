@@ -94,7 +94,9 @@ export default async function AppLayout({
             username={username}
             avatarUrl={profile?.avatar_url}
           />
-          <main className="flex-1 px-8 pb-8">{children}</main>
+          <main className="flex-1 px-3 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-2 sm:px-4 md:px-8 md:pb-8">
+            {children}
+          </main>
         </div>
       </div>
     );

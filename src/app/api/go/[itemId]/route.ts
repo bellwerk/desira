@@ -28,6 +28,7 @@ export async function GET(
 ): Promise<NextResponse> {
   const { itemId } = await context.params;
   const tokenParam = req.nextUrl.searchParams.get("token");
+  const resolveOnly = req.nextUrl.searchParams.get("resolve") === "1";
 
   // Validate itemId format (UUID)
   const uuidRegex =
@@ -126,6 +127,10 @@ export async function GET(
 
   // Generate affiliate URL (or pass through if Skimlinks not configured)
   const affiliateUrl = generateAffiliateUrl(item.product_url, xcust);
+
+  if (resolveOnly) {
+    return NextResponse.json({ ok: true, redirect_url: affiliateUrl });
+  }
 
   // Log click event for analytics (do NOT log share_token to avoid leaking it)
   await logAuditEvent({

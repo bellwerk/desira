@@ -53,6 +53,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
     status: previewStatus,
     data: previewData,
     error: previewError,
+    notice: previewNotice,
     reset: resetPreview,
     fetch: fetchPreview,
   } = useLinkPreview();
@@ -235,11 +236,11 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
 
   // Form rendering function
   const formContent = (
-      <div className="rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl relative">
+      <div className="relative rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6">
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 hover:text-white hover:bg-[#5a5a5a] transition-colors z-10"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
         >
           <svg
             className="h-4 w-4"
@@ -290,6 +291,17 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
               </svg>
               <span>{previewError}</span>
+            </div>
+          </div>
+        )}
+
+        {previewNotice && (
+          <div className="mb-5 rounded-xl bg-blue-500/20 px-4 py-3 text-sm text-blue-100">
+            <div className="flex items-start gap-2">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <span>{previewNotice}</span>
             </div>
           </div>
         )}
@@ -346,7 +358,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         </div>
 
         {/* Price + Quantity row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Price */}
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-white mb-2 font-[family-name:var(--font-urbanist)]">
@@ -594,7 +606,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         {/* Purple pill button */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-[#9d8df1] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#8a7be0] active:scale-[0.98]"
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-[#9d8df1] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#8a7be0] active:scale-[0.98]"
         >
           <svg
             className="h-4 w-4"
@@ -614,7 +626,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
 
         {/* Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -622,14 +634,14 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
             />
 
             {/* Modal content */}
-            <div className="relative z-10 w-full max-w-md mx-4 animate-modal-in">
+            <div className="relative z-10 mx-3 w-full max-w-md animate-modal-in sm:mx-4">
               {modalStep === "url" ? (
                 /* Step 1: URL Input */
-                <div className="rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl relative">
+                <div className="relative rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6">
                   {/* Close button */}
                   <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 hover:text-white hover:bg-[#5a5a5a] transition-colors"
+                    className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
                   >
                     <svg
                       className="h-4 w-4"

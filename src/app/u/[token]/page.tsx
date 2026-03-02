@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
-import { GlassCard } from "@/components/ui";
+import { ErrorStateCard, GlassCard } from "@/components/ui";
 import { PublicListClient } from "./PublicListClient";
 import { CreateWishlistButton } from "./CreateWishlistButton";
 import { SharedPageTracker } from "./SharedPageTracker";
@@ -23,16 +23,21 @@ type ContributionTotal = {
   funded_amount_cents: number;
 };
 
-type ItemRow = {
+type RawItemRow = {
   id: string;
   title: string;
   image_url: string | null;
+  product_url: string | null;
   price_cents: number | null;
   target_amount_cents: number | null;
   note_public: string | null;
   status: "active" | "funded" | "received" | "archived";
   sort_order: number | null;
   most_desired: boolean | null;
+};
+
+type ItemRow = Omit<RawItemRow, "product_url"> & {
+  has_product_link: boolean;
 };
 
 function formatEventDate(rawDate: string): string {
@@ -73,27 +78,11 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
   // Private lists should only be accessible to authenticated members, not via share link
   if (listErr || !list || list.visibility === "private") {
     return (
-      <GlassCard className="text-center py-12">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100/60">
-          <svg
-            className="h-8 w-8 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
-            />
-          </svg>
-        </div>
-        <h1 className="mt-4 text-lg font-semibold text-[#2B2B2B]">List not found</h1>
-        <p className="mt-2 text-sm text-[#62748e]">
-          That link may be invalid or expired.
-        </p>
-      </GlassCard>
+      <ErrorStateCard
+        title="List not found"
+        message="That link may be invalid or expired."
+        className="py-12"
+      />
     );
   }
 
@@ -114,6 +103,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
       id,
       title,
       image_url,
+      product_url,
       price_cents,
       target_amount_cents,
       note_public,
@@ -127,14 +117,19 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
 
   if (itemsErr) {
     return (
-      <GlassCard className="text-center py-12">
-        <h1 className="text-lg font-semibold text-[#2B2B2B]">Failed to load items</h1>
-        <p className="mt-2 text-sm text-[#62748e]">Please try again later.</p>
-      </GlassCard>
+      <ErrorStateCard
+        title="Failed to load items"
+        message="Please try again later."
+        className="py-12"
+      />
     );
   }
 
-  const typedItems = (items ?? []) as ItemRow[];
+  const rawItems = (items ?? []) as RawItemRow[];
+  const typedItems: ItemRow[] = rawItems.map(({ product_url, ...item }) => ({
+    ...item,
+    has_product_link: typeof product_url === "string" && product_url.trim().length > 0,
+  }));
   const itemIds = typedItems.map((i) => i.id);
 
   let reservedFlags: ReservationFlag[] = [];
@@ -176,7 +171,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
 
       <div className="mb-0 flex justify-center sm:mb-0 sm:justify-end">
         <span className="shared-tip-pill inline-flex h-11 w-full max-w-[500px] items-center justify-center gap-1 rounded-full px-3 text-sm font-normal font-[family-name:var(--font-urbanist)] sm:text-[15px]">
-          <span aria-hidden>&#10024;</span> Tip: You can reserve a gift or contribute toward a big-ticket item!
+          <span aria-hidden>&#10024;</span> Tip: Buy a gift now or contribute toward a big-ticket one.
         </span>
       </div>
 
@@ -206,7 +201,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
           {list.title}
         </h1>
         <p className="mt-2 text-sm font-medium text-[#6b6b6b] font-[family-name:var(--font-urbanist)] sm:text-base">
-          Reservations are anonymous , contributions go to recipient directly.
+          Bought gifts stay anonymous, and contributions go to the recipient directly.
         </p>
       </header>
 

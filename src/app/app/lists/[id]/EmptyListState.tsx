@@ -63,7 +63,7 @@ function GiftSuggestionCard({
       {/* Add button */}
       <button 
         onClick={() => onAdd(suggestion.name)}
-        className="absolute right-2.5 top-2.5 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-[#2b2b2b] shadow-md transition-transform hover:scale-110"
+        className="absolute right-1.5 top-1.5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#2b2b2b] shadow-md transition-transform hover:scale-110"
       >
         <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -160,7 +160,7 @@ function AddWishModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -168,14 +168,14 @@ function AddWishModal({
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md mx-4 animate-modal-in">
+      <div className="relative z-10 mx-3 w-full max-w-md animate-modal-in sm:mx-4">
         {step === "url" ? (
           /* Step 1: URL Input */
-          <div className="rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl">
+          <div className="rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6">
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 hover:text-white hover:bg-[#5a5a5a] transition-colors"
+              className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
             >
               <svg
                 className="h-4 w-4"
@@ -275,7 +275,7 @@ export function EmptyListState({
   }, []);
 
   return (
-    <div className="mx-auto max-w-3xl pt-[140px]">
+    <div className="mx-auto max-w-3xl pt-8 sm:pt-16 lg:pt-[140px]">
       {/* Floating decorative elements — static for stillness */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-gradient-to-br from-violet-500/8 to-rose-500/8 blur-3xl" />
@@ -372,7 +372,7 @@ export function EmptyListState({
           {/* Add item button - opens modal */}
           <button
             onClick={handleOpenModal}
-            className="rounded-full bg-[#9d8df1] px-6 py-2 text-center text-base font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#8a7ae0] hover:scale-[1.02] active:scale-[0.98] font-[family-name:var(--font-urbanist)]"
+            className="h-11 rounded-full bg-[#9d8df1] px-6 text-center text-base font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#8a7ae0] hover:scale-[1.02] active:scale-[0.98] font-[family-name:var(--font-urbanist)]"
           >
             Add an item
           </button>

@@ -153,9 +153,9 @@ export default function NewListPage(): React.ReactElement {
   }, []);
 
   return (
-    <div className="flex min-h-full items-start justify-center px-4 pt-6 pb-16 sm:pt-10">
+    <div className="flex min-h-full items-start justify-center px-1 pt-4 pb-16 sm:px-4 sm:pt-10">
       {/* Modal Container — Dark style matching Add Wish modal */}
-      <div className="relative rounded-[30px] bg-[#2b2b2b] p-6 w-full max-w-lg overflow-hidden shadow-2xl" style={{ fontFamily: "Urbanist" }}>
+      <div className="relative w-full max-w-lg overflow-hidden rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6" style={{ fontFamily: "Urbanist" }}>
         {/* Header */}
         <header className="mb-5">
           <h1 className="text-2xl font-bold text-white text-center" style={{ fontFamily: "Asul" }}>
@@ -303,7 +303,7 @@ export default function NewListPage(): React.ReactElement {
             <legend className="block text-sm font-medium text-white mb-3">
               What kind of list?
             </legend>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
               {(Object.keys(LIST_TYPE_CONFIG) as ListType[]).map((type) => {
                 const config = LIST_TYPE_CONFIG[type];
                 const isSelected = listType === type;
@@ -369,7 +369,7 @@ export default function NewListPage(): React.ReactElement {
               Who can see it?
             </legend>
 
-            <div className="inline-flex rounded-full border border-white/10 bg-[#3a3a3a] p-1">
+            <div className="grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-[#3a3a3a] p-2 sm:grid-cols-2 sm:gap-1 sm:rounded-full sm:p-1">
               {VISIBILITY_OPTIONS.map((option) => {
                 const isSelected = visibility === option.value;
                 return (
@@ -380,7 +380,7 @@ export default function NewListPage(): React.ReactElement {
                     aria-checked={isSelected}
                     onClick={() => setVisibility(option.value)}
                     className={`
-                      rounded-full px-4 py-2 text-sm font-medium
+                      h-11 rounded-full px-4 text-sm font-medium
                       transition-all duration-150
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d8df1]/50
                       ${
@@ -442,8 +442,8 @@ export default function NewListPage(): React.ReactElement {
               <div className="mt-3 space-y-1 rounded-xl border border-white/10 bg-[#3a3a3a] p-4">
                 <Toggle
                   name="allow_reservations"
-                  label="Reservations"
-                  helperText="Guests can claim items to prevent duplicates"
+                  label="Buy marks"
+                  helperText="Guests can mark gifts as bought to prevent duplicates"
                   checked={allowReservations}
                   onCheckedChange={setAllowReservations}
                 />
@@ -477,11 +477,11 @@ export default function NewListPage(): React.ReactElement {
           )}
 
           {/* Footer Actions */}
-          <footer className="mt-8 flex items-center justify-between">
+          <footer className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <Link
               href="/app/lists"
               className="
-                rounded-xl px-4 py-2 text-sm font-medium text-white/60
+                inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-white/60
                 transition-all duration-150
                 hover:bg-white/5 hover:text-white
                 focus-visible:outline-none focus-visible:ring-2
@@ -495,7 +495,7 @@ export default function NewListPage(): React.ReactElement {
               type="submit"
               disabled={!isFormValid || isPending}
               className="
-                rounded-full bg-[#9d8df1] px-6 py-3 text-center text-base font-semibold text-white
+                h-11 rounded-full bg-[#9d8df1] px-6 text-center text-base font-semibold text-white
                 shadow-sm transition-all duration-200
                 hover:bg-[#8a7ae0] hover:scale-[1.01]
                 active:scale-[0.99]

@@ -2,14 +2,14 @@
 
 ## What Desira is (1 paragraph)
 Desira helps people choose gifts for someone (a person) or a group (family ↔ family). It supports two ways to “help”:
-1) **Buy the gift** (via an external link) and **reserve it** so nobody duplicates it, while keeping reserver identity + gift details hidden.
+1) **Buy the gift** (via an external link) and **mark it as bought** so nobody duplicates it, while keeping buyer identity + gift details hidden.
 2) **Contribute money** (“fundraiser”) to partially cover the cost so the receiver can buy it later.
 
 ---
 
 ## Access model (important)
 ### MVP: no accounts required for guests (and can even be no accounts at all)
-- Wishlists are **unlisted**: anyone with the **guest link** can **view / reserve / contribute / click affiliate links**.
+- Wishlists are **unlisted**: anyone with the **guest link** can **view / buy / contribute / click affiliate links**.
 - List owners manage the list via a separate **manage link** (treat like a password).
 - We do NOT rely on “members” for MVP access control. Access is **token-based**.
 
@@ -20,12 +20,12 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ---
 
 ## Product rules (non-negotiable)
-- If an item is **reserved**, nobody else can reserve/buy the same item.
-- Reservation hides: **who reserved** + **purchase details** (only show “Reserved.”).
+- If an item is **marked as bought**, nobody else can buy-lock the same item.
+- Buy-lock hides: **who bought** + **purchase details** (only show “Bought.”).
 - Guests do not need accounts to do anything on the guest link.
 - **Mutual exclusivity (MVP):**
-  - A wish **CANNOT be reserved** if it already has **any contributions (> 0)**.
-  - A wish **CANNOT receive contributions** if it is **reserved**.
+  - A wish **CANNOT be buy-locked** if it already has **any contributions (> 0)**.
+  - A wish **CANNOT receive contributions** if it is **buy-locked**.
 - Everything must be enforced **server-side + DB-level** (UI checks are not enough).
 
 ---
@@ -44,7 +44,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - Create a list (no account required) → get guest link + manage link
 - Add wishes (title, URL, price estimate, notes, priority)
 - Share guest link
-- Reserve a wish (hidden identity)
+- Mark a wish as bought (hidden identity)
 - Contribute money (Stripe)
 - Click affiliate links (simple outbound link)
 - Basic notifications (in-app later; can start with none)
@@ -76,7 +76,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
   - [ ] guestToken
   - [ ] manageToken
 - [ ] `/m/[manageToken]` can edit list settings + wishes
-- [ ] `/l/[guestToken]` can view list + reserve + contribute
+- [ ] `/l/[guestToken]` can view list + buy + contribute
 - [ ] Add “treat manage link like password” warning
 
 ## M2 — Data model v1 + enforcement (critical)
@@ -127,9 +127,9 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [ ] Contribution amount > 0
 
 ### Business rules (must be enforced server-side + DB)
-- [ ] Block **reserve** if contributions exist for that wish
-- [ ] Block **contribute** if that wish is reserved
-- [ ] Block reserve if already reserved (race-safe / atomic)
+- [ ] Block **buy-lock** if contributions exist for that wish
+- [ ] Block **contribute** if that wish is buy-locked
+- [ ] Block buy-lock if already buy-locked (race-safe / atomic)
 
 ### Supabase/RLS approach for token-based MVP
 - [ ] Use server-only DB access for all reads/writes (route handlers / server actions)
@@ -143,15 +143,15 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
   - [ ] `/l/[token]` guest list view (core)
   - [ ] `/m/[token]` manage view (edit list + wishes + Stripe connect)
 
-## M4 — Reserve flow (no duplicates)
-- [ ] Reserve wish (atomic / safe)
-- [ ] Unreserve:
+## M4 — Buy-lock flow (no duplicates)
+- [ ] Buy-lock wish (atomic / safe)
+- [ ] Undo buy-lock:
   - [ ] MVP choice: use `reservation_secret` (stored in localStorage/cookie) to allow same-device unreserve
-- [ ] Block reserve if contributions exist (**DB + server**)
+- [ ] Block buy-lock if contributions exist (**DB + server**)
 - [ ] UI states:
   - [ ] Available
-  - [ ] Reserved (no identity shown)
-  - [ ] Funded/Contributions started (cannot reserve)
+  - [ ] Bought (no identity shown)
+  - [ ] Funded/Contributions started (cannot buy-lock)
   - [ ] Archived
 
 ## M5 — Money contributions (Stripe Connect destination charges)
@@ -163,7 +163,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 - [ ] Webhook(s) for payment confirmation
 - [ ] Save contribution records to DB
 - [ ] Show totals in UI
-- [ ] Block contributions if reserved (**DB + server**)
+- [ ] Block contributions if buy-locked (**DB + server**)
 
 ## M6 — Notifications v1 (minimum)
 - [ ] (Optional MVP) In-app notifications later
@@ -199,14 +199,14 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 
 ### `/` — micro landing (no big landing)
 **H1:** Gifts, without duplicates.  
-**Sub:** Reserve quietly, or chip in together. One link. No awkward chats.  
+**Sub:** Buy quietly, or chip in together. One link. No awkward chats.  
 **Primary CTA:** Create a list  
 **Secondary CTA:** See how it works
 
 **How it works (3 cards)**
 1) Add wishes (links, notes, price)  
 2) Share one link  
-3) Reserve or contribute — details stay hidden
+3) Buy or contribute — details stay hidden
 
 **Trust line:** No accounts for guests. Just the link.  
 **Footer note (tiny):** Some links may be affiliate links.
@@ -216,7 +216,7 @@ Desira helps people choose gifts for someone (a person) or a group (family ↔ f
 ### `/l/[guestToken]` — public list (your real landing)
 Header:
 - **Title:** {ListTitle}
-- **Subtitle:** Pick one. Reserve quietly. Or chip in.
+- **Subtitle:** Pick one. Buy quietly. Or chip in.
 - **Buttons:** Share (secondary) · Copy link (ghost)
 
 Helper under Share:
@@ -228,45 +228,45 @@ Helper under Share:
 
 ### State: Available
 **Badge:** Available  
-**Buttons:** Reserve (primary) · Chip in (secondary)  
+**Buttons:** Buy this gift (primary) · Chip in (secondary)  
 Helper text under actions (small):
-- Reservation keeps your name hidden.
+- Buy-lock keeps your name hidden.
 
-### State: Reserved
-**Badge:** Reserved  
+### State: Bought
+**Badge:** Bought  
 Body line (small):
 - Someone already claimed this one.
 Disabled buttons:
-- Reserve disabled
+- Buy disabled
 - Chip in disabled
 Tooltip (on disabled):
-- This item is reserved, so contributions are closed.
+- This item is marked as bought, so contributions are closed.
 
 ### State: Funded / Contributions started
 **Badge:** Funded  (alt: Contributions started)  
 Body line (small):
 - This one’s in chip-in mode.
 Buttons:
-- Reserve disabled
+- Buy disabled
 - Chip in enabled
-Tooltip (reserve disabled):
-- Contributions already started. This item can’t be reserved.
+Tooltip (buy disabled):
+- Contributions already started. This item can’t be marked as bought.
 
 ---
 
 ## Dialogs / toasts (exact)
 
-### Reserve confirm dialog
-**Title:** Reserve this gift?  
-**Body:** You’ll stay anonymous. Others will only see “Reserved.”  
-**Primary:** Reserve  
+### Buy confirm dialog
+**Title:** Mark this gift as bought?  
+**Body:** You’ll stay anonymous. Others will only see “Bought.”  
+**Primary:** Mark as bought  
 **Secondary:** Cancel
 
 Success toast:
-- Reserved. You’re the silent hero.
+- Marked as bought. You’re the silent hero.
 
-### Reserve blocked dialog (because contributions exist)
-**Title:** This one can’t be reserved  
+### Buy blocked dialog (because contributions exist)
+**Title:** This one can’t be marked as bought  
 **Body:** Contributions have already started, so this item is in chip-in mode.  
 **Primary:** Chip in instead  
 **Secondary:** Close
@@ -284,9 +284,9 @@ Secondary:
 Success toast:
 - Thank you. Added to the pot.
 
-### Contribute blocked dialog (because reserved)
+### Contribute blocked dialog (because bought)
 **Title:** Contributions are closed  
-**Body:** This gift is already reserved. Pick another wish to support.  
+**Body:** This gift is already marked as bought. Pick another wish to support.  
 **Primary:** Browse wishes  
 **Secondary:** Close
 
@@ -316,12 +316,12 @@ Success toast:
 ## Shadcn components to use
 - Button (primary/secondary/ghost)
 - Card (wish cards, page sections)
-- Badge (Available/Reserved/Funded)
-- Dialog (reserve confirm, contribute)
+- Badge (Available/Bought/Funded)
+- Dialog (buy confirm, contribute)
 - Sheet (share sheet, optional filters)
 - Input, Textarea (wish create/edit)
 - DropdownMenu (sort, more actions)
-- Tabs (All / Available / Reserved / Funded)
+- Tabs (All / Available / Bought / Funded)
 - Tooltip (why disabled)
 - Separator
 - Skeleton (loading)
@@ -353,7 +353,7 @@ Success toast:
 
 ### `/l/[guestToken]` — Guest list
 - Header + share controls
-- Tabs: All / Available / Reserved / Funded
+- Tabs: All / Available / Bought / Funded
 - Wish list grid (Card)
 - WishCard component with states/actions
 
@@ -364,7 +364,7 @@ Success toast:
 ## Share sheet UI labels
 Title: Share this list  
 Guest link label: Guest link  
-Guest helper: Anyone with this link can view, reserve, and chip in. No account needed.  
+Guest helper: Anyone with this link can view, buy, and chip in. No account needed.  
 Buttons: Copy link · Copy message  
 Manage link label: Manage link (private)  
 Manage warning (Alert): Treat this like a password. Anyone with it can edit the list.
@@ -372,27 +372,27 @@ Manage warning (Alert): Treat this like a password. Anyone with it can edit the 
 ## Copy message templates
 Default (best all-around):
 - {ListTitle} — gift ideas 🎁
-- Pick one to reserve (stays anonymous) or chip in.
+- Pick one to buy (stays anonymous) or chip in.
 - {Link}
 
 More premium / less emoji:
 - {ListTitle} — wishlist
-- Reserve a gift quietly or chip in.
+- Buy a gift quietly or chip in.
 - {Link}
 
 Person list:
 - Gift ideas for {PersonName} 🎁
-- Reserve to avoid duplicates (anonymous), or chip in.
+- Buy to avoid duplicates (anonymous), or chip in.
 - {Link}
 
 Group list:
 - {ListTitle} — group gift list
-- Reserve one (anonymous) or chip in together.
+- Buy one (anonymous) or chip in together.
 - {Link}
 
 With “rules” line (optional):
 - {ListTitle}
-- Reserve = anonymous. Chip-in = contributions (no reserving).
+- Buy-lock = anonymous. Chip-in = contributions (no buy-lock).
 - {Link}
 
 Email version
@@ -402,7 +402,7 @@ Subject options:
 
 Body:
 Hi! Here’s the wishlist: {Link}
-You can reserve a gift (stays anonymous) or chip in to contribute. No account needed.
+You can buy a gift (stays anonymous) or chip in to contribute. No account needed.
 
 ---
 
@@ -411,7 +411,7 @@ You can reserve a gift (stays anonymous) or chip in to contribute. No account ne
 - [ ] `pnpm build` passes
 - [ ] No secrets/PII in logs
 - [ ] Token access is server-validated (never client-trusted)
-- [ ] Reserve/contribute mutual exclusivity enforced (DB + server)
+- [ ] Buy-lock/contribute mutual exclusivity enforced (DB + server)
 - [ ] Feature tested: happy path + one failure path
 - [ ] Small PR with clear description
 
@@ -420,14 +420,14 @@ You can reserve a gift (stays anonymous) or chip in to contribute. No account ne
 ## Running notes / decisions (keep short)
 ### Decisions we’ve made
 - Unlisted, token-based access (no accounts for guests)
-- Guest link can view/reserve/contribute/click links
+- Guest link can view/buy/contribute/click links
 - Manage link is private and can edit list
 - Stripe Connect: destination charges
-- Reserve and contribute are mutually exclusive per wish (MVP)
+- Buy-lock and contribute are mutually exclusive per wish (MVP)
 
 ### Open questions
 - Do we want list-level “fund” in MVP, or only wish-level?
-- Unreserve method: same-device secret vs explicit “manage reservation” link
+- Undo buy-lock method: same-device secret vs explicit “manage lock” link
 
 ---
 

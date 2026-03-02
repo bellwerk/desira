@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ContributeForm } from "@/components/ContributeForm";
-import { GlassCard } from "@/components/ui";
+import { ErrorStateCard } from "@/components/ui";
 
 // Force dynamic rendering and nodejs runtime for server-side operations
 export const dynamic = "force-dynamic";
@@ -17,12 +17,11 @@ export default async function ContributePage({ params, searchParams }: PageProps
 
   if (!item) {
     return (
-      <GlassCard className="mx-auto max-w-md text-center py-8">
-        <h1 className="text-lg font-semibold text-[#2B2B2B]">Missing item</h1>
-        <p className="mt-2 text-sm text-[#62748e]">
-          Go back and tap Contribute from the list.
-        </p>
-      </GlassCard>
+      <ErrorStateCard
+        title="Missing item"
+        message="Go back and tap Contribute from the list."
+        className="mx-auto max-w-md"
+      />
     );
   }
 
@@ -35,23 +34,21 @@ export default async function ContributePage({ params, searchParams }: PageProps
 
   if (listErr || !list) {
     return (
-      <GlassCard className="mx-auto max-w-md text-center py-8">
-        <h1 className="text-lg font-semibold text-[#2B2B2B]">List not found</h1>
-        <p className="mt-2 text-sm text-[#62748e]">
-          That link may be invalid or expired.
-        </p>
-      </GlassCard>
+      <ErrorStateCard
+        title="List not found"
+        message="That link may be invalid or expired."
+        className="mx-auto max-w-md"
+      />
     );
   }
 
   if (!list.allow_contributions) {
     return (
-      <GlassCard className="mx-auto max-w-md text-center py-8">
-        <h1 className="text-lg font-semibold text-[#2B2B2B]">Contributions disabled</h1>
-        <p className="mt-2 text-sm text-[#62748e]">
-          This list doesn&apos;t accept contributions.
-        </p>
-      </GlassCard>
+      <ErrorStateCard
+        title="Contributions disabled"
+        message="This list doesn't accept contributions."
+        className="mx-auto max-w-md"
+      />
     );
   }
 
@@ -64,12 +61,21 @@ export default async function ContributePage({ params, searchParams }: PageProps
 
   if (itemErr || !itemRow || itemRow.list_id !== list.id) {
     return (
-      <GlassCard className="mx-auto max-w-md text-center py-8">
-        <h1 className="text-lg font-semibold text-[#2B2B2B]">Item not found</h1>
-        <p className="mt-2 text-sm text-[#62748e]">
-          This item may have been removed.
-        </p>
-      </GlassCard>
+      <ErrorStateCard
+        title="Item not found"
+        message="This item may have been removed."
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  if (itemRow.status !== "active") {
+    return (
+      <ErrorStateCard
+        title="Item unavailable"
+        message="This gift is no longer open for contributions."
+        className="mx-auto max-w-md"
+      />
     );
   }
 

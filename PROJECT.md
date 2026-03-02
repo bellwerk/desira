@@ -1,598 +1,334 @@
-# Desira — Project Tracker (MVP)
+# Desira - Project Tracker
 
-## What Desira is (1 paragraph)
-Desira helps people choose gifts for someone (a person) or a group (family ↔ family). It supports two ways to “help”:
-1) **Buy the gift** (via an external link) and **reserve it** so nobody duplicates it, while keeping reserver identity + gift details hidden.
-2) **Contribute money** (“fundraiser”) to partially cover the cost so the receiver can buy it later.
+## Product Summary
+Desira helps people organize gift wishlists for a person or a group. There are two core actions: someone can buy a gift through an external merchant link and mark it as bought so nobody duplicates the purchase, or they can contribute money toward a specific item so the receiver can buy it later.
 
 ---
 
-## Product rules (non-negotiable)
-- If an item is **reserved**, nobody else can reserve/buy the same item.
-- Reservation hides: **who reserved** + **purchase details** (only show "Reserved").
-- Contributors never see who else reserved unless explicitly allowed.
-- Wish owners should see: total contributed, and (optionally) contributor list depending on privacy.
-- Everything is permissioned: user sees only lists they belong to.
-- **Mutual exclusivity (MVP):**
-  - A wish **CANNOT be reserved** if it already has **any contributions (> 0)**.
-  - A wish **CANNOT receive contributions** if it is **reserved**.
-- **Self-gifting prevention:**
-  - List recipients (owners) **CANNOT reserve or contribute** to their own list items.
-  - "View list" button for owners should show read-only mode (no reserve/contribute buttons).
+## Product Rules
+- Buy-lock and contribution are mutually exclusive per item.
+- If an item is marked as bought, nobody else can buy-lock it or contribute to it.
+- If an item has any successful contributions, nobody can buy-lock it.
+- Buy-lock status hides buyer identity and purchase details from public and other contributors.
+- List owners can see contribution totals.
+- Contributor identity is hidden by default unless a later privacy setting explicitly allows reveal.
+- Private lists are visible only to members.
+- Unlisted lists are accessible by share link.
+- Public lists are accessible without login and may be indexable.
+- List owners cannot buy-lock or contribute to their own items.
+- List owners may click outbound merchant links on their own lists.
+- Public and owner views must never leak payment details or buyer identity.
 
 ---
 
-## Current status (update every session)
-- Date: 2026-02-03
-- Current branch: master
-- What we're building now: M9 — UI/UX Polish (Phase 1)
-- What's blocked: None
-- Next after M9: PWA foundation (manifest, service worker, installability)
+## Current Status
+- Date: 2026-03-02
+- Current focus: M9 UI/UX polish correction pass
+- Next focus after M9: M10 Publisher approval/public growth track
+- Known blockers: None
 
 ---
 
-## MVP scope (what must ship)
+## Scope
 
-### Core loop
-- Create a list (for a person OR a family/group)
-- Invite members (private link or email invite)
-- Add wishes (title, URL, price estimate, notes, priority)
-- Reserve a wish (hidden)
-- Contribute money to a wish or list (Stripe)
-- Basic notifications (in-app, email later)
+### MVP Must Ship
+- Authenticated app shell
+- Private, unlisted, and public lists
+- Invite flow
+- Item creation and editing
+- Buy-lock flow (internal reservations)
+- Item-level contributions with Stripe Connect destination charges
+- In-app notifications
+- Basic hardening, audit trail, and seed/demo data
 
-### MVP non-goals (explicitly NOT now)
-- Full marketplace checkout inside Desira
-- Complex recommendation engine
-- Multi-currency + tax handling
-- ~~Mobile native apps~~ → See M8 (Adaptive Design) + Mobile App roadmap below
-
----
-
-## Milestones & tasks (do in order)
-
-### M0 — Repo + baseline (foundation)
-- [x] Add `PROJECT.md`, `CLAUDE.md`, `AGENTS.md`
-- [x] Confirm pnpm + Node 22 work locally
-- [x] Add env template (`.env.example`)
-- [x] Add lint + typecheck scripts (or confirm existing)
-- [x] Add basic app shell routes:
-  - [x] `/` marketing placeholder
-  - [x] `/app` authenticated area
-
-### M1 — Auth + app skeleton (Supabase)
-- [x] Supabase project connected (local env vars working)
-- [x] Auth: sign in/sign out
-- [x] Protect `/app` (redirect if not authed)
-- [x] User profile table (minimal) + RLS
-
-#### Auth providers (configure in Supabase Dashboard → Authentication → Providers)
-- [ ] **Google OAuth** — requires Google Cloud Console credentials
-  - Create OAuth 2.0 Client ID at https://console.cloud.google.com/
-  - Add redirect URI: `https://<project>.supabase.co/auth/v1/callback`
-  - Add Client ID + Secret in Supabase
-- [ ] **Facebook OAuth** — requires Meta Developer App
-  - Create app at https://developers.facebook.com/
-  - Add Facebook Login product
-  - Add redirect URI: `https://<project>.supabase.co/auth/v1/callback`
-  - Add App ID + Secret in Supabase
-- [ ] **Apple OAuth** — requires Apple Developer account
-  - Create Services ID at https://developer.apple.com/
-  - Configure Sign in with Apple
-  - Add redirect URI: `https://<project>.supabase.co/auth/v1/callback`
-  - Add Service ID + Key in Supabase
-- [ ] **Email / Magic Link** — built-in, just enable in Supabase
-  - Enable "Email" provider in Supabase
-  - Configure SMTP for production (optional for dev)
-
-#### Login UI
-- [x] Continue with Google button
-- [x] Continue with Facebook button *(code ready — needs Supabase config)*
-- [x] Continue with Apple button *(code ready — needs Supabase config)*
-- [x] Email / password login + signup
-
-### M2 — Data model v1 + RLS (critical)
-
-#### Tables (v1)
-- [x] `profiles` (id, handle, display_name, avatar_url, created_at, updated_at)
-- [x] `lists` (id, owner_id, title, recipient_type, visibility, allow_reservations, allow_contributions, allow_anonymous, currency, share_token, occasion, event_date)
-- [x] `list_members` (list_id, user_id, role: `owner|member`, status) — migration: `002_list_members.sql`
-- [x] `items` (id, list_id, title, image_url, price_cents, target_amount_cents, note_public, note_private, product_url, merchant, status, sort_order, quantity, most_desired) — *renamed from `wishes`*
-- [x] `reservations` (id, item_id, status, reserved_by_name, reserved_by_email, cancel_token_hash, created_at, canceled_at)
-- [x] `contributions` (id, item_id, amount_cents, fee_cents, total_cents, currency, contributor_name, message, is_anonymous, payment_status, provider, provider_payment_intent_id)
-- [x] `payment_accounts` (owner_id, provider, provider_account_id, charges_enabled, payouts_enabled, details_submitted) — *Stripe Connect*
-
-#### Views (for public access without exposing sensitive data)
-- [x] `public_reservation_flags` (item_id, is_reserved) — hides reserver identity
-- [x] `public_contribution_totals` (item_id, funded_amount_cents) — aggregates contributions
-
-#### RLS rules (must-have)
-- [x] Public can read unlisted lists via share_token (visibility != private)
-- [x] Public views hide reserver identity and contributor details
-- [x] Only members can read a private list + its items — *migration 005*
-- [x] Only members can create items on the list — *migration 005*
-- [x] Reservations: public can see "Reserved" state, but NOT `reserved_by`
-- [x] Contributions: public sees totals only via view; contributor identity hidden
-
-#### Business rules (must be enforced server-side + DB)
-- [x] Block **reserve** if contributions exist for that wish — *DB trigger (migration 005) + server check in /api/reservations*
-- [x] Block **contribute** if that wish is reserved — *DB trigger (migration 005) + enforced in checkout route*
-- [x] Block **reserve/contribute** if user is the list owner (self-gifting prevention)
-  - [x] Server-side check in reserve + checkout routes
-  - [x] Hide reserve/contribute buttons in UI for list owner — *ItemActions.tsx*
-
-### M3 — UI v1 (no polish yet, just works)
-- See docs/UI_SPEC.md for UI copy + components + share sheet.
-- [x] App layout (sidebar/topbar)
-- [x] Lists screen:
-  - [x] Create list
-  - [x] See my lists
-- [x] List detail screen:
-  - [x] Add wish
-  - [x] Wish cards with: title, link, price, status
-  - [x] Reserve button (shows "Reserved" after) — *ItemActions.tsx on /u/[token]*
-  - [x] Contribute button (wish or list fund) — *ItemActions.tsx on /u/[token]*
-- [x] List settings (edit list) — `/app/lists/[id]/settings`:
-  - [x] Rename list title
-  - [x] Change visibility (unlisted/private/public)
-  - [x] Change recipient type (individual/group)
-  - [x] Edit occasion, event date
-  - [x] Toggle: allow reservations, allow contributions, allow anonymous
-  - [x] Delete list (with confirmation)
-- [x] Invite flow:
-  - [x] Generate invite link — *InvitesSection.tsx*
-  - [x] Accept invite — */app/invite/[token]*
-## M3 — Link Preview: Auto-parse item metadata from URL
-
-**Goal:** When a user pastes a product URL, Desira auto-fills item fields (best-effort) and never blocks manual entry.
-
-### Scope (M3)
-- [x] Extract **title**, **description**, **image**, **price (best-effort)** from a product link
-- [x] Use **Open Graph / Twitter meta tags** + **JSON-LD** parsing
-- [x] Server-side fetch (no client-side scraping)
-- [x] Cache results to avoid repeated fetches
-
-### Non-goals (M3)
-- [ ] "Works on every store" reliability (JS-rendered pages / anti-bot)
-- [ ] Headless browser scraping
-- [ ] Guaranteed price accuracy
+### Explicit Non-Goals For MVP
+- Native mobile apps
+- Multi-currency and tax complexity
+- Marketplace checkout inside Desira
+- List-level contribution fund
+- Advanced recommendation engine
 
 ---
 
-### UX / UI Behavior
-- [x] URL input in "Add Item"
-- [x] Debounce ~500ms after paste/typing
-- [x] Show loading skeleton → then Preview Card (image + title + domain + price if found)
-- [x] Autofill editable fields: title, description, image, price/currency (optional)
-- [x] Failure state: inline error ("Couldn't fetch details…") + user can still save manually
-- [x] "Refresh" button to refetch (`force=true`)
+## Architecture Decisions
+- Next.js App Router only
+- Supabase RLS is the source of truth for access
+- Server validates all mutations
+- Stripe Connect uses destination charges
+- Public share route for MVP is `/u/[token]`
+- `/l/[slugOrId]` is optional later as a marketing/SEO alias, not a required second implementation
+- Item-level contributions are the only contribution target in MVP
+- Outbound merchant routing uses `/api/go/[itemId]`
 
 ---
 
-### API
-**POST** `/api/link-preview`
+## Milestones
 
-**Request**
-- `url: string`
-- `force?: boolean` (bypass TTL)
+### M0 - Foundation
+- [x] Add project instructions and environment templates
+- [x] Confirm local Node/pnpm baseline
+- [x] Confirm lint and typecheck scripts
+- [x] Add base routes for `/` and `/app`
 
-**Response (success)**
-- `ok: true`
-- `normalizedUrl`
-- `cached: boolean`
-- `data: { title, description, image, images[], price?: { amount, currency } }`
-- optional: `source` + `confidence` (nice-to-have)
+### M1 - Auth And App Skeleton
+- [x] Supabase connected
+- [x] Sign in and sign out
+- [x] Protect `/app`
+- [x] Minimal `profiles` table with RLS
+- [x] Login UI for Google, Facebook, Apple, and email/password
 
-**Response (failure)**
-- `ok: false`
-- `error: { code: INVALID_URL | FETCH_BLOCKED | TIMEOUT | NO_METADATA, message }`
+#### Remaining External Auth Configuration
+- [ ] Google OAuth provider configured in Supabase
+- [ ] Facebook OAuth provider configured in Supabase
+- [ ] Apple OAuth provider configured in Supabase
+- [ ] Production email provider/SMTP configured if needed
 
----
+### M2 - Data Model And RLS
+- [x] `profiles`
+- [x] `lists`
+- [x] `list_members`
+- [x] `items`
+- [x] `reservations`
+- [x] `contributions`
+- [x] `payment_accounts`
+- [x] `public_reservation_flags`
+- [x] `public_contribution_totals`
+- [x] RLS for private/member/public access patterns
+- [x] Server and DB enforcement for buy-lock/contribute exclusivity
+- [x] Server and UI enforcement for self-gifting prevention
 
-### Parsing Priority
-**Title:** `og:title` → `twitter:title` → JSON-LD `name` → `<title>`  
-**Description:** `og:description` → `twitter:description` → JSON-LD `description` → `<meta name="description">`  
-**Image:** `og:image` → `twitter:image` → JSON-LD `image` → `link[rel=image_src]`  
-**Price (best-effort):** JSON-LD Product `offers.price` + `priceCurrency` → OG `product:price:*` → else null
+### M3 - Core UI And Link Preview
+- [x] App layout
+- [x] Lists screen
+- [x] List detail screen
+- [x] List settings
+- [x] Invite flow
+- [x] Link preview API and UI
+- [x] URL normalization and SSRF protections
+- [x] Caching for previews
+- [x] Manual entry remains possible on preview failure
 
----
+#### Remaining M3 Follow-Ups
+- [ ] Link preview rate limiting
+- [ ] Link preview logging and metrics
+- [ ] Link preview tests for normalization, SSRF, and JSON-LD edge cases
 
-### Caching
-- [x] Cache by `normalizedUrl`
-- [x] Default TTL: **7 days**
-- [x] If price exists: TTL **24 hours**
-- [x] `force=true` bypasses TTL
+### M4 - Buy-Lock Flow
+- [x] Atomic buy-lock flow
+- [x] Undo buy-lock flow
+- [x] Buy-lock blocked when contributions exist
+- [x] UI states for available, bought, and contributed
+- [x] Archived/unavailable state
 
----
+### M5 - Contributions And Affiliate Routing
+- [x] Stripe Connect onboarding
+- [x] Item-level contribution checkout
+- [x] Payment webhook handling
+- [x] Contribution records persisted
+- [x] Contribution totals shown in UI
+- [x] Contributions blocked when bought
+- [x] `/api/go/[itemId]` outbound redirect
+- [x] Skimlinks utility integration
+- [x] Public affiliate disclosure snippet on product-link pages
 
-### Security / Abuse (must-have)
-- [x] SSRF protection:
-  - allow only `http/https`
-  - block localhost + private/link-local IP ranges
-  - DNS resolve + re-check
-  - limit redirects (≤5)
-  - timeout (6–8s)
-  - max response size (1–2MB)
-- [ ] Rate limit preview calls (e.g., per user/IP) — *deferred to M7 hardening*
+### M6 - Notifications
+- [x] In-app notifications table and UI
+- [x] Notifications for item added
+- [x] Notifications for item bought
+- [x] Notifications for contribution received
+- [ ] Email notifications
 
----
+### M7 - Hardening
+- [x] Error toasts and loading states
+- [x] Basic audit log
+- [x] Seed/demo data support
+- [x] Security review documentation
+- [x] Performance sanity pass on obvious query waterfalls
 
-### DB (if caching in Supabase)
-**Table:** `link_previews`
-- `normalized_url` (unique)
-- `title`, `description`
-- `image`, `images (jsonb)`
-- `price_amount (numeric, nullable)`, `price_currency (text, nullable)`
-- `status (ok|error)`, `http_status`, `error_code`
-- `fetched_at`, `expires_at`
-- optional: `raw_og (jsonb)`, `raw_jsonld (jsonb)`
+#### Remaining Hardening Work
+- [ ] Rate limit `/api/link-preview`
+- [ ] Add centralized error tracking
+- [ ] Add production alerting
+- [ ] Add rollback/runbook documentation
+- [ ] Add user bug-report flow
 
----
+### M8 - Adaptive Design
+- [x] Hide sidebar on mobile
+- [x] Add mobile navigation
+- [x] Make header responsive
+- [x] Ensure 44x44 touch targets
+- [x] Add responsive page spacing
+- [x] Prevent overlap with fixed mobile UI
+- [x] Make item actions stack well on mobile
+- [x] Fix dashboard card fixed-width behavior
+- [x] Optimize add/edit forms for mobile
+- [ ] Test at 320, 375, 768, 1024, and 1280+ widths
 
-### Implementation Tasks (in order)
-1. [x] URL normalization (strip utm_*, fbclid, gclid, etc.) — `src/lib/url.ts`
-2. [x] Route handler `/api/link-preview` with SSRF guard + caching read/write
-3. [x] HTML fetch + meta parsing (OG/Twitter/meta/title)
-4. [x] JSON-LD parsing (Product + Offers for price)
-5. [x] UI wiring: debounce → fetch → preview card → autofill → editable fields
-6. [x] Error handling + "Refresh" (`force=true`)
-7. [ ] Rate limit + logging/metrics (status + error_code) — *deferred to M7*
-8. [ ] Tests: normalization, SSRF, JSON-LD price extraction edge cases — *future*
+### M9 - UI/UX Polish
 
-### Acceptance Criteria
-- [x] Pasting a typical ecommerce URL auto-fills title/desc/image in <3s (when available)
-- [x] Price fills when present in JSON-LD/OG; otherwise stays empty (editable)
-- [x] Failure never blocks saving an item manually
-- [x] SSRF protections enforced (rate limiting deferred to M7)
-- [x] Cache prevents repeated fetches for the same normalized URL within TTL
+#### Completed
+- [x] Public page glass styling
+- [x] Desira branding on public pages
+- [x] `GlassCard` usage on public item cards
+- [x] `ProgressBar` usage for contribution progress
+- [x] Public footer branding
+- [x] Hide owner-only payout controls from visitors
+- [x] Sidebar active state contrast fixes
+- [x] Sidebar tooltip labels
+- [x] Sidebar hover feedback
+- [x] Move/remove feature-suggestion entry
+- [x] Unify primary color token usage in `GlassButton`
+- [x] Add `danger` variant to `GlassButton`
+- [x] Add `shared` variant to `BadgeChip`
+- [x] Duplication audit completed
+- [x] Shared `formatCurrency`
+- [x] Shared `ErrorStateCard`
 
+#### Remaining
+- [ ] Remove remaining inline color overrides
+- [ ] Show returning-user list summary on `/app`
+- [ ] Remove static placeholder sections from dashboard
+- [ ] Add upcoming-events countdown
+- [ ] Clarify app header primary toggle labels
+- [ ] Increase tiny profile text for readability
+- [ ] Add unread notification indicator
+- [ ] Improve `/app/lists` visual hierarchy
+- [ ] Add search/filter when a user has many lists
+- [ ] Differentiate "Shared with me" badge styling
+- [ ] Add list type thumbnail/icon treatment
+- [ ] Collapse share link after first-use emphasis
+- [ ] Add drag handles for `sort_order`
+- [ ] Improve back navigation affordance
+- [ ] Polish `/app/lists/new`
+- [ ] Polish login page
+- [ ] Polish `/app/settings`
+- [ ] Create shared `PageHeader`
+- [ ] Create shared `EmptyState`
+- [ ] Create shared `IconButton`
+- [ ] Extract shared modal shell
+- [ ] Consolidate duplicated owner/public item-card presentation
+- [ ] Replace remaining one-off button styles with `GlassButton` variants
+- [ ] Extract shared dark-form input styles
+- [ ] Replace equivalent inline progress markup with `ProgressBar`
+- [ ] Standardize "Most Desired" badge treatment
+- [ ] Add lightweight micro-interactions where they improve confirmation
 
-### M4 — Reserve flow (the "no duplicates" feature)
-- [x] Reserve wish (atomic / safe, prevents duplicates)
-- [x] Unreserve (only reserver, or owner/admin)
-- [x] Block reserve if contributions exist (**enforced in DB + server**) — *migration 005 + /api/reservations*
-- [x] UI states:
-  - [x] Available
-  - [x] Reserved (no identity shown)
-  - [x] Contributed (cannot reserve)
-  - [ ] Unavailable/archived
+#### Current Correction Pass
+- [x] Move app navigation to a bottom bar on mobile while preserving desktop sidebar
+- [ ] Route returning users from `/app` to `/app/lists` when they already have lists
+- [ ] Unify the add-item flow behind one product-first flow
+- [ ] If the user has no lists, branch cleanly into create-list first
+- [ ] Make item title and image clickable in owner and public views
+- [ ] Route all product clicks through `/api/go/[itemId]` in owner and public views
+- [ ] Improve Amazon URL handling and preview reliability
+- [ ] Decide Amazon affiliate strategy:
+  - [ ] Option A: Skimlinks for Amazon too
+  - [ ] Option B: direct Amazon Associates for Amazon, Skimlinks for non-Amazon
+- [ ] Validate correction pass with manual sanity checks
 
-### M5 — Money contributions (Stripe Connect destination charges)
-- [x] Decide contribution target for MVP:
-  - [x] Option A: contribute to a specific wish
-  - [ ] Option B: contribute to list "fund"
-  - (Pick ONE first, add the other later)
-- [x] Stripe Connect onboarding (for receivers who want payouts)
-- [x] Contribution checkout (server-only Stripe calls)
-- [x] Webhook(s) for payment confirmation
-- [x] Save contribution records to DB
-- [x] Show totals in UI
-- [x] Block contributions if reserved (**enforced in DB + server**)
+### M10 - Publisher Approval And Public Growth
+This milestone replaces the duplicate Skimlinks track. It is the single roadmap for crawlable public commerce pages, compliance, and reviewer readiness.
 
-### Affiliate link monetization (Skimlinks)
-- [x] Add redirect route `/api/go/[itemId]` (all outbound product clicks go through server redirect)
-- [x] Integrate Skimlinks to monetize outbound product links — `src/lib/affiliate.ts`
-- [x] Add clear affiliate disclosure on `/u/[token]` (and anywhere product links appear)
+#### M10.1 Public Surfaces
+- [ ] Confirm `/u/[token]` is server-rendered with merchant links present in HTML source
+- [ ] Add metadata and OG tags to public list pages
+- [ ] Add public profile page at `/@/[username]`
+- [ ] Add `/explore` with featured and recent public lists
+- [ ] Add discoverable footer/navigation paths to public surfaces
+- [ ] Optionally add `/l/[slugOrId]` only if aliasing materially helps SEO or reviewer clarity
 
-> Note: Keep compliance simple for MVP: record transactions cleanly, avoid storing sensitive data, server-only Stripe logic.
+#### M10.2 Compliance And Trust
+- [ ] Add `/affiliate-disclosure`
+- [ ] Add `/privacy`
+- [ ] Add `/terms`
+- [ ] Add `/about`
+- [ ] Add `/contact`
+- [ ] Add cookie consent if required by the final affiliate script implementation
+- [ ] Ensure disclosure and legal links are visible from public pages/footer
 
-### M6 — Notifications v1 (minimum)
-- [x] In-app notifications table + UI (basic) — migration 008, `/app/notifications`, `NotificationBell` in header
-- [x] Notify on:
-  - [x] new wish added — triggered in `addItem` action
-  - [x] wish reserved — triggered in `POST /api/reservations`
-  - [x] contribution received — triggered in Stripe webhook
-- [ ] Email notifications (P1, later)
+#### M10.3 Demo Content And Approval Readiness
+- [ ] Seed 5-10 Desira-owned public demo lists
+- [ ] Ensure each demo list has enough real merchant links to demonstrate commercial intent
+- [ ] Remove all placeholder content from reviewer-visible pages
+- [ ] Prepare 6-8 submission URLs for reapplication
 
-### M7 — MVP hardening (before "real users")
-- [x] Error states + toasts — Toast system wired to all key flows (reserve, contribute, cancel, pay)
-- [x] Loading states — Added `Spinner` component + `loading.tsx` for key routes
-- [x] Basic audit log — `audit_events` table (migration 007) + `logAuditEvent()` helper
-- [x] Seed/demo data for quick testing — Dev-mode seed button on dashboard
-- [x] Security pass: confirm RLS + server checks — Documented in `docs/SECURITY.md`
-- [x] Performance sanity: avoid N+1 queries — Parallelized checkout queries
+#### M10.4 SEO And QA
+- [ ] Add sitemap for public lists and public profiles
+- [ ] Confirm `robots.txt`
+- [ ] Add canonical tags on public pages
+- [ ] Add structured data if useful
+- [ ] Add Playwright coverage for public reviewer flows
 
-### M8 — Adaptive Design (mobile-ready web)
+#### M10.5 Optional Expansion
+- [ ] Add guides/collections only after profiles and explore are live
+- [ ] Add publisher analytics page only after core approval requirements are met
 
-**Goal:** Make the entire application responsive/adaptive across all screen sizes (mobile, tablet, desktop).
+### M11 - PWA Foundation
+- [ ] Add `manifest.json`
+- [ ] Add installable icons and metadata
+- [ ] Add service worker
+- [ ] Add install prompt
+- [ ] Test installability on iOS Safari and Android Chrome
 
-#### What's already done (landing page)
-- [x] Responsive grids (`sm:grid-cols-2`, `lg:grid-cols-4`)
-- [x] Responsive typography (`text-lg sm:text-xl`)
-- [x] Mobile CTA visibility handling (`hidden md:flex`)
-- [x] Dark mode support
-
-#### Priority 1: Mobile Navigation
-- [ ] Hide Sidebar on mobile (`< md` breakpoint)
-- [ ] Add bottom tab bar for mobile navigation
-- [ ] Make AppHeader responsive with mobile-friendly layout
-- [ ] Ensure touch targets meet minimum size (44x44px)
-
-#### Priority 2: Layout Spacing
-- [ ] Add responsive padding to main content areas (`px-4 md:px-8`)
-- [ ] Adjust margins for Sidebar on desktop
-- [ ] Ensure content doesn't overlap fixed elements on mobile
-
-#### Priority 3: Component Responsiveness
-- [ ] Make ItemCard buttons stack on mobile
-- [ ] Optimize header layouts for small screens
-- [ ] Add responsive image sizing
-- [ ] Fix dashboard cards (remove fixed `w-[230px]`)
-
-#### Priority 4: Forms & Inputs
-- [ ] Optimize AddItemForm for mobile
-- [ ] Ensure form fields are touch-friendly
-- [ ] Test keyboard behavior on mobile
-
-#### Testing Checklist
-- [ ] Test at 320px (small phone)
-- [ ] Test at 375px (iPhone)
-- [ ] Test at 768px (tablet)
-- [ ] Test at 1024px (laptop)
-- [ ] Test at 1280px+ (desktop)
-
----
-
-### M9 — UI/UX Polish
-
-**Goal:** Improve clarity, consistency, and delight across all pages. Fix visual hierarchy gaps, unify styling between authenticated and public pages, and add missing micro-interactions.
-
-#### Phase 1: Foundation (Critical)
-
-##### Public Pages — Brand Consistency
-- [x] Apply glassmorphism (`glass-1`) styling to `/u/[token]` public list page
-- [x] Add Desira logo/branding in public page header
-- [x] Use `GlassCard` component for public item cards (replace plain borders)
-- [x] Use `ProgressBar` component for contribution progress (replace inline styles)
-- [x] Add "Powered by Desira" footer with link to landing page
-- [x] Hide "Enable Payouts" button from visitors (owner-only concern)
-
-##### Sidebar — Active States & Accessibility
-- [x] Fix active/inactive state contrast (currently both use same bg color)
-- [x] Add tooltip labels on hover (smooth fade, 200ms delay)
-- [x] Add subtle hover scale (1.05) for feedback
-- [x] Move "Suggest a Feature" to settings page or remove
-
-##### Color Token Audit
-- [ ] Unify `GlassButton` primary color with CSS `--primary` variable
-- [ ] Add `danger` variant to `GlassButton` (for delete actions)
-- [ ] Add `shared` variant to `BadgeChip` (different color from visibility badges)
-- [ ] Remove inline color overrides (e.g., `!from-red-500` in ItemCard)
-
-#### Phase 2: Core UX
-
-##### Dashboard (`/app`)
-- [ ] Show existing lists summary for returning users (not just creation cards)
-- [ ] Remove or hide "Popular gift ideas" section (static placeholder data)
-- [ ] Add upcoming events countdown (use `event_date` from lists)
-- [ ] Pass list type to `/app/lists/new` via query param (`?type=wishlist`)
-- [ ] Add time-based greeting ("Good morning, Tony")
-
-##### App Header
-- [ ] Rename toggle to "New List" / "My Lists" (clarify action vs view)
-- [ ] Increase profile text size (10px → 12px) for readability
-- [ ] Add notification badge (red dot) when unread notifications exist
-
-##### Lists Page (`/app/lists`)
-- [ ] Make list title larger and bolder (`text-xl font-semibold`)
-- [ ] Add search/filter when user has >5 lists
-- [ ] Use different badge color for "Shared with me" (blue vs gray)
-- [ ] Add list thumbnail/icon based on type
-
-##### List Detail Page (`/app/lists/[id]`)
-- [ ] Collapse share link into expandable section (de-emphasize after first use)
-- [ ] Move Add Item form below items OR make it a floating "+" button
-- [ ] Add drag handles for item reordering (sort_order already exists)
-- [ ] Larger back navigation with icon
-
-#### Phase 3: Polish
-
-##### Create List Page (`/app/lists/new`)
-- [ ] Place cursor at end of template text (not beginning)
-- [ ] Make list type cards horizontal pills on mobile
-- [ ] Default "Gift controls" section to open on desktop
-- [ ] Show mini preview of list as user configures
-
-##### Login Page
-- [ ] Add "Forgot password?" link
-- [ ] Add password visibility toggle (eye icon)
-- [ ] Add loading shimmer to OAuth buttons while pending
-
-##### Settings Page (`/app/settings`)
-- [ ] Add display name editing
-- [ ] Add avatar upload
-- [ ] Add dark mode toggle (CSS already supports it)
-- [ ] Add Stripe Connect status section
-- [ ] Replace "coming soon" with grayed-out section headers
-
-##### Component Library
-- [ ] Create `PageHeader` component (duplicated in 5+ places)
-- [ ] Create `EmptyState` component (duplicated pattern)
-- [ ] Create `IconButton` component for consistent icon-only buttons
-
-#### Phase 4: Delight
-
-##### Micro-interactions
-- [ ] Item added: slide-in animation + toast
-- [ ] List created: success animation (checkmark or confetti)
-- [ ] Reservation made: card pulses briefly to confirm
-- [ ] Copy link: button shows checkmark for 2s before reset
-- [ ] Delete confirmation: consider modal for destructive actions
-
-##### Mobile Responsiveness (complements M8)
-- [ ] Dashboard cards: responsive width (`w-full sm:w-[230px]`)
-- [ ] Public list: single column grid on phones
-- [ ] Bottom navigation for mobile (coordinate with M8)
-
-#### Focused Correction Pass (current)
-- [ ] Mobile nav correction: move app menu bar to bottom on mobile (`< md`), keep desktop sidebar behavior
-- [ ] Returning-user landing: when user has existing wishlist(s), route `/app` to `/app/lists`
-- [ ] Purple `+` global add flow:
-  - [ ] Sidebar `+` opens product-first flow, then user chooses wishlist
-  - [ ] `/app/lists` add action uses the same flow
-  - [ ] If user has no wishlists, prompt/create-list path first
-- [ ] Amazon link preview reliability:
-  - [ ] Correctly parse Amazon product URLs for `amazon.com` and `amazon.ca` (canonical product URL handling)
-  - [ ] Ensure metadata extraction returns title/image/price when available
-  - [ ] Configure Amazon Associates + PA-API credentials
-    - [ ] Enable Product Advertising API access in Amazon Associates
-    - [ ] Generate PA-API access key + secret key
-    - [ ] Set env vars in local + production: `AMAZON_PAAPI_ACCESS_KEY`, `AMAZON_PAAPI_SECRET_KEY`, `AMAZON_PAAPI_PARTNER_TAG`
-  - [ ] Verify Amazon preview behavior end-to-end
-    - [ ] Confirm `amazon.com` and `amazon.ca` links autofill title/image/price in Add Item
-    - [ ] Confirm graceful fallback when PA-API credentials are missing/invalid
-    - [ ] Confirm saved cards render correctly in owner + public views
-  - [ ] Decide Amazon affiliate routing strategy
-    - [ ] Option A: keep Skimlinks for all merchants (including Amazon)
-    - [ ] Option B: use direct Amazon Associates tag for Amazon links, keep Skimlinks for non-Amazon
-- [ ] Validation pass for this correction set:
-  - [ ] `pnpm lint`
-  - [ ] `pnpm build`
-  - [ ] Manual sanity checks (mobile nav, login landing, add flow branches, Amazon previews)
+### M12 - Post-MVP / P1
+- [ ] Better privacy controls for contribution reveal
+- [ ] Localization
+- [ ] Image uploads
+- [ ] Activity feed
+- [ ] Gift suggestions
+- [ ] Push notifications
+- [ ] Capacitor/app-store packaging only after the PWA is solid
 
 ---
 
-## Mobile App Roadmap (PWA → App Stores)
-
-**Strategy:** PWA-first approach, with intention to publish to App Stores (iOS + Android) via Capacitor wrapper.
-
-### Phase 1: PWA Foundation (after M8)
-- [ ] Add `manifest.json` with app metadata + icons
-- [ ] Configure service worker for offline caching
-- [ ] Add iOS/Android meta tags for splash screens
-- [ ] Add "Add to Home Screen" prompt
-- [ ] Test installability on iOS Safari + Android Chrome
-
-### Phase 2: PWA Enhancements
-- [ ] Push notification setup (web push)
-- [ ] Offline-first data sync (if needed)
-- [ ] App-like navigation transitions
-- [ ] Haptic feedback for key actions
-
-### Phase 3: App Store Publishing (Capacitor)
-- [ ] Set up Capacitor project wrapping Next.js app
-- [ ] Configure native splash screens + icons
-- [ ] Test on real iOS + Android devices
-- [ ] Handle native APIs if needed (camera, haptics, etc.)
-- [ ] Submit to Apple App Store
-- [ ] Submit to Google Play Store
-
-### Why this approach?
-- **Single codebase** — No separate iOS/Android repos to maintain
-- **Stripe works natively** — No App Store payment restrictions for physical goods
-- **Supabase works identically** — No SDK changes needed
-- **Fast iteration** — Deploy web updates instantly, app store updates as needed
+## Ordered Execution Plan
+1. Finish M9 current correction pass.
+2. Close remaining M7 hardening gaps that affect safety or reliability.
+3. Finish M8 adaptive design.
+4. Execute M10.1 and M10.2 before any optional publisher polish.
+5. Execute M10.3 and M10.4 to make the site reviewer-ready.
+6. Do M11 only after the public web product is stable.
+7. Treat M12 as true post-MVP work.
 
 ---
 
-## P1 (after MVP)
-- [ ] Gift idea suggestions (manual prompts, no heavy AI infra)
-- [ ] Better privacy controls (per list: reveal contributors / anonymous)
-- [ ] Public share link (read-only)
-- [ ] Localization (EN/FR/RU)
-- [ ] Image uploads for wishes
-- [ ] Activity feed (timeline)
-
----
-
-## Definition of done (for any task)
-- [ ] Typecheck/build passes
+## Definition Of Done
+- [ ] Typecheck passes
+- [ ] Build passes
 - [ ] Lint passes
-- [ ] No secrets/PII in logs
-- [ ] RLS reviewed for touched tables
-- [ ] Business rules enforced (reserve vs contribute mutual exclusivity)
-- [ ] Feature tested on happy path + one failure path
-- [ ] Small PR with clear description
+- [ ] No secrets or PII in logs
+- [ ] RLS reviewed for touched tables/routes
+- [ ] Zod or equivalent server validation for touched mutations
+- [ ] Buy-lock/contribute exclusivity still enforced
+- [ ] Happy path tested
+- [ ] At least one failure path tested
+- [ ] No placeholder content on any user-facing page touched by the work
 
 ---
 
-## Running notes / decisions (keep short)
-### Decisions we’ve made
-- Use App Router only
-- Use Supabase RLS as source of truth
-- Stripe Connect: destination charges
-- Reserve and contribute are mutually exclusive per wish (MVP)
-
-### Open questions
-- Should list owners see who reserved? (default: NO for MVP)
-- Contributions: wish-level vs list-level vs both (start with one)
+## Open Questions Requiring A Decision
+- [ ] Amazon affiliate strategy: Skimlinks-only vs split routing
+- [ ] Whether to add `/l/[slugOrId]` as an alias after `/u/[token]` public pages are validated
+- [ ] Whether contributor identity reveal belongs in MVP+1 or later
+- [ ] Whether to run a full internal rename from reservation terminology to buy-lock terminology after M10
 
 ---
 
-## Progress log (optional, 2–5 lines per session)
+## Progress Log
+- 2026-03-02:
+  - Aligned public UX copy from "Reserve" to "Buy this gift" while keeping internal reservation schema/API names unchanged.
+  - Implemented "Buy this gift" behavior as lock-first then redirect through `/api/go/[itemId]`.
+  - Normalized `project.md` into one backlog.
+  - Removed duplicate Skimlinks/public-roadmap items from the main plan by folding them into M10.
+  - Resolved documented contradictions around owner buy behavior, public access, and routing strategy.
+- 2026-02-26:
+  - Completed UI duplication/risk audit for maintainability and UX consistency.
+  - Biggest long-term risk identified as consistency drift, not immediate runtime speed.
 - 2026-01-28:
-  - Done: M9 Phase 1 (Public Pages) complete:
-    - `/u/[token]` layout: Added glassmorphism header with Desira logo, sign-in button, footer with "Powered by Desira"
-    - `/u/[token]` page: Replaced plain borders with GlassCard, added BadgeChip for status, ProgressBar for contributions
-    - `/u/[token]/contribute`, `/pay`, `/thanks`, `/cancel`, `/reserve`: All updated with glass styling
-    - `ItemActions` component: Updated to use GlassButton instead of plain buttons
-    - `ContributeForm` component: Full glass treatment with glass-2 summary cards
-    - Removed EnablePayoutsButton from public view (owner-only concern)
-  - UI/UX audit completed earlier. Created M9 milestone with 4 phases.
-  - Next: Phase 1 continued — sidebar active states and color token audit
-  - Blockers: None
+  - Completed public-page glass styling pass and removed owner-only payout controls from visitor view.
 - 2026-01-05:
-  - Done: Skimlinks affiliate link integration fully implemented:
-    - `src/lib/affiliate.ts` — Skimlinks URL generation utility
-    - `/api/go/[itemId]` redirect route with click tracking (audit log)
-    - "Buy this gift" button on public list `/u/[token]`
-    - Affiliate disclosure text for FTC compliance
-    - All product links (owner + public views) route through affiliate redirect
-  - Config needed: Set `SKIMLINKS_PUBLISHER_ID` env variable after Skimlinks signup
-  - Next: Sign up at https://skimlinks.com and configure publisher ID
-  - Blockers: None
-- 2026-01-04 (pm):
-  - Done: M6 (Notifications v1) fully implemented:
-    - `notifications` table migration (008) with RLS
-    - `src/lib/notifications.ts` helper functions
-    - Notifications triggered on: item added, item reserved, contribution received
-    - `/api/notifications` route (GET + PATCH for mark-as-read)
-    - `NotificationBell` component in AppHeader with dropdown
-    - `/app/notifications` full page view
-  - Next: Email notifications (P1), or testing the full MVP flow
-  - Blockers: None
+  - Implemented affiliate redirect routing and public affiliate disclosure.
 - 2026-01-04:
-  - Done: M7 (MVP Hardening) fully implemented:
-    - Reusable `Spinner` component + `loading.tsx` files for key routes
-    - Toast notifications wired to ContributeForm, pay/page, reserve/page
-    - `audit_events` table (migration 007) + `logAuditEvent()` helper in API routes
-    - Dev-mode seed button on dashboard for quick testing
-    - Security documentation in `docs/SECURITY.md`
-    - Parallelized Stripe checkout queries to avoid waterfall
-  - Next: M6 (Notifications) — in-app notifications table + UI
-  - Blockers: None
-- 2026-01-03:
-  - Audit: Reviewed all milestones — M0, M1 (core), M2, M3 (UI + Link Preview), M4, M5 are complete.
-  - Remaining: M6 (Notifications) and M7 (MVP hardening) are next.
-  - Note: Auth providers (Google/Facebook/Apple OAuth) need Supabase Dashboard config, not code.
-  - Next: Recommend M7 (hardening) before M6 — solidify error/loading states before adding notifications.
+  - Completed notifications and hardening baseline.
 - 2025-01-02:
-  - Done: M3 Link Preview fully implemented:
-    - `link_previews` table migration (006)
-    - URL normalization + SSRF protection utilities (`src/lib/url.ts`)
-    - `/api/link-preview` route with OG/Twitter/JSON-LD parsing + caching
-    - `useLinkPreview` hook with 500ms debounce
-    - `AddItemForm` wired up: paste URL → preview → autofill title/image/price
-  - Deferred: Rate limiting (M7), comprehensive tests (future)
-  - Next: M6 Notifications or M7 MVP hardening
-  - Blockers: None
-- 2024-12-31:
-  - Done: Audited PROJECT.md — marked M2 RLS, M3 UI, and M4 reserve flow as complete. List settings page, invite flow, self-gifting prevention (UI+server), and mutual exclusivity (DB triggers + server checks) all implemented.
-  - Next: M3 Link Preview (auto-parse item metadata from URL) OR M6 Notifications.
-  - Blockers: None
-- 2024-12-30 (evening):
-  - Done: Added `list_members` table migration (002). Created list detail page `/app/lists/[id]` with add/delete items. Switched login to Google OAuth only (UI ready, needs Supabase config).
-  - Next: Configure Google OAuth in Supabase. Add Facebook, Apple, Email login options. Invite flow.
-  - Blockers: None
-- 2024-12-30 (pm):
-  - Done: Added "Add wish" functionality to list detail screen (modal form, Zod validation). Item cards with title, price, link, status badges (Available/Reserved/Funded). Delete item action with confirmation. Funding progress bar display.
-  - Next: Invite flow (generate/accept links), or polish Reserve/Contribute buttons for owner testing.
-  - Blockers: None
-- 2024-12-30:
-  - Done: M0 complete, M1 complete, M2 mostly complete (tables exist, views exist, RLS partial). Fixed reservation cancel flow (localStorage token format).
-  - Next: M3 (app UI) — create/manage lists from authenticated dashboard.
-  - Blockers: None
-- 2024-12-29:
-  - Done: Completed M0 + M1 (auth flow with sign in/out, protected /app, profiles table SQL).
-  - Next: M2 (data model tables + RLS), then M3 (app UI).
-  - Blockers: None
+  - Completed link preview implementation with caching and SSRF protections.
