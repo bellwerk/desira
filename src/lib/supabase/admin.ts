@@ -2,6 +2,14 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 let _supabaseAdmin: SupabaseClient | null = null;
 
+export function hasSupabaseAdminCredentials(): boolean {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  return Boolean(url && serviceKey);
+}
+
 /**
  * Returns the Supabase admin client (service role).
  * Lazily initialized to avoid build-time errors when env vars aren't available.
@@ -21,6 +29,14 @@ export function getSupabaseAdmin(): SupabaseClient {
   });
 
   return _supabaseAdmin;
+}
+
+export function tryGetSupabaseAdmin(): SupabaseClient | null {
+  if (!hasSupabaseAdminCredentials()) {
+    return null;
+  }
+
+  return getSupabaseAdmin();
 }
 
 /**

@@ -155,10 +155,12 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
   const fundedMap = new Map(totals.map((t) => [t.item_id, t.funded_amount_cents]));
   const recipientTypeLabel =
     list.recipient_type === "person"
-      ? "Personal List"
-      : list.recipient_type === "shared"
-      ? "Shared List"
-      : "Group List";
+      ? "Wishlist"
+      : list.recipient_type === "group"
+      ? "Registry"
+      : list.recipient_type === "shopping"
+      ? "Collaborative"
+      : "Personal";
   const eventDateLabel = list.event_date ? formatEventDate(String(list.event_date)) : null;
 
   return (

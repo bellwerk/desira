@@ -146,7 +146,7 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [x] Performance sanity pass on obvious query waterfalls
 
 #### Remaining Hardening Work
-- [ ] Rate limit `/api/link-preview`
+- [x] Rate limit `/api/link-preview`
 - [ ] Add centralized error tracking
 - [ ] Add production alerting
 - [ ] Add rollback/runbook documentation
@@ -199,8 +199,8 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [ ] Collapse share link after first-use emphasis
 - [ ] Add drag handles for `sort_order`
 - [ ] Improve back navigation affordance
-- [ ] Polish `/app/lists/new`
-- [ ] Polish login page
+- [x] Polish `/app/lists/new`
+- [x] Polish login page
 - [ ] Polish `/app/settings`
 - [ ] Create shared `PageHeader`
 - [ ] Create shared `EmptyState`
@@ -215,9 +215,9 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 
 #### Current Correction Pass
 - [x] Move app navigation to a bottom bar on mobile while preserving desktop sidebar
-- [ ] Route returning users from `/app` to `/app/lists` when they already have lists
-- [ ] Unify the add-item flow behind one product-first flow
-- [ ] If the user has no lists, branch cleanly into create-list first
+- [x] Route returning users to `/app/lists` by default when they already have lists, while keeping `/app` available as the dashboard
+- [x] Unify the add-item flow behind one product-first flow
+- [x] If the user has no lists, branch cleanly into create-list first
 - [ ] Make item title and image clickable in owner and public views
 - [ ] Route all product clicks through `/api/go/[itemId]` in owner and public views
 - [ ] Improve Amazon URL handling and preview reliability
@@ -225,6 +225,240 @@ Desira helps people organize gift wishlists for a person or a group. There are t
   - [ ] Option A: Skimlinks for Amazon too
   - [ ] Option B: direct Amazon Associates for Amazon, Skimlinks for non-Amazon
 - [ ] Validate correction pass with manual sanity checks
+- [ ] Apply Supabase migration `017_add_personal_recipient_type.sql` in the target environment
+
+#### Task File - Minimal Card + Smart Buy (Guest) + Owner Buy Item / Item Received
+This task refines the existing buy-lock flow into explicit item lifecycle states: `available | reserved | purchased | received`.
+
+##### 0) Definition Of Done
+- Card stays minimal with 2 buttons:
+  - Guest: Buy gift + Contribute
+  - Owner: Buy item + Item received
+- Guest "Buy gift" uses Option B:
+  - Tap Buy gift -> Reserve 24h -> open Buy sheet with 3 options
+- If an item is reserved, it is not available to buy or contribute for anyone (locked).
+- Clicking Buy on store does not auto-mark purchased; it stays reserved (24h).
+- After outbound click, returning users see a banner prompting Mark purchased.
+- Owner never reserves their own items. Owner can mark Item received globally.
+
+##### 1) Status Model + Rules
+###### 1.1 Status Enum
+`available | reserved | purchased | received`
+
+###### 1.2 Global Rules (All Viewers)
+- `available`: buy + contribute enabled (guest) / buy + received enabled (owner)
+- `reserved`: buy + contribute disabled for everyone
+- `purchased`: disabled for everyone
+- `received`: disabled for everyone (final)
+
+###### 1.3 Ownership Rules
+- Reservation owner = matching device token hash
+- List owner = authenticated owner (or current list-ownership identity mechanism)
+
+##### 2) DB Changes
+###### 2.1 `gift_items` (Or Equivalent)
+Add or confirm columns:
+- `status` enum
+- `reserved_until` timestamptz NULL
+- `reserved_at` timestamptz NULL
+- `reserved_by_token_hash` text NULL
+- `affiliate_click_at` timestamptz NULL (set when guest clicks Buy on store)
+- `purchased_at` timestamptz NULL
+- `received_at` timestamptz NULL
+- `received_by_owner_id` uuid NULL (optional but recommended for audit)
+
+Indexes:
+- index `(status, reserved_until)`
+- index `(reserved_by_token_hash)` if helpful
+
+Security:
+- Guests: READ only via RLS; no direct writes
+- Writes happen via server/edge endpoints with validation
+
+##### 3) Anonymous Device Token (No Signup)
+- [ ] On first visit, generate `deviceToken = crypto.randomUUID()`
+- [ ] Persist in `localStorage` (optional cookie fallback)
+- [ ] Never store raw token; server stores and compares `hash(deviceToken)`
+
+##### 4) API / Server Endpoints (Core)
+###### 4.1 Reserve (24h) - called when guest taps Buy gift or Reserve only
+`POST /api/gifts/:id/reserve`
+- Input: `deviceToken`
+- Behavior:
+  - If `available` or (`reserved` and `reserved_until < now()`): set reserved
+  - Set:
+    - `status = reserved`
+    - `reserved_at = now()`
+    - `reserved_until = now() + 24h`
+    - `reserved_by_token_hash = hash(deviceToken)`
+    - clear `affiliate_click_at` (optional: only clear if this is a new reservation)
+- If reserved by someone else and not expired: `409` with `reserved_until`
+
+###### 4.2 Record Outbound Affiliate Click (Guest)
+`POST /api/gifts/:id/affiliate-click`
+- Input: `deviceToken`
+- Validate:
+  - item is `reserved`
+  - `reserved_by_token_hash == hash(deviceToken)`
+- Set `affiliate_click_at = now()`
+- Return `affiliate_url` (the final URL to open)
+
+###### 4.3 Cancel Reservation (Guest)
+`POST /api/gifts/:id/cancel-reservation`
+- Input: `deviceToken`
+- Validate token owns reservation
+- Set:
+  - `status = available`
+  - clear `reserved_*` + `affiliate_click_at`
+
+###### 4.4 Mark Purchased (Guest)
+`POST /api/gifts/:id/mark-purchased`
+- Input: `deviceToken`
+- Validate token owns reservation (recommended behavior for MVP)
+- Set:
+  - `status = purchased`
+  - `purchased_at = now()`
+  - clear `reserved_*` (optional keep audit)
+
+###### 4.5 Mark Received (Owner)
+`POST /api/gifts/:id/mark-received`
+- Auth: list owner only
+- Set:
+  - `status = received`
+  - `received_at = now()`
+  - `received_by_owner_id = ownerId`
+  - clear `reserved_*` + `affiliate_click_at` (owner wins)
+- Log audit event if overriding `reserved` or `purchased`
+
+###### 4.6 Contribute Payment (Guest)
+- Must be blocked unless `status == available`
+`POST /api/gifts/:id/contribute/create-session`
+`POST /api/gifts/:id/contribute/webhook`
+- On success: record contribution (money goes to owner)
+- Reject if `reserved`, `purchased`, or `received`
+
+##### 5) Reservation Expiry (24h)
+Implement at least one:
+
+###### Option A (Recommended MVP): Lazy Expiry
+- On list/items fetch and on reserve attempt:
+  - if `status = reserved` and `reserved_until < now()` -> release to `available` and clear reservation fields
+
+###### Option B: Scheduled Cleanup
+- Cron every 5-15 minutes:
+  - release all expired reservations
+
+##### 6) UI - Card + Sheets + Banner
+###### 6.1 Guest Card (2 Buttons)
+- Buttons: Buy gift (primary), Contribute (secondary)
+- Under Buy gift add one-line helper text (small):
+  - "We'll hold it for 24h."
+- State rendering:
+  - `available`: enabled
+  - `reserved` / `purchased` / `received`: disabled + badge (Reserved / Purchased / Received)
+  - On tap of a disabled reserved item: show info sheet "Reserved until {time}"
+
+###### 6.2 Guest Buy Gift Flow (Option B)
+On tap Buy gift:
+- Call `/reserve`
+- If success: open Buy sheet with 3 options
+
+Buy sheet (guest):
+1) Buy on {Store} (primary)
+   - Note (small): "We'll hold it for 24h. After checkout, come back to mark purchased."
+2) Reserve only (24h) (secondary)
+   - Note: "Hold it while you decide."
+3) I bought it elsewhere (tertiary)
+   - Note: "Mark as purchased."
+
+Actions:
+- Buy on store:
+  - call `/affiliate-click` -> open returned `affiliate_url`
+  - keep status = `reserved` (do not auto-mark purchased)
+- Reserve only:
+  - close sheet (reservation already active)
+- I bought it elsewhere:
+  - call `/mark-purchased`
+
+###### 6.3 Return Banner (Guest, No Signup)
+Show banner when:
+- There exists at least one item where:
+  - `status == reserved`
+  - reservation is owned by this device token
+  - `affiliate_click_at IS NOT NULL`
+
+Banner text:
+- "Did you buy this gift?"
+Buttons:
+- Mark purchased (primary) -> `/mark-purchased`
+- Not yet (secondary) -> dismiss for now (but banner can reappear on next visit/session)
+
+Handling multiple reserved items:
+- MVP: show most recent by `affiliate_click_at DESC`
+- Optional: allow cycling Next or open list of reserved items
+
+###### 6.4 Owner Card (2 Buttons, Different)
+- Buttons: Buy item (primary), Item received (secondary)
+- No Contribute for owner.
+
+Owner Buy item behavior:
+- Open Owner Buy sheet:
+  - Primary: Buy on {Store}
+  - Note: "After you buy it, tap Item received."
+- Open affiliate link directly (track analytics), no reservation is created.
+
+Owner Item received behavior:
+- Call `/mark-received`
+- Show toast: "Marked as received" + Undo (10-15s)
+  - Undo strategy:
+    - Store previous status client-side and call a safe revert endpoint, or
+    - Implement soft-revert within the undo window (recommended if simple)
+
+##### 7) Analytics Events
+Track (minimum):
+- `guest_buy_tap` (Buy gift tapped)
+- `guest_reserved_success`
+- `guest_reserved_conflict`
+- `guest_buy_on_store_click` (before outbound)
+- `guest_banner_shown`
+- `guest_mark_purchased`
+- `guest_cancel_reservation`
+- `reservation_expired`
+- `owner_buy_item_click` (outbound)
+- `owner_mark_received`
+- `owner_undo_received`
+- `guest_contribute_tap`
+- `guest_contribute_success`
+
+##### 8) Abuse / Guardrails (Light)
+- Limit active reservations per device token (for example, max 2-3)
+- Rate limit reserve endpoint (IP + token)
+- Reject contribute if not `available`
+
+##### 9) Tests (Must-Have)
+###### 9.1 Guest Reservation Locking
+- Two browser contexts:
+  - A reserves -> B sees Reserved and cannot buy/contribute
+- A clicks Buy on store -> `affiliate_click_at` set
+- A returns -> banner appears -> A marks purchased -> status becomes purchased, banner disappears
+- Expiry: set `reserved_until` in past -> item becomes available
+
+###### 9.2 Owner Behavior
+- Owner sees Buy item + Item received (no Contribute)
+- Owner Buy item does not reserve
+- Owner marks received -> guest sees Received
+- Owner marking received overrides reserved (audit logged)
+
+###### 9.3 Contribute Rules
+- Contribute allowed only when `available`
+- Contribute blocked when `reserved`, `purchased`, or `received`
+
+##### 10) Copy (Final)
+- Guest helper under Buy gift: "We'll hold it for 24h."
+- Buy sheet (guest) note under Buy on store:
+  - "We'll hold it for 24h. After checkout, come back to mark purchased."
+- Banner: "Did you buy this gift?" -> Mark purchased / Not yet
+- Owner secondary button: Item received
 
 ### M10 - Publisher Approval And Public Growth
 This milestone replaces the duplicate Skimlinks track. It is the single roadmap for crawlable public commerce pages, compliance, and reviewer readiness.
@@ -307,7 +541,6 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 ---
 
 ## Open Questions Requiring A Decision
-- [ ] Amazon affiliate strategy: Skimlinks-only vs split routing
 - [ ] Whether to add `/l/[slugOrId]` as an alias after `/u/[token]` public pages are validated
 - [ ] Whether contributor identity reveal belongs in MVP+1 or later
 - [ ] Whether to run a full internal rename from reservation terminology to buy-lock terminology after M10
@@ -315,12 +548,19 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 ---
 
 ## Progress Log
+- 2026-03-04:
+  - Added DB-backed rate limiting for `/api/link-preview` with hashed client keys, per-window counters, and 429 handling on cache misses.
+  - Added Smart Buy task spec under M9 current correction pass, including status model, API contracts, DB fields, UX flow, analytics, guardrails, and required tests.
+  - Removed the duplicate Amazon affiliate strategy decision from Open Questions; it remains tracked under the active M9 correction pass.
+  - Marked the empty-account create-list branch, `/app/lists/new` polish, and login-page polish as completed after verifying the current routes and UI implementations.
+  - Unified add-item entry points behind one product-first modal flow across list detail, empty-list state, and Gift Finder.
 - 2026-03-02:
   - Aligned public UX copy from "Reserve" to "Buy this gift" while keeping internal reservation schema/API names unchanged.
   - Implemented "Buy this gift" behavior as lock-first then redirect through `/api/go/[itemId]`.
   - Normalized `project.md` into one backlog.
   - Removed duplicate Skimlinks/public-roadmap items from the main plan by folding them into M10.
   - Resolved documented contradictions around owner buy behavior, public access, and routing strategy.
+  - Redirected returning users to `/app/lists` from auth entry routes while preserving direct dashboard access at `/app` and the first-list onboarding page for empty accounts.
 - 2026-02-26:
   - Completed UI duplication/risk audit for maintainability and UX consistency.
   - Biggest long-term risk identified as consistency drift, not immediate runtime speed.

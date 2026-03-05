@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ suggestion?: string }>;
 };
 
 type ItemRow = {
@@ -35,10 +36,22 @@ type ContributionTotal = {
   funded_amount_cents: number;
 };
 
+function getSingleSearchParam(value: string | string[] | undefined): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  return undefined;
+}
+
 export default async function ListDetailPage({
   params,
+  searchParams,
 }: PageProps): Promise<React.ReactElement> {
   const { id } = await params;
+  const { suggestion } = await searchParams;
+  const initialSuggestion = getSingleSearchParam(suggestion);
   const supabase = await createClient();
 
   const {
@@ -156,6 +169,7 @@ export default async function ListDetailPage({
         listTitle={list.title}
         visibilityVariant={visibilityVariant}
         visibilityLabel={visibilityLabel}
+        initialSuggestion={initialSuggestion}
       />
     );
   }
@@ -169,6 +183,7 @@ export default async function ListDetailPage({
       reservedMap={reservedMap}
       fundedMap={fundedMap}
       currency={list.currency ?? "CAD"}
+      initialSuggestion={initialSuggestion}
       listSettings={{
         id: list.id,
         title: list.title,

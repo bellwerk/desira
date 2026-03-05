@@ -87,7 +87,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
         {/* Recipient Type */}
         <div>
           <label className="block text-sm font-medium text-slate-900 dark:text-white">
-            Who is this list for?
+            Choose your list type
           </label>
           <div className="mt-2 grid grid-cols-3 gap-3">
             <label className="relative flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white p-4 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
@@ -116,10 +116,10 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 </div>
                 <div>
                   <p className="font-medium text-slate-900 dark:text-white">
-                    Individual
+                    Wishlist
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    For one person
+                    One person&apos;s wishes
                   </p>
                 </div>
               </div>
@@ -130,7 +130,7 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 type="radio"
                 name="recipient_type"
                 value="group"
-                defaultChecked={list.recipient_type === "group"}
+                defaultChecked={list.recipient_type === "group" || list.recipient_type === "shopping"}
                 className="peer sr-only"
               />
               <div className="flex items-center gap-3">
@@ -151,10 +151,10 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                 </div>
                 <div>
                   <p className="font-medium text-slate-900 dark:text-white">
-                    Group
+                    Registry
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Family or friends
+                    Weddings, baby showers, and more
                   </p>
                 </div>
               </div>
@@ -164,8 +164,8 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
               <input
                 type="radio"
                 name="recipient_type"
-                value="shared"
-                defaultChecked={list.recipient_type === "shared"}
+                value="personal"
+                defaultChecked={list.recipient_type === "personal"}
                 className="peer sr-only"
               />
               <div className="flex items-center gap-3">
@@ -180,16 +180,16 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"
+                      d="M2.25 3h1.386a1.125 1.125 0 011.098.883l.383 1.532m0 0 1.492 5.967a1.125 1.125 0 001.091.851h8.61a1.125 1.125 0 001.091-.851l1.005-4.019a1.125 1.125 0 00-1.091-1.399H5.117zm3.633 11.335a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Zm8.25 0a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Z"
                     />
                   </svg>
                 </div>
                 <div>
                   <p className="font-medium text-slate-900 dark:text-white">
-                    Collaborative
+                    Personal
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Everyone can add
+                    Personal picks for yourself
                   </p>
                 </div>
               </div>

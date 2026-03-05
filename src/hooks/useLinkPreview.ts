@@ -33,6 +33,8 @@ function formatPreviewError(code?: string, message?: string): string {
       return "Preview request timed out. Try again or add details manually.";
     case "INVALID_URL":
       return "That link doesn't look valid yet. Please paste a full URL.";
+    case "RATE_LIMITED":
+      return "You've requested too many previews in a short time. Wait a few minutes and try again.";
     default:
       return message ?? "Failed to fetch preview.";
   }
@@ -239,8 +241,6 @@ export function useLinkPreview(): UseLinkPreviewResult {
     reset,
   };
 }
-
-
 
 
 

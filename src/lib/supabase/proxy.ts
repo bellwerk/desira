@@ -23,7 +23,17 @@ function supabaseAnonKey(): string {
 const PROTECTED_ROUTES = ["/app"];
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
-  let response = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
+  const requestPath = `${pathname}${search}`;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", requestPath);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const url = supabaseUrl();
   const key = supabaseAnonKey();
@@ -56,8 +66,6 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
   // Check if accessing a protected route without auth
   const isProtectedRoute = PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -65,7 +73,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (isProtectedRoute && !user) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", requestPath);
     response = NextResponse.redirect(loginUrl);
   }
 

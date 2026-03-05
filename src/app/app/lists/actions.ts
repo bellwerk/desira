@@ -23,13 +23,14 @@ export type ActionResult = {
 // --------------------------------------------------------------------------
 const createListSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
-  recipient_type: z.enum(["person", "group", "shared"]).default("person"),
+  recipient_type: z.enum(["person", "group", "personal"]).default("person"),
   visibility: z.enum(["unlisted", "private", "public"]).default("unlisted"),
   occasion: z.string().max(100).optional(),
   event_date: z.string().optional(),
   allow_reservations: z.boolean().default(true),
   allow_contributions: z.boolean().default(true),
   allow_anonymous: z.boolean().default(true),
+  suggestion: z.string().trim().max(200).optional(),
 });
 
 export async function createList(formData: FormData): Promise<ActionResult> {
@@ -122,6 +123,7 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     allow_reservations: formData.get("allow_reservations") === "true",
     allow_contributions: formData.get("allow_contributions") === "true",
     allow_anonymous: formData.get("allow_anonymous") === "true",
+    suggestion: formData.get("suggestion") || undefined,
   };
 
   // Debug: log form values to help diagnose issues
@@ -163,7 +165,11 @@ export async function createList(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "Failed to create list. Please try again." };
   }
 
-  redirect(`/app/lists/${list.id}`);
+  const redirectPath = parsed.data.suggestion?.trim()
+    ? `/app/lists/${list.id}?suggestion=${encodeURIComponent(parsed.data.suggestion)}`
+    : `/app/lists/${list.id}`;
+
+  redirect(redirectPath);
 }
 
 // --------------------------------------------------------------------------
@@ -383,7 +389,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
 const updateListSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1, "Title is required").max(100),
-  recipient_type: z.enum(["person", "group", "shared"]),
+  recipient_type: z.enum(["person", "group", "personal"]),
   visibility: z.enum(["unlisted", "private", "public"]),
   occasion: z.string().max(100).optional(),
   event_date: z.string().optional(),
@@ -427,7 +433,7 @@ export async function updateList(formData: FormData): Promise<ActionResult> {
   // Verify user owns the list
   const { data: existingList, error: checkErr } = await supabase
     .from("lists")
-    .select("id")
+    .select("id, recipient_type")
     .eq("id", parsed.data.id)
     .eq("owner_id", user.id)
     .single();
@@ -436,11 +442,16 @@ export async function updateList(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "List not found or you don't have permission" };
   }
 
+  const recipientTypeToSave =
+    existingList.recipient_type === "shopping" && parsed.data.recipient_type === "group"
+      ? "shopping"
+      : parsed.data.recipient_type;
+
   const { error } = await supabase
     .from("lists")
     .update({
       title: parsed.data.title,
-      recipient_type: parsed.data.recipient_type,
+      recipient_type: recipientTypeToSave,
       visibility: parsed.data.visibility,
       occasion: parsed.data.occasion ?? null,
       event_date: parsed.data.event_date ?? null,

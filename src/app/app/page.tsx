@@ -46,29 +46,42 @@ function DocumentIcon(): React.ReactElement {
 interface ListTypeCardProps {
   title: string;
   subtitle: string;
+  descriptor: string;
   icon: React.ReactNode;
+  href: string;
 }
 
-function ListTypeCard({ title, subtitle, icon }: ListTypeCardProps): React.ReactElement {
+function ListTypeCard({
+  title,
+  subtitle,
+  descriptor,
+  icon,
+  href,
+}: ListTypeCardProps): React.ReactElement {
   return (
     <Link
-      href="/app/lists/new"
-      className="glass-1 group relative flex h-[280px] w-full max-w-[260px] flex-col items-center justify-center rounded-[30px] px-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)] sm:h-[290px] sm:max-w-[240px] lg:h-[300px] lg:max-w-[230px]"
+      href={href}
+      className="glass-1 group relative flex h-[280px] w-full max-w-[300px] flex-col items-center justify-center overflow-hidden rounded-[30px] px-5 pb-5 pt-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2b2b2b]/25 sm:h-[290px] lg:h-[360px]"
     >
       {/* Gradient overlay for visual depth */}
       <div className="absolute inset-0 rounded-[30px] bg-gradient-to-br from-violet-500/5 via-transparent to-rose-500/5 pointer-events-none" />
       
       {/* Title badge */}
-      <div className="absolute top-4 z-10 mt-3.5 mb-3.5 rounded-full bg-white/80 px-6 py-2 text-center shadow-sm">
+      <div className="absolute top-5 z-10 rounded-full bg-white/85 px-6 py-2 text-center shadow-sm backdrop-blur-sm">
         <span className="font-asul text-lg font-semibold tracking-normal text-[#2b2b2b]">{title}</span>
       </div>
       
       {/* Icon */}
-      <div className="relative z-10 mb-2.5 mt-12 sm:mt-14">{icon}</div>
+      <div className="relative z-10 mb-2 mt-12 sm:mt-14">{icon}</div>
       
       {/* Subtitle */}
-      <p className="relative z-10 flex h-fit max-w-[11rem] flex-wrap justify-center text-center text-base leading-tight text-[#2b2b2b] font-[family-name:var(--font-urbanist)]">
+      <p className="relative z-10 min-h-[2.5rem] max-w-[11.5rem] text-center text-[15px] font-medium leading-[1.25] text-[#2b2b2b] transition-colors duration-300 group-hover:text-[#1f1f1f] font-[family-name:var(--font-urbanist)]">
         {subtitle}
+      </p>
+
+      {/* Descriptor */}
+      <p className="relative z-10 mt-[20px] min-h-[44px] max-w-[12.75rem] rounded-full bg-white/85 px-6 py-2 text-center text-[14px] font-medium leading-[13px] text-[#2b2b2b]/70 shadow-sm backdrop-blur-sm transition-colors duration-300 group-hover:text-[#2b2b2b]/60 font-[family-name:var(--font-urbanist)]">
+        {descriptor}
       </p>
     </Link>
   );
@@ -77,11 +90,11 @@ function ListTypeCard({ title, subtitle, icon }: ListTypeCardProps): React.React
 export default async function DashboardPage(): Promise<React.ReactElement> {
   const supabase = await createClient();
   const { data: userData, error: authError } = await supabase.auth.getUser();
-  
+
   if (authError) {
     console.error("[DashboardPage] Auth error:", authError.message);
   }
-  
+
   // Fetch profile to get display name - use maybeSingle to handle missing profiles
   let displayName = userData?.user?.email?.split("@")[0] ?? "there";
   try {
@@ -90,7 +103,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       .select("display_name")
       .eq("id", userData?.user?.id ?? "")
       .maybeSingle();
-    
+
     if (profileError) {
       console.error("[DashboardPage] Profile fetch error:", profileError.message, profileError.code);
     } else if (profile?.display_name) {
@@ -103,16 +116,34 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   return (
     <div className="relative flex min-h-full flex-col items-center justify-start pt-6 text-[#2b2b2b] sm:pt-10">
       {/* Greeting */}
-      <h1 className="mt-2 px-2 text-center font-inter text-base font-medium text-[#2b2b2b] sm:mt-4 sm:text-lg">
+      <h1 className="px-3 text-center font-asul text-[32px] leading-tight text-[#2b2b2b] sm:text-[42px]">
         Hey {displayName}, let&apos;s make some wishes happen!
       </h1>
 
       {/* List type cards */}
       <div className="relative mt-8 w-full max-w-6xl sm:mt-10">
-        <div className="mx-auto grid w-full max-w-[760px] grid-cols-1 justify-items-center gap-4 sm:grid-cols-2 sm:gap-5 lg:max-w-none lg:grid-cols-3">
-          <ListTypeCard title="Wishlist" subtitle="Birthday gifts, Christmas, etc." icon={<GiftIcon />} />
-          <ListTypeCard title="Registry" subtitle="Weddings, baby showers & more" icon={<RegistryIcon />} />
-          <ListTypeCard title="Personal" subtitle="Shopping list for personal use" icon={<DocumentIcon />} />
+        <div className="mx-auto grid w-full max-w-[300px] grid-cols-1 gap-5 sm:max-w-[620px] sm:grid-cols-2 lg:max-w-[940px] lg:grid-cols-3">
+          <ListTypeCard
+            title="Wishlist"
+            subtitle="Birthdays, holidays, and more"
+            descriptor="Make a wishlist others can gift from."
+            icon={<GiftIcon />}
+            href="/app/lists/new?type=wishlist"
+          />
+          <ListTypeCard
+            title="Registry"
+            subtitle="Weddings, showers, and birthdays"
+            descriptor="Build a registry for someone special."
+            icon={<RegistryIcon />}
+            href="/app/lists/new?type=registry"
+          />
+          <ListTypeCard
+            title="Personal"
+            subtitle="Trips, upgrades, and daily picks"
+            descriptor="Track what you want to buy next."
+            icon={<DocumentIcon />}
+            href="/app/lists/new?type=personal"
+          />
         </div>
       </div>
 

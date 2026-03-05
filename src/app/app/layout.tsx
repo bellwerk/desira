@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
@@ -38,16 +39,60 @@ interface Profile {
   avatar_url: string | null;
 }
 
+function normalizeCandidatePath(value: string | null): string | null {
+  if (!value) return null;
+
+  let candidate = value.trim();
+  if (!candidate) return null;
+
+  if (/^https?:\/\//i.test(candidate)) {
+    try {
+      const parsed = new URL(candidate);
+      candidate = `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return null;
+    }
+  }
+
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
+    return null;
+  }
+
+  return candidate;
+}
+
+function getSafeLoginNext(headerStore: Awaited<ReturnType<typeof headers>>): string {
+  const candidates = [
+    headerStore.get("x-pathname"),
+    headerStore.get("x-invoke-path"),
+    headerStore.get("next-url"),
+    headerStore.get("x-matched-path"),
+  ];
+
+  for (const raw of candidates) {
+    const normalized = normalizeCandidatePath(raw);
+    if (normalized && (normalized === "/app" || normalized.startsWith("/app/"))) {
+      return normalized;
+    }
+  }
+
+  return "/app";
+}
+
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headerStore = await headers();
+  const safeLoginNext = getSafeLoginNext(headerStore);
+  const loginHref = `/login?next=${encodeURIComponent(safeLoginNext)}`;
+
   try {
     // During build, env vars may not be available - redirect to login
     if (!isSupabaseConfigured()) {
       console.error("[AppLayout] Supabase not configured");
-      redirect("/login");
+      redirect(loginHref);
     }
 
     const supabase = await createClient();
@@ -58,7 +103,7 @@ export default async function AppLayout({
     }
 
     if (!userData?.user) {
-      redirect("/login");
+      redirect(loginHref);
     }
 
     // Fetch profile data - use maybeSingle to handle missing profiles gracefully
@@ -105,6 +150,6 @@ export default async function AppLayout({
     if (isNextRedirect(error)) throw error;
     console.error("[AppLayout] Unexpected error:", error);
     // Safest fallback: send to login
-    redirect("/login");
+    redirect(loginHref);
   }
 }

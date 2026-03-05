@@ -77,7 +77,8 @@ export async function signInWithEmail(
 // Email/password signup
 export async function signUpWithEmail(
   email: string,
-  password: string
+  password: string,
+  redirectTo?: string
 ): Promise<{ error?: string; message?: string }> {
   const supabase = await createClient();
 
@@ -85,11 +86,15 @@ export async function signUpWithEmail(
     return { error: "Password must be at least 6 characters" };
   }
 
+  const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/app";
+  const callbackUrl = new URL("/auth/callback", getSiteURL());
+  callbackUrl.searchParams.set("next", safeRedirect);
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${getSiteURL()}/auth/callback`,
+      emailRedirectTo: callbackUrl.toString(),
     },
   });
 

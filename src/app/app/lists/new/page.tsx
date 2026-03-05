@@ -2,6 +2,7 @@
 
 import { useState, useActionState, useId, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createList, ActionResult } from "../actions";
 import { Toggle } from "@/components/ui";
 
@@ -11,14 +12,14 @@ import { Toggle } from "@/components/ui";
 
 const initialState: ActionResult = { success: false };
 
-type ListType = "wishlist" | "household" | "collaborative";
+type ListType = "wishlist" | "registry" | "personal";
 type Visibility = "private_link" | "public";
 
 /** Maps UI list type to database recipient_type */
 const LIST_TYPE_TO_RECIPIENT: Record<ListType, string> = {
   wishlist: "person",
-  household: "group",
-  collaborative: "shared",
+  registry: "group",
+  personal: "personal",
 } as const;
 
 const LIST_TYPE_CONFIG: Record<
@@ -34,25 +35,33 @@ const LIST_TYPE_CONFIG: Record<
       </svg>
     ),
   },
-  household: {
-    label: "Household",
-    description: "Couple / family gifts",
+  registry: {
+    label: "Registry",
+    description: "Weddings, baby showers, and more",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
       </svg>
     ),
   },
-  collaborative: {
-    label: "Collaborative",
-    description: "Everyone adds items",
+  personal: {
+    label: "Personal",
+    description: "Personal picks for yourself",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386a1.125 1.125 0 011.098.883l.383 1.532m0 0 1.492 5.967a1.125 1.125 0 001.091.851h8.61a1.125 1.125 0 001.091-.851l1.005-4.019a1.125 1.125 0 00-1.091-1.399H5.117zm3.633 11.335a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Zm8.25 0a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Z" />
       </svg>
     ),
   },
 };
+
+function parseListType(value: string | null): ListType | null {
+  if (value === "wishlist" || value === "registry" || value === "personal") {
+    return value;
+  }
+
+  return null;
+}
 
 const VISIBILITY_OPTIONS: Array<{
   value: Visibility;
@@ -77,7 +86,7 @@ const TEMPLATES = [
   { label: "Wedding", icon: "💒", name: " Wedding Registry", offset: 90 },
   { label: "Baby", icon: "👶", name: " Baby Shower", offset: 60 },
   { label: "Holiday", icon: "🎄", name: " Holiday Wishlist", offset: 0 },
-  { label: "Shopping", icon: "🛒", name: " Shopping List", offset: 0 },
+  { label: "Personal", icon: "🛒", name: " Personal List", offset: 0 },
 ] as const;
 
 const MAX_NAME_LENGTH = 100;
@@ -87,8 +96,10 @@ const MAX_NAME_LENGTH = 100;
 // ---------------------------------------------------------------------------
 
 export default function NewListPage(): React.ReactElement {
+  const searchParams = useSearchParams();
   const formId = useId();
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const suggestion = searchParams.get("suggestion")?.trim() ?? "";
 
   // Form action state
   const [state, formAction, isPending] = useActionState(
@@ -100,7 +111,7 @@ export default function NewListPage(): React.ReactElement {
   const [listName, setListName] = useState("");
   const [listNameTouched, setListNameTouched] = useState(false);
   const [eventDate, setEventDate] = useState("");
-  const [listType, setListType] = useState<ListType>("wishlist");
+  const [listType, setListType] = useState<ListType | null>(null);
   const [visibility, setVisibility] = useState<Visibility>("private_link");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [allowReservations, setAllowReservations] = useState(true);
@@ -118,6 +129,7 @@ export default function NewListPage(): React.ReactElement {
   const visibilityHelper =
     VISIBILITY_OPTIONS.find((v) => v.value === visibility)?.helper ?? "";
   const charactersRemaining = MAX_NAME_LENGTH - listName.length;
+  const selectedListType = listType ?? parseListType(searchParams.get("type")) ?? "wishlist";
 
   // Handlers
   const handleListNameChange = useCallback(
@@ -158,16 +170,17 @@ export default function NewListPage(): React.ReactElement {
       <div className="relative w-full max-w-lg overflow-hidden rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl sm:p-6" style={{ fontFamily: "Urbanist" }}>
         {/* Header */}
         <header className="mb-5">
-          <h1 className="text-2xl font-bold text-white text-center" style={{ fontFamily: "Asul" }}>
+          <h1 className="px-3 text-center font-asul text-[32px] leading-tight text-white sm:text-[42px]">
             Create a new list
           </h1>
           <p className="mt-2 text-center text-sm text-white/70">
-            Start with a template or customize your own
+            Start with your selected list type or customize it here
           </p>
         </header>
 
-        <form id={formId} action={formAction}>
-          {/* Error Alert */}
+	        <form id={formId} action={formAction}>
+	          <input type="hidden" name="suggestion" value={suggestion} />
+	          {/* Error Alert */}
           {state.error && (
             <div
               role="alert"
@@ -301,12 +314,12 @@ export default function NewListPage(): React.ReactElement {
           {/* Section: List Type */}
           <fieldset className="mt-6">
             <legend className="block text-sm font-medium text-white mb-3">
-              What kind of list?
+              Choose your list type
             </legend>
             <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
               {(Object.keys(LIST_TYPE_CONFIG) as ListType[]).map((type) => {
                 const config = LIST_TYPE_CONFIG[type];
-                const isSelected = listType === type;
+                const isSelected = selectedListType === type;
                 return (
                   <label
                     key={type}

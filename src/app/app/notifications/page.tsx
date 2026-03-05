@@ -125,26 +125,26 @@ export default function NotificationsPage(): React.ReactElement {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pt-6 sm:pt-10">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#343338] dark:text-white">
-            Notifications
-          </h1>
-          {unreadCount > 0 && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="px-3 text-center font-asul text-[32px] leading-tight text-[#2b2b2b] dark:text-white sm:text-[42px]">
+          Notifications
+        </h1>
         {unreadCount > 0 && (
-          <button
-            onClick={markAllAsRead}
-            className="rounded-lg bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-950"
-          >
-            Mark all as read
-          </button>
+          <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
+            {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
+          </p>
+        )}
+        {unreadCount > 0 && (
+          <div className="mt-4 flex justify-center sm:justify-end">
+            <button
+              onClick={markAllAsRead}
+              className="rounded-lg bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-950"
+            >
+              Mark all as read
+            </button>
+          </div>
         )}
       </div>
 

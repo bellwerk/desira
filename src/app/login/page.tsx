@@ -1,11 +1,35 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { userHasAnyLists } from "@/lib/lists/server";
 import { LoginForm } from "./LoginForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage(): Promise<React.ReactElement> {
+type LoginPageProps = {
+  searchParams: Promise<{ next?: string | string[] }>;
+};
+
+function getSingleRedirectTarget(value: string | string[] | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
+function isAuthRedirectTarget(value: string | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const pathname = (value.split(/[?#]/)[0] || "/").replace(/\/+$/, "") || "/";
+  return pathname === "/login" || pathname === "/signup";
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps): Promise<React.ReactElement> {
+  const requestedNext = getSingleRedirectTarget((await searchParams).next);
+
   // Check if Supabase is configured before trying to use it
   if (!isSupabaseConfigured()) {
     return (
@@ -24,6 +48,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
   }
 
   let shouldRedirect = false;
+  let redirectPath = "/app";
   try {
     const supabase = await createClient();
     const {
@@ -31,6 +56,13 @@ export default async function LoginPage(): Promise<React.ReactElement> {
     } = await supabase.auth.getUser();
     if (user) {
       shouldRedirect = true;
+
+      if (requestedNext && !isAuthRedirectTarget(requestedNext)) {
+        redirectPath = requestedNext;
+      } else {
+        const hasLists = await userHasAnyLists(supabase, user.id);
+        redirectPath = hasLists ? "/app/lists" : "/app";
+      }
     }
   } catch (err: unknown) {
     // Log the real error so it appears in Cloudflare observability logs
@@ -40,7 +72,7 @@ export default async function LoginPage(): Promise<React.ReactElement> {
 
   // redirect() throws internally — must be called outside try/catch
   if (shouldRedirect) {
-    redirect("/app");
+    redirect(redirectPath);
   }
 
   return (

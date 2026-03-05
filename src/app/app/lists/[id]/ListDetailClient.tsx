@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ItemsGrid } from "./ItemsGrid";
 import { ShareModal } from "./ShareModal";
 import { ListSettingsModal } from "../ListSettingsModal";
-import { AddItemForm } from "./AddItemForm";
+import { AddWishModal } from "./AddWishModal";
 
 type ItemRow = {
   id: string;
@@ -29,6 +30,7 @@ type ListDetailClientProps = {
   reservedMap: Record<string, boolean>;
   fundedMap: Record<string, number>;
   currency: string;
+  initialSuggestion?: string;
   listSettings: {
     id: string;
     title: string;
@@ -50,10 +52,28 @@ export function ListDetailClient({
   reservedMap,
   fundedMap,
   currency,
+  initialSuggestion,
   listSettings,
 }: ListDetailClientProps): React.ReactElement {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [prefillSuggestion, setPrefillSuggestion] = useState(initialSuggestion);
+  const [isAddWishModalOpen, setIsAddWishModalOpen] = useState(Boolean(initialSuggestion));
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!initialSuggestion) {
+      return;
+    }
+
+    router.replace(pathname);
+  }, [initialSuggestion, pathname, router]);
+
+  function handleCloseAddWishModal(): void {
+    setIsAddWishModalOpen(false);
+    setPrefillSuggestion(undefined);
+  }
 
   return (
     <>
@@ -63,7 +83,25 @@ export function ListDetailClient({
           <header className="mb-6 grid grid-cols-1 gap-3 sm:mb-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
             {/* Add New Wish button - left side */}
             <div className="flex items-center justify-center lg:justify-start">
-              <AddItemForm listId={listId} />
+              <button
+                onClick={() => setIsAddWishModalOpen(true)}
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#9d8df1] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#8a7be0] active:scale-[0.98]"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+                Add New Wish
+              </button>
             </div>
 
             {/* Title centered */}
@@ -148,6 +186,13 @@ export function ListDetailClient({
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         list={listSettings}
+      />
+
+      <AddWishModal
+        isOpen={isAddWishModalOpen}
+        onClose={handleCloseAddWishModal}
+        listId={listId}
+        initialTitle={prefillSuggestion}
       />
     </>
   );

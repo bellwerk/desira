@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { lookup } from "dns/promises";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { fetchAmazonPreview, parseAmazonProductUrl } from "@/lib/amazon-paapi";
+import {
+  getRateLimitClientKey,
+  RateLimitUnavailableError,
+  takeRateLimit,
+} from "@/lib/rate-limit";
 import {
   normalizeUrl,
   extractDomain,
@@ -37,9 +43,19 @@ const MAX_REDIRECTS = 5;
 // Cache TTL
 const DEFAULT_TTL_DAYS = 7;
 const PRICE_TTL_HOURS = 24;
+const LINK_PREVIEW_WINDOW_SECONDS = 10 * 60;
+const LINK_PREVIEW_MAX_MISSES_PER_IP = 20;
+const LINK_PREVIEW_MAX_MISSES_PER_IP_DOMAIN = 8;
 
 // Error codes
-type ErrorCode = "INVALID_URL" | "FETCH_BLOCKED" | "TIMEOUT" | "NO_METADATA" | "FETCH_ERROR";
+type ErrorCode =
+  | "INVALID_URL"
+  | "FETCH_BLOCKED"
+  | "TIMEOUT"
+  | "NO_METADATA"
+  | "FETCH_ERROR"
+  | "RATE_LIMITED"
+  | "PREVIEW_UNAVAILABLE";
 
 // Request schema
 const RequestSchema = z.object({
@@ -865,6 +881,24 @@ async function cachePreview(
  * Fetch and parse URL metadata with caching
  */
 export async function POST(req: Request): Promise<NextResponse<LinkPreviewResponse>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: {
+          code: "PREVIEW_UNAVAILABLE",
+          message: "Please sign in to fetch link previews.",
+        },
+      },
+      { status: 401 }
+    );
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = RequestSchema.safeParse(json);
 
@@ -902,6 +936,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
 
   const domain = extractDomain(normalizedUrl);
   let amazonPaapiData: LinkPreviewData | null = null;
+  const clientKey = getRateLimitClientKey(req.headers, user.id);
 
   // Check cache
   const cached = await getCachedPreview(normalizedUrl, force);
@@ -913,6 +948,93 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       cached: true,
       data: cached,
     });
+  }
+
+  const missRateLimitResponse = await applyMissRateLimit();
+  if (missRateLimitResponse) {
+    return missRateLimitResponse;
+  }
+
+  async function applyMissRateLimit(): Promise<NextResponse<LinkPreviewResponse> | null> {
+    try {
+      const routeLimit = await takeRateLimit({
+        scope: "link-preview",
+        key: clientKey,
+        maxRequests: LINK_PREVIEW_MAX_MISSES_PER_IP,
+        windowSeconds: LINK_PREVIEW_WINDOW_SECONDS,
+      });
+
+      if (!routeLimit.allowed) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: {
+              code: "RATE_LIMITED",
+              message: "Too many preview requests. Please wait a few minutes and try again.",
+            },
+          },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(routeLimit.retryAfterSeconds),
+            },
+          }
+        );
+      }
+
+      const domainLimit = await takeRateLimit({
+        scope: "link-preview-domain",
+        key: `${clientKey}|domain:${domain}`,
+        maxRequests: LINK_PREVIEW_MAX_MISSES_PER_IP_DOMAIN,
+        windowSeconds: LINK_PREVIEW_WINDOW_SECONDS,
+      });
+
+      if (!domainLimit.allowed) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: {
+              code: "RATE_LIMITED",
+              message: "Too many preview requests. Please wait a few minutes and try again.",
+            },
+          },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(domainLimit.retryAfterSeconds),
+            },
+          }
+        );
+      }
+    } catch (error) {
+      if (error instanceof RateLimitUnavailableError) {
+        if (error.shouldBypass) {
+          console.warn("[link-preview] Skipping rate limit:", error.message);
+          return null;
+        }
+
+        console.error("[link-preview] Rate limiting unavailable:", error.message);
+        return NextResponse.json(
+          {
+            ok: false,
+            error: {
+              code: "PREVIEW_UNAVAILABLE",
+              message: "Link previews are temporarily unavailable. Please try again shortly.",
+            },
+          },
+          {
+            status: 503,
+            headers: {
+              "Retry-After": "60",
+            },
+          }
+        );
+      }
+
+      throw error;
+    }
+
+    return null;
   }
 
   // Amazon pages frequently block generic metadata fetches. Use PA-API first when possible.

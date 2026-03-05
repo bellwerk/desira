@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { userHasAnyLists } from "@/lib/lists/server";
 
 /**
  * Root page for app.desira.gift
@@ -26,9 +27,10 @@ export default async function RootPage(): Promise<never> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect("/app");
-  } else {
+  if (!user) {
     redirect("/login");
   }
+
+  const hasLists = await userHasAnyLists(supabase, user.id);
+  redirect(hasLists ? "/app/lists" : "/app");
 }

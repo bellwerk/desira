@@ -2,6 +2,7 @@ import { expect, type APIRequestContext } from "@playwright/test";
 
 type SeedResult = {
   ok: boolean;
+  visibility: "public" | "unlisted";
   share_token: string;
   public_url: string;
   stripe_ready?: boolean;
@@ -11,8 +12,22 @@ type SeedResult = {
   };
 };
 
-export async function createSeed(request: APIRequestContext): Promise<SeedResult> {
-  const response = await request.get("/api/seed");
+type SeedOptions = {
+  visibility?: "public" | "unlisted";
+};
+
+export async function createSeed(
+  request: APIRequestContext,
+  options: SeedOptions = {}
+): Promise<SeedResult> {
+  const params = new URLSearchParams();
+  if (options.visibility) {
+    params.set("visibility", options.visibility);
+  }
+
+  const response = await request.get(
+    params.size > 0 ? `/api/seed?${params.toString()}` : "/api/seed"
+  );
   expect(response.ok(), "Seed endpoint should return 200").toBeTruthy();
 
   const json = (await response.json()) as SeedResult;
@@ -20,6 +35,7 @@ export async function createSeed(request: APIRequestContext): Promise<SeedResult
   expect(json.share_token).toBeTruthy();
   expect(json.demo_owner?.email).toBeTruthy();
   expect(json.demo_owner?.password).toBeTruthy();
+  expect(json.visibility).toBeTruthy();
 
   return json;
 }

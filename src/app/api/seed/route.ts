@@ -4,10 +4,14 @@ import crypto from "crypto";
 
 export const runtime = "nodejs";
 
+function parseSeedVisibility(value: string | null): "public" | "unlisted" {
+  return value === "public" ? "public" : "unlisted";
+}
+
 // GET /api/seed
 // Creates a demo auth user + profile + unlisted list + a few items.
 // Requires ALLOW_SEED=true env var to be explicitly set.
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   // Only allow if explicitly enabled via env var (never set this in production)
   if (process.env.ALLOW_SEED !== "true") {
     return NextResponse.json(
@@ -15,6 +19,10 @@ export async function GET(): Promise<NextResponse> {
       { status: 403 }
     );
   }
+
+  const url = new URL(request.url);
+  const visibility = parseSeedVisibility(url.searchParams.get("visibility"));
+
   // 1) Create demo auth user
   const stamp = Date.now();
   const email = `demo+${stamp}@example.com`;
@@ -59,7 +67,7 @@ export async function GET(): Promise<NextResponse> {
       owner_id: userId,
       title: "Desira Demo List",
       recipient_type: "person",
-      visibility: "unlisted",
+      visibility,
       allow_reservations: true,
       allow_contributions: true,
       allow_anonymous: true,
@@ -159,6 +167,7 @@ export async function GET(): Promise<NextResponse> {
 
   return NextResponse.json({
     ok: true,
+    visibility,
     share_token: list.share_token,
     public_url: `http://localhost:3000/u/${list.share_token}`,
     demo_owner: { email, password },

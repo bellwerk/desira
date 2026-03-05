@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   signInWithGoogle,
   signInWithFacebook,
@@ -15,15 +15,25 @@ export function LoginForm(): React.ReactElement {
   const redirectTo =
     searchParams.get("next") ?? searchParams.get("returnUrl") ?? "/app";
   const errorParam = searchParams.get("error");
+  const requestedMode = searchParams.get("signup") === "true" ? "signup" : "login";
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(
     errorParam === "auth_callback_error" ? "Authentication failed. Please try again." : null
   );
   const [message, setMessage] = useState<string | null>(null);
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">(requestedMode);
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMode(requestedMode);
+      setShowPassword(false);
+      setError(errorParam === "auth_callback_error" ? "Authentication failed. Please try again." : null);
+      setMessage(null);
+    });
+  }, [errorParam, requestedMode]);
 
   function handleGoogleSignIn(): void {
     setError(null);
@@ -59,7 +69,7 @@ export function LoginForm(): React.ReactElement {
           setError(result.error);
         }
       } else {
-        const result = await signUpWithEmail(emailValue, password);
+        const result = await signUpWithEmail(emailValue, password, redirectTo);
         if (result.error) {
           setError(result.error);
         } else if (result.message) {

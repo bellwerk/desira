@@ -94,8 +94,7 @@ export default async function ListsPage(): Promise<React.ReactElement> {
     <div className="flex flex-col items-center pt-6 sm:pt-10">
       {/* Tagline */}
       <h2
-        className="mb-6 px-3 text-center text-xl font-medium leading-tight text-[#2b2b2b] sm:mb-8 sm:text-[24px] sm:leading-[24px]"
-        style={{ fontFamily: "Urbanist" }}
+        className="mb-6 px-3 text-center font-asul text-[32px] leading-tight text-[#2b2b2b] sm:mb-8 sm:text-[42px]"
       >
         Great surprises won&apos;t create themselves!
       </h2>

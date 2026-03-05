@@ -166,7 +166,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           {/* Recipient Type */}
           <div>
             <label className="block text-sm font-medium text-white/90 mb-3">
-              Who is this list for?
+              Choose your list type
             </label>
             <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
               <label className="relative flex cursor-pointer flex-col items-center rounded-[20px] bg-[#3a3a3a] p-3 hover:bg-[#4a4a4a] transition-colors">
@@ -180,7 +180,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                 <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
-                <p className="text-xs font-medium text-white/80">Individual</p>
+                <p className="text-xs font-medium text-white/80">Wishlist</p>
                 <div className="pointer-events-none absolute inset-0 rounded-[20px] border-2 border-transparent peer-checked:border-[#9d8df1]"></div>
               </label>
               <label className="relative flex cursor-pointer flex-col items-center rounded-[20px] bg-[#3a3a3a] p-3 hover:bg-[#4a4a4a] transition-colors">
@@ -188,27 +188,27 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                   type="radio"
                   name="recipient_type"
                   value="group"
-                  defaultChecked={list.recipient_type === "group"}
+                  defaultChecked={list.recipient_type === "group" || list.recipient_type === "shopping"}
                   className="peer sr-only"
                 />
                 <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                 </svg>
-                <p className="text-xs font-medium text-white/80">Group</p>
+                <p className="text-xs font-medium text-white/80">Registry</p>
                 <div className="pointer-events-none absolute inset-0 rounded-[20px] border-2 border-transparent peer-checked:border-[#9d8df1]"></div>
               </label>
               <label className="relative flex cursor-pointer flex-col items-center rounded-[20px] bg-[#3a3a3a] p-3 hover:bg-[#4a4a4a] transition-colors">
                 <input
                   type="radio"
                   name="recipient_type"
-                  value="shared"
-                  defaultChecked={list.recipient_type === "shared"}
+                  value="personal"
+                  defaultChecked={list.recipient_type === "personal"}
                   className="peer sr-only"
                 />
                 <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386a1.125 1.125 0 011.098.883l.383 1.532m0 0 1.492 5.967a1.125 1.125 0 001.091.851h8.61a1.125 1.125 0 001.091-.851l1.005-4.019a1.125 1.125 0 00-1.091-1.399H5.117zm3.633 11.335a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Zm8.25 0a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Z" />
                 </svg>
-                <p className="text-xs font-medium text-white/80">Collaborative</p>
+                <p className="text-xs font-medium text-white/80">Personal</p>
                 <div className="pointer-events-none absolute inset-0 rounded-[20px] border-2 border-transparent peer-checked:border-[#9d8df1]"></div>
               </label>
             </div>
