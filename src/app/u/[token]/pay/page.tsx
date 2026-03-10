@@ -88,12 +88,11 @@ export default function PayPage(): React.ReactElement {
     const draft = state.draft;
     setState({ status: "submitting", draft });
 
-    const res = await fetch("/api/stripe/checkout", {
+    const res = await fetch(`/api/gifts/${draft.item_id}/contribute/create-session`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         token,
-        item_id: draft.item_id,
         contribution_cents: draft.amount_cents,
         fee_cents: draft.fee_cents,
         total_cents: draft.total_cents,

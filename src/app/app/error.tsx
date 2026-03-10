@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackClientError } from "@/lib/error-tracking";
 
 export default function AppError({
   error,
@@ -10,8 +11,10 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to console for debugging
-    console.error("[AppError] Caught error:", error);
+    trackClientError(error, {
+      scope: "app.error-boundary",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (

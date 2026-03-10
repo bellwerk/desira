@@ -62,7 +62,15 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || (href !== "/app" && pathname.startsWith(href));
 }
 
-function DesktopNavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
+function DesktopNavLink({
+  item,
+  isActive,
+  showUnreadDot,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  showUnreadDot: boolean;
+}): React.ReactElement {
   return (
     <Link
       href={item.href}
@@ -73,6 +81,12 @@ function DesktopNavLink({ item, isActive }: { item: NavItem; isActive: boolean }
       }`}
     >
       {item.icon}
+      {showUnreadDot && (
+        <>
+          <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#e53935] ring-2 ring-white" />
+          <span className="sr-only">Unread notifications</span>
+        </>
+      )}
       {/* Tooltip */}
       <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-[#2B2B2B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 delay-200 group-hover:opacity-100">
         {item.label}
@@ -83,24 +97,42 @@ function DesktopNavLink({ item, isActive }: { item: NavItem; isActive: boolean }
   );
 }
 
-function MobileNavLink({ item, isActive }: { item: NavItem; isActive: boolean }): React.ReactElement {
+function MobileNavLink({
+  item,
+  isActive,
+  showUnreadDot,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  showUnreadDot: boolean;
+}): React.ReactElement {
   return (
     <Link
       href={item.href}
       aria-label={item.label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${
+      className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${
         isActive
           ? "bg-[#2B2B2B] text-white shadow-sm"
           : "text-[#2B2B2B] hover:bg-[#2B2B2B]/10"
       }`}
     >
       {item.icon}
+      {showUnreadDot && (
+        <>
+          <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#e53935] ring-2 ring-white" />
+          <span className="sr-only">Unread notifications</span>
+        </>
+      )}
       <span className="sr-only">{item.label}</span>
     </Link>
   );
 }
 
-export function Sidebar(): React.ReactElement {
+export function Sidebar({
+  unreadNotificationCount = 0,
+}: {
+  unreadNotificationCount?: number;
+}): React.ReactElement {
   const pathname = usePathname();
 
   return (
@@ -109,7 +141,12 @@ export function Sidebar(): React.ReactElement {
         {/* Navigation icons */}
         <nav className="flex flex-col items-center gap-1">
           {navItems.map((item) => (
-            <DesktopNavLink key={item.href} item={item} isActive={isActivePath(pathname, item.href)} />
+            <DesktopNavLink
+              key={item.href}
+              item={item}
+              isActive={isActivePath(pathname, item.href)}
+              showUnreadDot={item.href === "/app/notifications" && unreadNotificationCount > 0}
+            />
           ))}
         </nav>
 
@@ -140,7 +177,12 @@ export function Sidebar(): React.ReactElement {
       >
         <div className="flex flex-1 items-center justify-evenly">
           {navItems.map((item) => (
-            <MobileNavLink key={item.href} item={item} isActive={isActivePath(pathname, item.href)} />
+            <MobileNavLink
+              key={item.href}
+              item={item}
+              isActive={isActivePath(pathname, item.href)}
+              showUnreadDot={item.href === "/app/notifications" && unreadNotificationCount > 0}
+            />
           ))}
         </div>
         <Link

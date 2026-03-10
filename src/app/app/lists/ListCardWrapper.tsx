@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GlassCard } from "@/components/ui";
+import { BadgeChip, GlassCard } from "@/components/ui";
 import { ListSettingsModal } from "./ListSettingsModal";
 
 interface ListRow {
@@ -32,10 +32,67 @@ interface ListCardWrapperProps {
   items: ItemRow[];
   totalWishes: number;
   receivedCount: number;
+  ownership: "owner" | "shared";
 }
 
-export function ListCardWrapper({ list, items, totalWishes, receivedCount }: ListCardWrapperProps): React.ReactElement {
+function getListTypeMeta(recipientType: string): {
+  label: string;
+  icon: React.ReactElement;
+} {
+  const normalized = recipientType.toLowerCase();
+  if (normalized === "registry") {
+    return {
+      label: "Registry",
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16v13H4z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h20M12 7V4a2 2 0 1 0-4 0v3m4 0V4a2 2 0 1 1 4 0v3" />
+        </svg>
+      ),
+    };
+  }
+  if (normalized === "personal") {
+    return {
+      label: "Personal",
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13H7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v5h5" />
+        </svg>
+      ),
+    };
+  }
+  return {
+    label: "Wishlist",
+    icon: (
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h20v5H2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 22V7M12 7H8.5a2.5 2.5 0 1 1 0-5C10.4 2 12 4.2 12 7Zm0 0h3.5a2.5 2.5 0 1 0 0-5C13.6 2 12 4.2 12 7Z" />
+      </svg>
+    ),
+  };
+}
+
+export function ListCardWrapper({
+  list,
+  items,
+  totalWishes,
+  receivedCount,
+  ownership,
+}: ListCardWrapperProps): React.ReactElement {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const listType = getListTypeMeta(list.recipient_type);
+  const visibilityVariant = (list.visibility === "private" || list.visibility === "unlisted" || list.visibility === "public")
+    ? list.visibility
+    : "neutral";
+  const visibilityLabel = list.visibility === "public"
+    ? "Public"
+    : list.visibility === "unlisted"
+      ? "Unlisted"
+      : list.visibility === "private"
+        ? "Private"
+        : "Visible";
 
   // Take first 4 items for the 2x2 grid
   const gridItems = items.slice(0, 4);
@@ -55,7 +112,7 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
           {/* Clickable image grid area */}
           <Link href={`/app/lists/${list.id}`} className="block">
             {/* 2x2 Image grid */}
-            <div className="grid grid-cols-2 gap-[2px] mb-1 cursor-pointer transition-opacity hover:opacity-90" style={{ border: '2px solid rgba(255, 255, 255, 1)', borderRadius: '18px' }}>
+            <div className="mb-1 grid grid-cols-2 gap-[2px] rounded-[18px] border-2 border-white cursor-pointer transition-opacity hover:opacity-90">
               {gridItems.map((item, index) => {
                 // Calculate border radius based on position in 2x2 grid
                 let borderRadius = '0px';
@@ -80,11 +137,10 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
                     ) : (
                       <div className="h-full w-full bg-white flex items-center justify-center" style={{ borderRadius }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
+                        <img
                           src="/logo.svg" 
                           alt="" 
-                          className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12"
-                          style={{ opacity: 0.6 }}
+                          className="h-8 w-8 opacity-60 md:h-10 md:w-10 lg:h-12 lg:w-12"
                         />
                       </div>
                     )}
@@ -98,6 +154,15 @@ export function ListCardWrapper({ list, items, totalWishes, receivedCount }: Lis
               {list.title}
             </h3>
           </Link>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <BadgeChip variant="neutral" icon={listType.icon}>
+              {listType.label}
+            </BadgeChip>
+            <BadgeChip variant={visibilityVariant}>{visibilityLabel}</BadgeChip>
+            {ownership === "shared" && (
+              <BadgeChip variant="shared">Shared with me</BadgeChip>
+            )}
+          </div>
 
           {/* Stats */}
           <p className="text-[10px] md:text-[12px] lg:text-[13px] text-[#2b2b2b] font-medium" style={{ marginBottom: '6px' }}>

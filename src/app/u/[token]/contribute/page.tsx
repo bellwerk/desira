@@ -5,6 +5,45 @@ import { ErrorStateCard } from "@/components/ui";
 // Force dynamic rendering and nodejs runtime for server-side operations
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+const RESERVATION_DURATION_HOURS = 24;
+
+type ReservationRow = {
+  id: string;
+  status: string;
+  created_at?: string | null;
+  reserved_until?: string | null;
+  reserved_by_token_hash?: string | null;
+  device_token_hash?: string | null;
+  cancel_token_hash?: string | null;
+};
+
+function getReservationOwnerHash(
+  reservation: Pick<ReservationRow, "reserved_by_token_hash" | "device_token_hash">
+): string | null {
+  return reservation.reserved_by_token_hash ?? reservation.device_token_hash ?? null;
+}
+
+function isLegacyPurchasedLock(reservation: ReservationRow): boolean {
+  if (reservation.status !== "reserved") {
+    return false;
+  }
+  const ownerHash = getReservationOwnerHash(reservation);
+  return !reservation.reserved_until && !ownerHash && !reservation.cancel_token_hash;
+}
+
+function isReservationExpired(reservation: ReservationRow): boolean {
+  const expiryIso = reservation.reserved_until
+    ? reservation.reserved_until
+    : reservation.created_at
+      ? new Date(
+        new Date(reservation.created_at).getTime() + RESERVATION_DURATION_HOURS * 60 * 60 * 1000
+      ).toISOString()
+      : null;
+  if (!expiryIso) {
+    return false;
+  }
+  return new Date(expiryIso).getTime() <= Date.now();
+}
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -74,6 +113,47 @@ export default async function ContributePage({ params, searchParams }: PageProps
       <ErrorStateCard
         title="Item unavailable"
         message="This gift is no longer open for contributions."
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  const { data: reservationLockRaw, error: reservationLockErr } = await supabaseAdmin
+    .from("reservations")
+    .select("*")
+    .eq("item_id", itemRow.id)
+    .neq("status", "canceled")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (reservationLockErr) {
+    return (
+      <ErrorStateCard
+        title="Item unavailable"
+        message="We could not verify current reservation state."
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  const reservationLock = (reservationLockRaw ?? null) as ReservationRow | null;
+
+  if (reservationLock && (reservationLock.status === "purchased" || isLegacyPurchasedLock(reservationLock))) {
+    return (
+      <ErrorStateCard
+        title="Item unavailable"
+        message="This gift has already been purchased."
+        className="mx-auto max-w-md"
+      />
+    );
+  }
+
+  if (reservationLock?.status === "reserved" && !isReservationExpired(reservationLock)) {
+    return (
+      <ErrorStateCard
+        title="Item unavailable"
+        message="This gift is currently reserved."
         className="mx-auto max-w-md"
       />
     );

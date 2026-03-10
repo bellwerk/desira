@@ -15,6 +15,16 @@ export interface AuditLogParams {
   ipAddress?: string | null;
 }
 
+let auditEventsUnavailable = false;
+
+function isMissingAuditEventsError(message: string | undefined): boolean {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("audit_events") &&
+    (normalized.includes("could not find") || normalized.includes("does not exist"))
+  );
+}
+
 /**
  * Log an audit event.
  * 
@@ -22,6 +32,10 @@ export interface AuditLogParams {
  * Call from API routes after successful operations.
  */
 export async function logAuditEvent(params: AuditLogParams): Promise<void> {
+  if (process.env.DISABLE_AUDIT_LOGGING === "true") {
+    return;
+  }
+
   const {
     eventType,
     actorId = null,
@@ -31,6 +45,10 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
     metadata = {},
     ipAddress = null,
   } = params;
+
+  if (auditEventsUnavailable) {
+    return;
+  }
 
   try {
     const { error } = await supabaseAdmin.from("audit_events").insert({
@@ -44,6 +62,11 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
     });
 
     if (error) {
+      if (isMissingAuditEventsError(error.message)) {
+        auditEventsUnavailable = true;
+        console.warn("[audit] Disabling audit logging: audit_events table unavailable.");
+        return;
+      }
       // Log but don't throw - audit failures shouldn't break the app
       console.error("[audit] Failed to log event:", eventType, error.message);
     }

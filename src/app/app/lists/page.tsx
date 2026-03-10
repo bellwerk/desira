@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { GlassCard } from "@/components/ui";
+import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { PopularGiftIdeas } from "@/components/PopularGiftIdeas";
 import { ListCardWrapper } from "./ListCardWrapper";
 import { ShareProfileButton } from "./ShareProfileButton";
@@ -30,9 +32,18 @@ interface ItemRow {
   status: string;
 }
 
+interface ListsPageProps {
+  searchParams: Promise<{
+    q?: string;
+    scope?: string;
+  }>;
+}
 
-export default async function ListsPage(): Promise<React.ReactElement> {
+export default async function ListsPage({
+  searchParams,
+}: ListsPageProps): Promise<React.ReactElement> {
   const supabase = await createClient();
+  const resolvedSearchParams = await searchParams;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -69,6 +80,29 @@ export default async function ListsPage(): Promise<React.ReactElement> {
   }
 
   const typedLists = (lists ?? []) as ListRow[];
+  const ownedLists = typedLists.filter((list) => list.owner_id === user.id);
+  const sharedLists = typedLists.filter((list) => list.owner_id !== user.id);
+  const hasManyLists = typedLists.length >= 6;
+  const rawQuery =
+    typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
+  const query = rawQuery.trim().toLowerCase();
+  const scope =
+    resolvedSearchParams.scope === "owned" || resolvedSearchParams.scope === "shared"
+      ? resolvedSearchParams.scope
+      : "all";
+
+  const matchesQuery = (list: ListRow): boolean => {
+    if (!query) return true;
+    const title = list.title.toLowerCase();
+    const occasion = list.occasion?.toLowerCase() ?? "";
+    return title.includes(query) || occasion.includes(query);
+  };
+
+  const visibleOwnedLists =
+    scope === "shared" ? [] : ownedLists.filter(matchesQuery);
+  const visibleSharedLists =
+    scope === "owned" ? [] : sharedLists.filter(matchesQuery);
+  const visibleListCount = visibleOwnedLists.length + visibleSharedLists.length;
 
   // Fetch items for all lists to display thumbnails and stats
   const listIds = typedLists.map((l) => l.id);
@@ -92,12 +126,11 @@ export default async function ListsPage(): Promise<React.ReactElement> {
 
   return (
     <div className="flex flex-col items-center pt-6 sm:pt-10">
-      {/* Tagline */}
-      <h2
-        className="mb-6 px-3 text-center font-asul text-[32px] leading-tight text-[#2b2b2b] sm:mb-8 sm:text-[42px]"
-      >
-        Great surprises won&apos;t create themselves!
-      </h2>
+      <PageHeader
+        title="Great surprises won&apos;t create themselves!"
+        align="center"
+        className="mb-6 w-full max-w-[1100px] px-0 sm:mb-8 sm:px-4"
+      />
 
       {/* Action bar */}
       <div className="mb-6 flex w-full max-w-[1100px] flex-col items-stretch gap-3 px-0 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:px-4">
@@ -138,19 +171,19 @@ export default async function ListsPage(): Promise<React.ReactElement> {
       {/* Lists or Empty State */}
       {typedLists.length === 0 ? (
         <>
-          {/* Empty State Card */}
-          <GlassCard className="w-full max-w-[940px] px-5 py-10 text-center sm:px-10 sm:py-14">
-            <h3 className="font-asul text-3xl font-medium text-[#2b2b2b]">
-              Only you know what you want!
-            </h3>
-            <Link
-              href="/app/lists/new"
-              className="mt-8 inline-block rounded-full bg-[#D4D7C2] px-7 py-3.5 text-lg font-semibold text-[#2b2b2f] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98]"
-              style={{ fontFamily: "Urbanist" }}
-            >
-              Create your first wishlist
-            </Link>
-          </GlassCard>
+          <EmptyState
+            className="w-full max-w-[940px]"
+            title="Only you know what you want!"
+            action={(
+              <Link
+                href="/app/lists/new"
+                className="inline-block rounded-full bg-[#D4D7C2] px-7 py-3.5 text-lg font-semibold text-[#2b2b2f] shadow-sm transition-all hover:bg-[#c8cbb6] hover:shadow-md active:scale-[0.98]"
+                style={{ fontFamily: "Urbanist" }}
+              >
+                Create your first wishlist
+              </Link>
+            )}
+          />
 
           {/* Popular Gift Ideas Section */}
           <div className="mt-6 w-full flex justify-center">
@@ -158,25 +191,129 @@ export default async function ListsPage(): Promise<React.ReactElement> {
           </div>
         </>
       ) : (
-        /* 3-card grid layout - aligned with action bar */
-        <div className="w-full max-w-[1100px]">
-          <div className="grid grid-cols-1 justify-items-center gap-4 font-[family-name:var(--font-urbanist)] md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-            {typedLists.map((list) => {
-              const listItems = itemsByList[list.id] || [];
-              const totalWishes = listItems.length;
-              const receivedCount = listItems.filter((i) => i.status === "received").length;
-              
-              return (
-                <ListCardWrapper
-                  key={list.id}
-                  list={list}
-                  items={listItems.slice(0, 4)}
-                  totalWishes={totalWishes}
-                  receivedCount={receivedCount}
-                />
-              );
-            })}
-          </div>
+        <div className="w-full max-w-[1100px] space-y-7 font-[family-name:var(--font-urbanist)]">
+          {hasManyLists && (
+            <GlassCard className="rounded-2xl px-3 py-3 sm:px-4">
+              <form className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:gap-3" method="get">
+                <label className="flex-1 text-sm font-medium text-[#2b2b2b]">
+                  Search lists
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={rawQuery}
+                    placeholder="Search by list title or occasion"
+                    className="mt-1 block h-11 w-full rounded-xl border border-[#2b2b2b]/20 bg-white px-3 text-sm text-[#2b2b2b] placeholder:text-[#2b2b2b]/45 focus:border-[#2b2b2b]/35 focus:outline-none"
+                  />
+                </label>
+                <label className="text-sm font-medium text-[#2b2b2b] sm:w-[170px]">
+                  Scope
+                  <select
+                    name="scope"
+                    defaultValue={scope}
+                    className="mt-1 block h-11 w-full rounded-xl border border-[#2b2b2b]/20 bg-white px-3 text-sm text-[#2b2b2b] focus:border-[#2b2b2b]/35 focus:outline-none"
+                  >
+                    <option value="all">All lists</option>
+                    <option value="owned">Owned by me</option>
+                    <option value="shared">Shared with me</option>
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-[#2b2b2b] px-5 text-sm font-medium text-white transition-colors hover:bg-[#1f1f1f]"
+                >
+                  Apply
+                </button>
+                {(query || scope !== "all") && (
+                  <Link
+                    href="/app/lists"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#2b2b2b]/20 bg-white/70 px-4 text-sm font-medium text-[#2b2b2b] transition-colors hover:bg-white"
+                  >
+                    Clear
+                  </Link>
+                )}
+              </form>
+            </GlassCard>
+          )}
+
+          {scope !== "shared" && (
+            <section>
+              <div className="mb-3 flex items-center justify-between sm:mb-4">
+                <h3 className="font-asul text-2xl leading-tight text-[#2b2b2b] sm:text-[30px]">
+                  Your Lists
+                </h3>
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#2b2b2b]/70">
+                  {visibleOwnedLists.length}
+                  {query || scope !== "all" ? ` / ${ownedLists.length}` : ""}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 justify-items-center gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                {visibleOwnedLists.map((list) => {
+                  const listItems = itemsByList[list.id] || [];
+                  const totalWishes = listItems.length;
+                  const receivedCount = listItems.filter((i) => i.status === "received").length;
+
+                  return (
+                    <ListCardWrapper
+                      key={list.id}
+                      list={list}
+                      items={listItems.slice(0, 4)}
+                      totalWishes={totalWishes}
+                      receivedCount={receivedCount}
+                      ownership="owner"
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {scope !== "owned" && sharedLists.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center justify-between sm:mb-4">
+                <h3 className="font-asul text-2xl leading-tight text-[#2b2b2b] sm:text-[30px]">
+                  Shared With You
+                </h3>
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#2b2b2b]/70">
+                  {visibleSharedLists.length}
+                  {query || scope !== "all" ? ` / ${sharedLists.length}` : ""}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 justify-items-center gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                {visibleSharedLists.map((list) => {
+                  const listItems = itemsByList[list.id] || [];
+                  const totalWishes = listItems.length;
+                  const receivedCount = listItems.filter((i) => i.status === "received").length;
+
+                  return (
+                    <ListCardWrapper
+                      key={list.id}
+                      list={list}
+                      items={listItems.slice(0, 4)}
+                      totalWishes={totalWishes}
+                      receivedCount={receivedCount}
+                      ownership="shared"
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {visibleListCount === 0 && (
+            <GlassCard className="rounded-2xl px-4 py-4 text-center">
+              <p className="text-sm text-[#2b2b2b]/70">
+                No lists match your current search filters.
+              </p>
+            </GlassCard>
+          )}
+
+          {ownedLists.length === 0 && (
+            <GlassCard className="rounded-2xl px-4 py-3 text-center">
+              <p className="text-sm text-[#2b2b2b]/70">
+                You don&apos;t own a list yet. Create one to start sharing.
+              </p>
+            </GlassCard>
+          )}
         </div>
       )}
     </div>

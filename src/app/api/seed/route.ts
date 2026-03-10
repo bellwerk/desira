@@ -170,7 +170,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     visibility,
     share_token: list.share_token,
     public_url: `http://localhost:3000/u/${list.share_token}`,
-    demo_owner: { email, password },
+    demo_owner: { email, password, handle },
     stripe_ready: stripeReady,
   });
 }

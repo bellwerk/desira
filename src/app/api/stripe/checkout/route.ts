@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AuditEventType, getClientIP, logAuditEvent } from "@/lib/audit";
 
 export const runtime = "nodejs";
+const RESERVATION_DURATION_HOURS = 24;
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -16,6 +17,18 @@ function getStripe(): Stripe {
 // fee rule (must match UI): 5% with $1 minimum
 function feeCentsForContribution(contributionCents: number) {
   return Math.max(100, Math.round(contributionCents * 0.05));
+}
+function getAppOrigin(): string {
+  const configuredOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ??
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ??
+    "http://localhost:3000";
+
+  try {
+    return new URL(configuredOrigin).origin;
+  } catch {
+    return "http://localhost:3000";
+  }
 }
 
 // Accept BOTH old and new shapes (so we don’t break during iteration)
@@ -37,6 +50,46 @@ const BodySchema = z
     is_anonymous: z.boolean().optional(),
   })
   .strict();
+
+type ReservationRow = {
+  id: string;
+  status: string;
+  created_at?: string | null;
+  reserved_until?: string | null;
+  reserved_by_token_hash?: string | null;
+  device_token_hash?: string | null;
+  cancel_token_hash?: string | null;
+};
+
+function getReservationOwnerHash(
+  reservation: Pick<ReservationRow, "reserved_by_token_hash" | "device_token_hash">
+): string | null {
+  return reservation.reserved_by_token_hash ?? reservation.device_token_hash ?? null;
+}
+
+function getReservationExpiryIso(
+  reservation: Pick<ReservationRow, "reserved_until" | "created_at">
+): string | null {
+  if (reservation.reserved_until) {
+    return reservation.reserved_until;
+  }
+  if (!reservation.created_at) {
+    return null;
+  }
+  const createdAtMs = new Date(reservation.created_at).getTime();
+  if (Number.isNaN(createdAtMs)) {
+    return null;
+  }
+  return new Date(createdAtMs + RESERVATION_DURATION_HOURS * 60 * 60 * 1000).toISOString();
+}
+
+function isLegacyPurchasedLock(reservation: ReservationRow): boolean {
+  if (reservation.status !== "reserved") {
+    return false;
+  }
+  const ownerHash = getReservationOwnerHash(reservation);
+  return !reservation.reserved_until && !ownerHash && !reservation.cancel_token_hash;
+}
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -134,12 +187,14 @@ export async function POST(req: Request) {
   const targetCents = item.target_amount_cents ?? item.price_cents ?? null;
 
   const [rsvResult, contribsResult] = await Promise.all([
-    // Block contributions if reserved
+    // Block contributions if reserved/purchased
     supabaseAdmin
       .from("reservations")
-      .select("id")
+      .select("*")
       .eq("item_id", item.id)
-      .eq("status", "reserved")
+      .neq("status", "canceled")
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     // Get funding status if there's a target
     targetCents
@@ -150,11 +205,34 @@ export async function POST(req: Request) {
       : Promise.resolve({ data: null, error: null }),
   ]);
 
-  const { data: rsv } = rsvResult;
+  const { data: rsv, error: rsvErr } = rsvResult;
   const { data: contribs, error: sumErr } = contribsResult;
 
-  if (rsv) {
-    return NextResponse.json({ error: "Item is already marked as bought." }, { status: 409 });
+  if (rsvErr) {
+    return NextResponse.json({ error: "Failed to load reservation state." }, { status: 500 });
+  }
+
+  const reservation = (rsv ?? null) as ReservationRow | null;
+  if (reservation && (reservation.status === "purchased" || isLegacyPurchasedLock(reservation))) {
+    return NextResponse.json({ error: "Item is already purchased." }, { status: 409 });
+  }
+
+  if (reservation?.status === "reserved") {
+    const expiryIso = getReservationExpiryIso(reservation);
+    const isExpired = expiryIso ? new Date(expiryIso).getTime() <= Date.now() : false;
+
+    if (!isExpired) {
+      return NextResponse.json({ error: "Item is already marked as bought." }, { status: 409 });
+    }
+
+    await supabaseAdmin
+      .from("reservations")
+      .update({
+        status: "canceled",
+        canceled_at: new Date().toISOString(),
+      })
+      .eq("id", reservation.id)
+      .eq("status", "reserved");
   }
 
   if (targetCents) {
@@ -221,7 +299,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const origin = req.headers.get("origin") ?? "http://localhost:3000";
+  const origin = getAppOrigin();
   const currency = String(list.currency ?? "CAD").toLowerCase();
 
   const session = await stripe.checkout.sessions.create({

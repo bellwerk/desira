@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { GlassCard, useToastActions } from "@/components/ui";
+import { IconButton } from "@/components/IconButton";
+import { ItemCardMedia } from "@/components/item-card/ItemCardMedia";
+import { LinkedItemTitle } from "@/components/item-card/LinkedItemTitle";
+import { MostDesiredBadge } from "@/components/item-card/MostDesiredBadge";
+import { ModalShell } from "@/components/ModalShell";
+import { GlassCard, ProgressBar, useToastActions } from "@/components/ui";
 import { getItemRedirectPath } from "@/lib/affiliate";
 import { formatCurrency } from "@/lib/currency";
-import { deleteItem, markItemReceived, toggleMostDesired } from "../actions";
+import { deleteItem, toggleMostDesired } from "../actions";
 import { EditItemModal } from "./EditItemModal";
 
 type ItemRow = {
@@ -35,6 +40,12 @@ type ItemCardProps = {
   listId?: string;
 };
 
+const OWNER_RECEIVED_UNDO_WINDOW_MS = 12_000;
+
+function getOwnerUndoStorageKey(itemId: string): string {
+  return `desira_owner_undo_received_${itemId}`;
+}
+
 /**
  * ItemCard — displays a wish item with glass styling
  * 
@@ -58,37 +69,95 @@ export function ItemCard({
   const toast = useToastActions();
   const [isDeleted, setIsDeleted] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isOwnerBuySheetOpen, setIsOwnerBuySheetOpen] = useState(false);
+  const [undoPreviousStatus, setUndoPreviousStatus] = useState<string | null>(null);
+  const [undoExpiresAt, setUndoExpiresAt] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const target = item.target_amount_cents ?? item.price_cents ?? 0;
   const pct = target > 0 ? Math.min(100, Math.round((fundedAmount / target) * 100)) : 0;
+  const productRedirectPath = item.product_url ? getItemRedirectPath(item.id) : null;
+  const storeLabel = (() => {
+    if (!item.product_url) return "Store";
+    try {
+      const host = new URL(item.product_url).hostname.replace(/^www\./i, "");
+      const root = host.split(".")[0] ?? "store";
+      return root.charAt(0).toUpperCase() + root.slice(1);
+    } catch {
+      return "Store";
+    }
+  })();
 
   // Business rule: disable buy-lock if contributions exist
   const hasContributions = fundedAmount > 0;
-  const isReceived = item.status === "received";
+  const isReceived = item.status === "received" || undoExpiresAt !== null;
+
+  useEffect(() => {
+    if (!isOwner || isPreview) {
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(getOwnerUndoStorageKey(item.id));
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw) as {
+        previous_status?: string;
+        expires_at?: number;
+      };
+      if (
+        typeof parsed.previous_status !== "string" ||
+        typeof parsed.expires_at !== "number" ||
+        parsed.expires_at <= Date.now()
+      ) {
+        localStorage.removeItem(getOwnerUndoStorageKey(item.id));
+        return;
+      }
+      const previousStatus = parsed.previous_status;
+      const expiresAt = parsed.expires_at;
+      queueMicrotask(() => {
+        setUndoPreviousStatus(previousStatus);
+        setUndoExpiresAt(expiresAt);
+      });
+    } catch {
+      // Ignore malformed local storage values.
+    }
+  }, [isOwner, isPreview, item.id]);
+
+  useEffect(() => {
+    if (!undoExpiresAt) {
+      return;
+    }
+    const remaining = undoExpiresAt - Date.now();
+    if (remaining <= 0) {
+      queueMicrotask(() => {
+        setUndoExpiresAt(null);
+        setUndoPreviousStatus(null);
+      });
+      try {
+        localStorage.removeItem(getOwnerUndoStorageKey(item.id));
+      } catch {
+        // Ignore cleanup errors.
+      }
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setUndoExpiresAt(null);
+      setUndoPreviousStatus(null);
+      try {
+        localStorage.removeItem(getOwnerUndoStorageKey(item.id));
+      } catch {
+        // Ignore cleanup errors.
+      }
+      router.refresh();
+    }, remaining);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [item.id, router, undoExpiresAt]);
 
   // Don't render if deleted
   if (isDeleted) return <></>;
-
-  /**
-   * Handle card click to open product link
-   * Opens in new tab via affiliate redirect route
-   */
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't trigger if clicking on buttons or interactive elements
-    const target = e.target as HTMLElement;
-    if (
-      target.closest("button") ||
-      target.closest("a") ||
-      !item.product_url
-    ) {
-      return;
-    }
-
-    // Open affiliate link in new tab
-    const affiliateUrl = getItemRedirectPath(item.id);
-    window.open(affiliateUrl, "_blank", "noopener,noreferrer");
-  };
 
   /**
    * Toggle most desired status
@@ -150,71 +219,118 @@ export function ItemCard({
     }
 
     startTransition(async () => {
-      const result = await markItemReceived(item.id);
-      if (result.success) {
-        toast.success("Marked as received");
+      const res = await fetch(`/api/gifts/${item.id}/mark-received`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        const expiresAt = Date.now() + OWNER_RECEIVED_UNDO_WINDOW_MS;
+        const previousStatus = item.status;
+        setUndoPreviousStatus(previousStatus);
+        setUndoExpiresAt(expiresAt);
+        try {
+          localStorage.setItem(
+            getOwnerUndoStorageKey(item.id),
+            JSON.stringify({
+              previous_status: previousStatus,
+              expires_at: expiresAt,
+            })
+          );
+        } catch {
+          // Ignore local storage failures.
+        }
+        toast.success("Marked as received. Undo available for 12 seconds.");
         router.refresh();
       } else {
-        toast.error(result.error ?? "Failed to mark as received");
+        toast.error(
+          typeof json?.error === "string" ? json.error : "Failed to mark as received"
+        );
       }
     });
+  };
+
+  const handleUndoReceived = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!undoPreviousStatus) {
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await fetch(`/api/gifts/${item.id}/undo-received`, {
+        method: "POST",
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setUndoExpiresAt(null);
+        setUndoPreviousStatus(null);
+        try {
+          localStorage.removeItem(getOwnerUndoStorageKey(item.id));
+        } catch {
+          // Ignore local storage cleanup failures.
+        }
+        toast.info("Item received mark was undone.");
+        router.refresh();
+      } else {
+        toast.error(
+          typeof json?.error === "string" ? json.error : "Failed to undo received state"
+        );
+      }
+    });
+  };
+
+  const handleOwnerBuy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!productRedirectPath) return;
+    setIsOwnerBuySheetOpen(true);
+  };
+
+  const openOwnerStore = (): void => {
+    if (!productRedirectPath) return;
+    window.location.assign(productRedirectPath);
   };
 
   return (
     <div className="stagger-item">
       <GlassCard 
         variant="default" 
-        className="rounded-[20px] sm:rounded-[24px] p-2 sm:p-[10px] md:p-3 group bg-[#c5c5c5] cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.99]"
-        onClick={handleCardClick}
+        className="rounded-[20px] sm:rounded-[24px] p-2 sm:p-[10px] md:p-3 group bg-[#c5c5c5] transition-transform hover:scale-[1.02] active:scale-[0.99]"
       >
         {/* White container for image with rounded corners */}
-        <div className="relative bg-white rounded-[16px] sm:rounded-[20px] mb-2 sm:mb-3 overflow-hidden aspect-square">
-          {/* Mark as Most Desired toggle */}
-          {isOwner && !isPreview && (
-            <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 z-10">
-              <button 
-                onClick={handleToggleMostDesired}
-                disabled={isPending}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[#f5a623] text-[#2b2b2b] text-[8px] sm:text-[10px] md:text-xs font-semibold hover:bg-[#f5b647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title={item.most_desired ? "Remove from most desired" : "Mark as most desired"}
-              >
-                <div className="w-3 h-3 sm:w-[14px] sm:h-[14px] rounded-full border-2 border-[#2b2b2b] bg-white flex items-center justify-center">
-                  {item.most_desired && (
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#2b2b2b]" />
-                  )}
-                </div>
-                <span className="hidden sm:inline">{item.most_desired ? "Most Desired" : "Mark as Most Desired"}</span>
-                <span className="sm:hidden">Most Desired</span>
-              </button>
-            </div>
-          )}
-
-          {/* Product image - covers entire container */}
-          {item.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.image_url}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src="/logo.svg" 
-                alt="" 
-                className="h-24 w-24 opacity-35"
-              />
-            </div>
-          )}
-        </div>
+        <ItemCardMedia
+          title={item.title}
+          imageUrl={item.image_url}
+          productRedirectPath={productRedirectPath}
+          wrapperClassName="relative bg-white rounded-[16px] sm:rounded-[20px] mb-2 sm:mb-3 overflow-hidden aspect-square"
+          imageClassName="w-full h-full object-cover transition-opacity hover:opacity-95"
+          overlay={
+            isOwner && !isPreview ? (
+              <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 z-10">
+                <button
+                  onClick={handleToggleMostDesired}
+                  disabled={isPending}
+                  className="transition-colors hover:bg-[#f5b647] disabled:opacity-50 disabled:cursor-not-allowed rounded-full"
+                  title={item.most_desired ? "Remove from most desired" : "Mark as most desired"}
+                >
+                  <MostDesiredBadge active={Boolean(item.most_desired)} interactive />
+                </button>
+              </div>
+            ) : undefined
+          }
+        />
 
         <div className="space-y-2">
           {/* Title and Price on same line */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <h3 className="text-[10px] sm:text-xs md:text-sm font-bold text-[#2b2b2b] leading-tight line-clamp-2">
-                {item.title}
+                <LinkedItemTitle
+                  title={item.title}
+                  productRedirectPath={productRedirectPath}
+                  className="underline-offset-2 hover:underline"
+                />
               </h3>
             </div>
             
@@ -251,12 +367,12 @@ export function ItemCard({
               </div>
               
               {/* Progress bar with dual colors */}
-              <div className="h-1 w-full rounded-full bg-[#b8a8ff] overflow-hidden flex">
-                <div 
-                  className="h-full bg-[#3a3a3a] rounded-l-full transition-all duration-500"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={pct}
+                heightClassName="h-1"
+                trackClassName="bg-[#b8a8ff]"
+                barClassName="bg-[#3a3a3a]"
+              />
             </div>
           )}
 
@@ -282,37 +398,57 @@ export function ItemCard({
             {isOwner && !isPreview && (
               <>
                 {/* Edit and Delete icon buttons */}
-                <button
+                <IconButton
                   onClick={handleEdit}
                   disabled={isPending}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:bg-[#2b2b2b]/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Edit item"
-                >
-                  <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                  </svg>
-                </button>
+                  label="Edit item"
+                  icon={(
+                    <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                  )}
+                />
 
-                <button
+                <IconButton
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#2b2b2b] bg-transparent transition-all hover:border-red-500 hover:bg-red-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Delete item"
+                  variant="danger"
+                  label="Delete item"
+                  icon={(
+                    <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  )}
+                />
+
+                <button
+                  onClick={handleOwnerBuy}
+                  disabled={isPending || !productRedirectPath}
+                  className="h-11 flex-1 rounded-full border border-[#2b2b2b] bg-white px-3 text-center text-[10px] font-medium text-[#2b2b2b] transition-all hover:bg-[#f4f4f4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-xs md:text-sm"
+                  title={productRedirectPath ? "Buy this item" : "No store link available"}
                 >
-                  <svg className="h-4 w-4 text-[#2b2b2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
+                  Buy item
                 </button>
 
-                {/* Mark Received button */}
                 <button
                   onClick={handleMarkReceived}
                   disabled={isPending || isReceived}
                   className="h-11 flex-1 rounded-full bg-[#3a3a3a] px-3 text-center text-[10px] font-medium text-white transition-all hover:bg-[#2b2b2b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#3a3a3a] sm:px-4 sm:text-xs md:text-sm"
-                  title={isReceived ? "Already marked as received" : "Mark as received"}
+                  title={isReceived ? "Already marked as received" : "Mark item as received"}
                 >
-                  {isReceived ? "Received" : "Mark Received"}
+                  {isReceived ? "Received" : "Item received"}
                 </button>
+
+                {undoExpiresAt && (
+                  <button
+                    onClick={handleUndoReceived}
+                    disabled={isPending || !undoPreviousStatus}
+                    className="h-11 rounded-full border border-[#2b2b2b] bg-white px-4 text-center text-[10px] font-medium text-[#2b2b2b] transition-all hover:bg-[#f4f4f4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs md:text-sm"
+                    title="Undo mark as received"
+                  >
+                    Undo
+                  </button>
+                )}
               </>
             )}
 
@@ -365,6 +501,36 @@ export function ItemCard({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
       />
+
+      <ModalShell
+        isOpen={isOwnerBuySheetOpen}
+        onClose={() => setIsOwnerBuySheetOpen(false)}
+        maxWidthClass="max-w-md"
+        panelClassName="rounded-[24px] bg-[#2b2b2b] p-4 text-white shadow-2xl animate-modal-in sm:p-5"
+      >
+        <div className="space-y-4 pr-8">
+          <h3 className="text-lg font-semibold">Buy item</h3>
+          <p className="text-sm text-white/80">
+            Buy on {storeLabel}, then come back and tap Item received.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={openOwnerStore}
+              className="h-11 flex-1 rounded-full bg-white px-4 text-sm font-semibold text-[#2b2b2b] transition-colors hover:bg-[#f2f2f2]"
+            >
+              Buy on {storeLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOwnerBuySheetOpen(false)}
+              className="h-11 flex-1 rounded-full border border-white/30 bg-transparent px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </ModalShell>
     </div>
   );
 }

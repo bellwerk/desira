@@ -5,15 +5,21 @@ import { useState } from "react";
 interface CopyButtonProps {
   text: string;
   variant?: "light" | "dark";
+  onCopied?: () => void;
 }
 
-export function CopyButton({ text, variant = "light" }: CopyButtonProps): React.ReactElement {
+export function CopyButton({
+  text,
+  variant = "light",
+  onCopied,
+}: CopyButtonProps): React.ReactElement {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      onCopied?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for browsers that don't support clipboard API
@@ -25,19 +31,33 @@ export function CopyButton({ text, variant = "light" }: CopyButtonProps): React.
   const variantClasses = variant === "dark"
     ? "bg-[#9D8DF1] hover:bg-[#8A7AE0] text-white"
     : "rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700";
+  const copiedClasses = variant === "dark"
+    ? "bg-emerald-500 text-white shadow-md"
+    : "border-emerald-300 bg-emerald-50 text-emerald-700";
 
   return (
     <button
       type="button"
       onClick={handleCopy}
-      className={variant === "dark" ? `${baseClasses} ${variantClasses}` : variantClasses}
+      className={
+        variant === "dark"
+          ? `${baseClasses} ${copied ? copiedClasses : variantClasses} ${copied ? "scale-[1.02]" : ""}`
+          : `${copied ? copiedClasses : variantClasses} ${copied ? "scale-[1.01] shadow-sm" : ""}`
+      }
     >
-      {copied ? "Copied!" : "Copy"}
+      {copied ? (
+        <span className="inline-flex items-center gap-1.5">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+          </svg>
+          Copied
+        </span>
+      ) : (
+        "Copy"
+      )}
     </button>
   );
 }
-
-
 
 
 

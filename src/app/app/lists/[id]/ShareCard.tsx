@@ -15,9 +15,27 @@ export function ShareCard({
   shareUrl,
   listTitle,
 }: ShareCardProps): React.ReactElement {
+  const collapseStorageKey = `desira_share_link_collapsed_${shareToken}`;
   const [showQR, setShowQR] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [isLinkCollapsed, setIsLinkCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(collapseStorageKey) === "1";
+    } catch {
+      return false;
+    }
+  });
   const qrGeneratedForUrl = useRef<string | null>(null);
+
+  function handleLinkCopied(): void {
+    if (isLinkCollapsed) return;
+    setIsLinkCollapsed(true);
+    try {
+      localStorage.setItem(collapseStorageKey, "1");
+    } catch {
+      // Ignore storage failures and keep UI state only.
+    }
+  }
 
   // Generate QR code client-side to avoid leaking unlisted tokens to third-party APIs
   useEffect(() => {
@@ -59,12 +77,27 @@ export function ShareCard({
         <div className="flex items-center gap-2">
           {/* URL display */}
           <div className="flex-1 rounded-xl bg-[#3a3a3a] px-4 py-3">
-            <code className="text-white/90 text-sm font-mono truncate block font-[family-name:var(--font-urbanist)]">
-              /u/{shareToken}
-            </code>
+            {isLinkCollapsed ? (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-white/90 font-[family-name:var(--font-urbanist)]">
+                  Share link ready
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsLinkCollapsed(false)}
+                  className="rounded-full border border-white/20 px-2.5 py-1 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/10"
+                >
+                  Show
+                </button>
+              </div>
+            ) : (
+              <code className="text-white/90 text-sm font-mono truncate block font-[family-name:var(--font-urbanist)]">
+                /u/{shareToken}
+              </code>
+            )}
           </div>
           
-          <CopyButton text={shareUrl} variant="dark" />
+          <CopyButton text={shareUrl} variant="dark" onCopied={handleLinkCopied} />
           
           {/* QR Code button */}
           <button

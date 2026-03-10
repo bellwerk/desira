@@ -41,7 +41,7 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Create New
+            Create List
           </Link>
           <Link
             href="/app/lists"
@@ -69,10 +69,10 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
         
         {/* User info */}
         <div className="hidden flex-col text-right sm:flex">
-          <span className="text-xs font-semibold leading-tight tracking-tight text-[#2B2B2B] transition-colors duration-200 group-hover:text-[#1a1a1a]">
+          <span className="text-sm font-semibold leading-tight tracking-tight text-[#2B2B2B] transition-colors duration-200 group-hover:text-[#1a1a1a]">
             {displayName}
           </span>
-          <span className="text-[10px] leading-tight text-[#2B2B2B]/50 transition-colors duration-200 group-hover:text-[#2B2B2B]/70">
+          <span className="text-xs leading-tight text-[#2B2B2B]/55 transition-colors duration-200 group-hover:text-[#2B2B2B]/75">
             @{username}
           </span>
         </div>

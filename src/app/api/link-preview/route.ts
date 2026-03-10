@@ -88,6 +88,17 @@ interface ErrorResponse {
 
 type LinkPreviewResponse = SuccessResponse | ErrorResponse;
 
+type LinkPreviewMetricStatus =
+  | "success"
+  | "unauthorized"
+  | "invalid_request"
+  | "invalid_url"
+  | "rate_limited"
+  | "preview_unavailable"
+  | "error";
+
+type LinkPreviewSource = "cache" | "paapi" | "paapi_fallback" | "html" | "html_plus_paapi" | "none";
+
 /**
  * DNS-over-HTTPS response types from Cloudflare
  */
@@ -705,7 +716,7 @@ function mergeWithAmazonFallback(
 /**
  * Parse HTML and extract metadata
  */
-function parseHtml(html: string, finalUrl: string): LinkPreviewData {
+export function parseHtml(html: string, finalUrl: string): LinkPreviewData {
   // Extract JSON-LD first
   const jsonLdItems = extractJsonLd(html);
   const product = findProductInJsonLd(jsonLdItems);
@@ -881,12 +892,39 @@ async function cachePreview(
  * Fetch and parse URL metadata with caching
  */
 export async function POST(req: Request): Promise<NextResponse<LinkPreviewResponse>> {
+  const startedAt = Date.now();
+  let metricDomain: string | null = null;
+  const logPreviewMetric = (
+    status: LinkPreviewMetricStatus,
+    options: {
+      source?: LinkPreviewSource;
+      cached?: boolean;
+      domain?: string | null;
+      reason?: string;
+      errorCode?: string;
+    } = {}
+  ): void => {
+    console.info(
+      "[link-preview][metric]",
+      JSON.stringify({
+        status,
+        source: options.source ?? "none",
+        cached: options.cached ?? false,
+        domain: options.domain ?? metricDomain,
+        reason: options.reason ?? null,
+        error_code: options.errorCode ?? null,
+        duration_ms: Date.now() - startedAt,
+      })
+    );
+  };
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
+    logPreviewMetric("unauthorized", { errorCode: "PREVIEW_UNAVAILABLE" });
     return NextResponse.json(
       {
         ok: false,
@@ -903,6 +941,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   const parsed = RequestSchema.safeParse(json);
 
   if (!parsed.success) {
+    logPreviewMetric("invalid_request", { errorCode: "INVALID_URL" });
     return NextResponse.json(
       { ok: false, error: { code: "INVALID_URL" as const, message: "Invalid request" } },
       { status: 400 }
@@ -914,6 +953,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   // Validate URL format and SSRF
   const ssrfCheck = validateUrlForSsrf(rawUrl);
   if (!ssrfCheck.ok) {
+    logPreviewMetric("invalid_url", { errorCode: "INVALID_URL", reason: ssrfCheck.error });
     return NextResponse.json(
       { ok: false, error: { code: "INVALID_URL" as const, message: ssrfCheck.error } },
       { status: 400 }
@@ -921,26 +961,29 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   }
 
   // Parse Amazon links early so we can use canonical /dp/{ASIN} URLs for cache keys.
-  const amazonProduct = parseAmazonProductUrl(rawUrl);
+  let amazonProduct = parseAmazonProductUrl(rawUrl);
 
   // Normalize URL
   let normalizedUrl: string;
   try {
     normalizedUrl = normalizeUrl(amazonProduct?.canonicalUrl ?? rawUrl);
   } catch {
+    logPreviewMetric("invalid_url", { errorCode: "INVALID_URL", reason: "normalize_failed" });
     return NextResponse.json(
       { ok: false, error: { code: "INVALID_URL" as const, message: "Could not normalize URL" } },
       { status: 400 }
     );
   }
 
-  const domain = extractDomain(normalizedUrl);
+  let domain = extractDomain(normalizedUrl);
+  metricDomain = domain;
   let amazonPaapiData: LinkPreviewData | null = null;
   const clientKey = getRateLimitClientKey(req.headers, user.id);
 
   // Check cache
   const cached = await getCachedPreview(normalizedUrl, force);
   if (cached) {
+    logPreviewMetric("success", { source: "cache", cached: true });
     return NextResponse.json({
       ok: true,
       normalizedUrl,
@@ -965,6 +1008,10 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       });
 
       if (!routeLimit.allowed) {
+        logPreviewMetric("rate_limited", {
+          errorCode: "RATE_LIMITED",
+          reason: "route_limit",
+        });
         return NextResponse.json(
           {
             ok: false,
@@ -990,6 +1037,10 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       });
 
       if (!domainLimit.allowed) {
+        logPreviewMetric("rate_limited", {
+          errorCode: "RATE_LIMITED",
+          reason: "domain_limit",
+        });
         return NextResponse.json(
           {
             ok: false,
@@ -1014,6 +1065,10 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
         }
 
         console.error("[link-preview] Rate limiting unavailable:", error.message);
+        logPreviewMetric("preview_unavailable", {
+          reason: "rate_limit_unavailable",
+          errorCode: "PREVIEW_UNAVAILABLE",
+        });
         return NextResponse.json(
           {
             ok: false,
@@ -1052,6 +1107,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
         // If PA-API already has the key preview fields, return early.
         if (amazonData.image && amazonData.price) {
           await cachePreview(normalizedUrl, amazonData, "ok", 200);
+          logPreviewMetric("success", { source: "paapi" });
 
           return NextResponse.json({
             ok: true,
@@ -1071,6 +1127,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   if (!fetchResult.ok) {
     if (amazonPaapiData) {
       await cachePreview(normalizedUrl, amazonPaapiData, "ok", 200);
+      logPreviewMetric("success", { source: "paapi_fallback" });
 
       return NextResponse.json({
         ok: true,
@@ -1089,6 +1146,11 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       undefined,
       fetchResult.code
     );
+    logPreviewMetric("error", {
+      source: "none",
+      reason: fetchResult.error,
+      errorCode: fetchResult.code,
+    });
 
     return NextResponse.json(
       { ok: false, error: { code: fetchResult.code, message: fetchResult.error } },
@@ -1096,9 +1158,43 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
     );
   }
 
+  const redirectedAmazonProduct = amazonProduct ?? parseAmazonProductUrl(fetchResult.finalUrl);
+  if (!amazonProduct && redirectedAmazonProduct) {
+    amazonProduct = redirectedAmazonProduct;
+    normalizedUrl = normalizeUrl(amazonProduct.canonicalUrl);
+    domain = extractDomain(normalizedUrl);
+    metricDomain = domain;
+
+    const canonicalCached = await getCachedPreview(normalizedUrl, force);
+    if (canonicalCached) {
+      logPreviewMetric("success", { source: "cache", cached: true, reason: "canonicalized" });
+      return NextResponse.json({
+        ok: true,
+        normalizedUrl,
+        domain,
+        cached: true,
+        data: canonicalCached,
+      });
+    }
+  }
+
+  if (amazonProduct && !amazonPaapiData) {
+    const amazonPreview = await fetchAmazonPreview(amazonProduct);
+    if (amazonPreview.ok) {
+      const amazonData: LinkPreviewData = {
+        ...amazonPreview.data,
+        favicon: getFaviconWithFallback(null, domain),
+      };
+
+      if (amazonData.title || amazonData.description || amazonData.image || amazonData.price) {
+        amazonPaapiData = amazonData;
+      }
+    }
+  }
+
   let data = parseHtml(fetchResult.html, fetchResult.finalUrl);
 
-  if (amazonProduct && isAmazonDomain(domain)) {
+  if (amazonProduct && isAmazonDomain(extractDomain(fetchResult.finalUrl))) {
     if (!data.image || !data.price) {
       const amazonFallback = extractAmazonFallbackData(fetchResult.html, fetchResult.finalUrl);
       data = mergeWithAmazonFallback(data, amazonFallback);
@@ -1127,6 +1223,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   // Check if we got any useful metadata
   if (!data.title && !data.description && !data.image && !data.price) {
     await cachePreview(normalizedUrl, data, "error", 200, "NO_METADATA");
+    logPreviewMetric("error", { source: "html", errorCode: "NO_METADATA" });
     
     return NextResponse.json(
       { ok: false, error: { code: "NO_METADATA" as const, message: "No metadata found on page" } },
@@ -1136,6 +1233,9 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
 
   // Cache success
   await cachePreview(normalizedUrl, data, "ok", 200);
+  logPreviewMetric("success", {
+    source: amazonPaapiData ? "html_plus_paapi" : "html",
+  });
 
   return NextResponse.json({
     ok: true,

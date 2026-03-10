@@ -997,6 +997,98 @@ export async function toggleMostDesired(
 }
 
 // --------------------------------------------------------------------------
+// reorderItems
+// --------------------------------------------------------------------------
+const reorderItemsSchema = z.object({
+  list_id: z.string().uuid(),
+  ordered_item_ids: z.array(z.string().uuid()).min(1).max(200),
+});
+
+export async function reorderItems(
+  listId: string,
+  orderedItemIds: string[]
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const parsed = reorderItemsSchema.safeParse({
+    list_id: listId,
+    ordered_item_ids: orderedItemIds,
+  });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((issue) => issue.message).join(", "),
+    };
+  }
+
+  // Verify user is an accepted member of the list (owner or collaborator)
+  const { data: membership } = await supabase
+    .from("list_members")
+    .select("id")
+    .eq("list_id", parsed.data.list_id)
+    .eq("user_id", user.id)
+    .eq("status", "accepted")
+    .single();
+
+  if (!membership) {
+    const { data: list, error: listErr } = await supabase
+      .from("lists")
+      .select("id")
+      .eq("id", parsed.data.list_id)
+      .eq("owner_id", user.id)
+      .single();
+
+    if (listErr || !list) {
+      return { success: false, error: "You don't have permission to reorder this list" };
+    }
+  }
+
+  // Ensure payload IDs match the current list items exactly.
+  const { data: listItems, error: listItemsError } = await supabase
+    .from("items")
+    .select("id")
+    .eq("list_id", parsed.data.list_id);
+
+  if (listItemsError) {
+    return { success: false, error: listItemsError.message };
+  }
+
+  const currentIds = new Set((listItems ?? []).map((item) => item.id));
+  if (
+    currentIds.size !== parsed.data.ordered_item_ids.length ||
+    parsed.data.ordered_item_ids.some((id) => !currentIds.has(id))
+  ) {
+    return { success: false, error: "Item order payload does not match current list items" };
+  }
+
+  const updateResults = await Promise.all(
+    parsed.data.ordered_item_ids.map((id, index) =>
+      supabase
+        .from("items")
+        .update({ sort_order: index + 1 })
+        .eq("id", id)
+        .eq("list_id", parsed.data.list_id)
+    )
+  );
+
+  const firstError = updateResults.find((result) => result.error)?.error;
+  if (firstError) {
+    return { success: false, error: firstError.message };
+  }
+
+  return { success: true };
+}
+
+// --------------------------------------------------------------------------
 // markItemReceived
 // --------------------------------------------------------------------------
 const markItemReceivedSchema = z.object({
@@ -1047,13 +1139,42 @@ export async function markItemReceived(itemId: string): Promise<ActionResult> {
     return { success: true };
   }
 
-  const { error } = await supabase
+  const nowIso = new Date().toISOString();
+
+  const primaryUpdate = await supabase
     .from("items")
-    .update({ status: "received" })
+    .update({
+      status: "received",
+      received_at: nowIso,
+      received_by_owner_id: user.id,
+    })
     .eq("id", item.id);
 
-  if (error) {
-    return { success: false, error: error.message };
+  let updateError = primaryUpdate.error;
+
+  if (updateError && updateError.message.toLowerCase().includes("received_at")) {
+    const fallbackUpdate = await supabase
+      .from("items")
+      .update({ status: "received" })
+      .eq("id", item.id);
+    updateError = fallbackUpdate.error;
+  }
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  const { error: reservationCleanupError } = await supabaseAdmin
+    .from("reservations")
+    .update({
+      status: "canceled",
+      canceled_at: nowIso,
+    })
+    .eq("item_id", item.id)
+    .neq("status", "canceled");
+
+  if (reservationCleanupError) {
+    return { success: false, error: reservationCleanupError.message };
   }
 
   return { success: true };

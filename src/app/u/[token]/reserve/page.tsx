@@ -1,29 +1,208 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import { ErrorStateCard, GlassCard, GlassButton } from "@/components/ui";
+import { getOrCreateDeviceToken } from "@/lib/device-token";
 
 export default function ReservePage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const search = useSearchParams();
   const itemId = search.get("item");
-  const shouldRedirectToMerchant = search.get("go") === "1";
+  const [reservedUntil, setReservedUntil] = useState<string | null>(null);
+  const [cancelToken, setCancelToken] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [openDetails, setOpenDetails] = useState(false);
   const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+    "reserving" | "ready" | "processing" | "error"
+  >("reserving");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const reserveAttemptedRef = useRef(false);
 
-  const canSubmit = useMemo(
-    () => Boolean(token) && Boolean(itemId) && status !== "submitting",
-    [token, itemId, status]
-  );
+  const canProceed = useMemo(() => Boolean(token) && Boolean(itemId), [token, itemId]);
+
+  useEffect(() => {
+    if (!canProceed || status !== "reserving") {
+      return;
+    }
+    if (reserveAttemptedRef.current) {
+      return;
+    }
+    reserveAttemptedRef.current = true;
+
+    const doReserve = async (): Promise<void> => {
+      if (!itemId) return;
+
+      setErrorMsg(null);
+      const deviceToken = getOrCreateDeviceToken();
+      if (!deviceToken) {
+        queueMicrotask(() => {
+          setStatus("error");
+          setErrorMsg("Could not initialize this browser session. Please retry.");
+        });
+        return;
+      }
+
+      const res = await fetch(`/api/gifts/${itemId}/reserve`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          deviceToken,
+          share_token: token,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const reservedUntilValue =
+          typeof json?.reserved_until === "string" ? json.reserved_until : null;
+        queueMicrotask(() => {
+          setStatus("error");
+          setReservedUntil(reservedUntilValue);
+          setErrorMsg(json?.error ?? "Failed to hold this gift right now.");
+        });
+        return;
+      }
+
+      const reservationCancelToken =
+        typeof json?.cancel_token === "string" ? json.cancel_token : null;
+      const reservedUntilValue =
+        typeof json?.reserved_until === "string" ? json.reserved_until : null;
+
+      if (reservationCancelToken) {
+        try {
+          localStorage.setItem(
+            `desira_cancel_${itemId}`,
+            JSON.stringify({
+              reservation_id:
+                typeof json?.reservation_id === "string" ? json.reservation_id : null,
+              cancel_token: reservationCancelToken,
+            })
+          );
+        } catch {
+          // Continue without local storage if unavailable.
+        }
+      }
+
+      queueMicrotask(() => {
+        setCancelToken(reservationCancelToken);
+        setReservedUntil(reservedUntilValue);
+        setStatus("ready");
+      });
+    };
+
+    void doReserve();
+  }, [canProceed, itemId, status, token]);
+
+  async function buyOnStore(): Promise<void> {
+    if (!itemId) return;
+    setStatus("processing");
+    setErrorMsg(null);
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      setStatus("error");
+      setErrorMsg("Could not initialize this browser session. Please retry.");
+      return;
+    }
+
+    const clickRes = await fetch(`/api/gifts/${itemId}/affiliate-click`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        deviceToken,
+        cancelToken: cancelToken ?? undefined,
+        share_token: token,
+      }),
+    });
+    const clickJson = await clickRes.json().catch(() => ({}));
+
+    if (!clickRes.ok) {
+      setStatus("error");
+      setErrorMsg(
+        clickJson?.error ??
+          "Could not open the merchant link right now. Your 24-hour hold is still active."
+      );
+      return;
+    }
+
+    if (typeof clickJson?.affiliate_url !== "string") {
+      setStatus("error");
+      setErrorMsg("Could not open the merchant link right now. Your hold is still active.");
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        `desira_pending_purchase_${itemId}`,
+        JSON.stringify({
+          item_id: itemId,
+          token,
+          clicked_at: new Date().toISOString(),
+        })
+      );
+    } catch {
+      // Ignore local storage failures.
+    }
+
+    window.location.assign(clickJson.affiliate_url);
+  }
+
+  async function markBoughtElsewhere(): Promise<void> {
+    if (!itemId) return;
+    setStatus("processing");
+    setErrorMsg(null);
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      setStatus("error");
+      setErrorMsg("Could not initialize this browser session. Please retry.");
+      return;
+    }
+
+    const purchaseRes = await fetch(`/api/gifts/${itemId}/mark-purchased`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        deviceToken,
+        cancelToken: cancelToken ?? undefined,
+        share_token: token,
+      }),
+    });
+    const purchaseJson = await purchaseRes.json().catch(() => ({}));
+
+    if (!purchaseRes.ok) {
+      setStatus("error");
+      setErrorMsg(
+        purchaseJson?.error ?? "Gift was reserved, but could not be marked purchased yet."
+      );
+      return;
+    }
+
+    try {
+      localStorage.removeItem(`desira_cancel_${itemId}`);
+      localStorage.removeItem(`desira_pending_purchase_${itemId}`);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+
+    router.push(`/u/${token}`);
+    router.refresh();
+  }
+
+  function reserveOnly(): void {
+    router.push(`/u/${token}`);
+    router.refresh();
+  }
+
+  function formatReservedUntil(value: string | null): string | null {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleString();
+  }
+
+  const reservedUntilLabel = formatReservedUntil(reservedUntil);
 
   if (!itemId) {
     return (
@@ -37,218 +216,113 @@ export default function ReservePage(): React.ReactElement {
     );
   }
 
-  async function submit(): Promise<void> {
-    if (!itemId) return;
-    setStatus("submitting");
-    setErrorMsg(null);
-    setSuccessMsg(null);
+  if (status === "error") {
+    return (
+      <ErrorStateCard
+        title="Could not hold this gift"
+        message={
+          reservedUntilLabel
+            ? `${errorMsg ?? "This gift is currently reserved."} Reserved until ${reservedUntilLabel}.`
+            : (errorMsg ?? "Please go back and try another gift.")
+        }
+        actionLabel="Back to list"
+        actionHref={`/u/${token}`}
+        className="mx-auto max-w-md"
+      />
+    );
+  }
 
-    const res = await fetch("/api/reservations", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        item_id: itemId,
-        reserved_by_name: openDetails && name.trim() ? name.trim() : undefined,
-        reserved_by_email: openDetails && email.trim() ? email.trim() : undefined,
-        share_token: token,
-      }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      setStatus("error");
-      setErrorMsg(json?.error ?? "Failed to mark this gift as bought");
-      return;
-    }
-
-    const reservationId =
-      typeof json?.reservation_id === "string"
-        ? json.reservation_id
-        : typeof json?.reservation?.id === "string"
-          ? json.reservation.id
-          : null;
-    const cancelToken =
-      typeof json?.cancel_token === "string" ? json.cancel_token : null;
-
-    // Store cancel ticket locally (same browser/device can cancel)
-    if (reservationId && cancelToken) {
-      try {
-        localStorage.setItem(
-          `desira_cancel_${itemId}`,
-          JSON.stringify({
-            reservation_id: reservationId,
-            cancel_token: cancelToken,
-          })
-        );
-      } catch {
-        // Continue without local cancel credentials if browser storage is unavailable.
-      }
-    }
-
-    if (shouldRedirectToMerchant) {
-      const merchantRedirectPath = `/api/go/${itemId}?token=${encodeURIComponent(token)}`;
-      const resolveRes = await fetch(`${merchantRedirectPath}&resolve=1`, {
-        cache: "no-store",
-      });
-      const resolveJson = await resolveRes.json().catch(() => ({}));
-
-      if (resolveRes.ok && typeof resolveJson?.redirect_url === "string") {
-        setStatus("success");
-        window.location.assign(merchantRedirectPath);
-        return;
-      }
-
-      if (reservationId && cancelToken) {
-        await fetch("/api/reservations", {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            reservation_id: reservationId,
-            cancel_token: cancelToken,
-          }),
-        }).catch(() => null);
-      }
-
-      try {
-        localStorage.removeItem(`desira_cancel_${itemId}`);
-      } catch {
-        // Ignore storage cleanup failures.
-      }
-
-      setStatus("error");
-      setErrorMsg(
-        resolveJson?.error ??
-          "Could not open the merchant link right now. The buy mark was removed, so the gift is still available."
-      );
-      return;
-    }
-
-    setStatus("success");
-    setTimeout(() => router.push(`/u/${token}`), 600);
+  if (status === "reserving") {
+    return (
+      <GlassCard className="mx-auto max-w-md">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#9D8DF1]/20">
+          <svg
+            className="h-7 w-7 animate-spin text-[#9D8DF1]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 3v4m0 10v4m9-9h-4M7 12H3m15.364 6.364-2.828-2.828M8.464 8.464 5.636 5.636m12.728 0-2.828 2.828M8.464 15.536l-2.828 2.828"
+            />
+          </svg>
+        </div>
+        <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
+          Holding this gift for 24h
+        </h1>
+        <p className="mt-2 text-center text-sm text-[#62748e]">
+          We&apos;re reserving it now so nobody else can buy or contribute.
+        </p>
+      </GlassCard>
+    );
   }
 
   return (
     <GlassCard className="mx-auto max-w-md">
-      {status !== "success" ? (
-        <>
-          {/* Buy-lock icon */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#9D8DF1]/20">
-            <svg
-              className="h-8 w-8 text-[#9D8DF1]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-              />
-            </svg>
-          </div>
+      <h1 className="text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
+        Buy gift
+      </h1>
+      <p className="mt-2 text-center text-sm text-[#62748e]">
+        We&apos;ll hold it for 24h. Choose what you want to do next.
+      </p>
+      {errorMsg ? (
+        <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-center text-sm text-red-600">
+          {errorMsg}
+        </div>
+      ) : null}
+      {reservedUntilLabel ? (
+        <p className="mt-3 text-center text-xs text-[#62748e]">Hold ends: {reservedUntilLabel}</p>
+      ) : null}
 
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
-            Mark gift as bought
-          </h1>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
-            Mark this gift as bought so nobody duplicates it. You stay
-            anonymous to others.
-          </p>
-
-          <button
-            type="button"
-            className="mt-4 w-full text-sm text-[#62748e] underline underline-offset-4 hover:text-[#2B2B2B] transition-colors"
-            onClick={() => setOpenDetails((v) => !v)}
+      <div className="mt-5 space-y-3">
+        <div className="rounded-2xl border border-[#2b2b2b]/15 bg-white/80 p-3">
+          <GlassButton
+            variant="primary"
+            size="md"
+            disabled={status === "processing"}
+            onClick={() => {
+              void buyOnStore();
+            }}
+            className="w-full justify-center"
           >
-            {openDetails ? "Hide optional details" : "Add optional details"}
-          </button>
-
-          {openDetails ? (
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm text-[#62748e]">Name</label>
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#62748e] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-[#62748e]">Email</label>
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#62748e] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Optional (only owner can see)"
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {status === "error" && errorMsg ? (
-            <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-sm text-red-600 text-center">
-              {errorMsg}
-            </div>
-          ) : null}
-
-          <div className="mt-5 flex gap-2">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={submit}
-              disabled={!canSubmit}
-              loading={status === "submitting"}
-              className="flex-1 justify-center"
-            >
-              {status === "submitting" ? "Saving..." : "Confirm buy mark"}
-            </GlassButton>
-
-            <GlassButton
-              variant="secondary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="flex-1 justify-center"
-            >
-              Cancel
-            </GlassButton>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Success icon */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100/80">
-            <svg
-              className="h-8 w-8 text-emerald-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 12.75l6 6 9-13.5"
-              />
-            </svg>
-          </div>
-
-          <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
-            Marked as bought
-          </h1>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
-            This gift is now marked as bought and hidden from other shoppers.
+            Buy on store
+          </GlassButton>
+          <p className="mt-2 text-center text-xs text-[#62748e]">
+            We&apos;ll hold it for 24h. After checkout, come back to mark purchased.
           </p>
-          {successMsg ? (
-            <div className="mt-4 rounded-xl bg-amber-50/80 px-3 py-2 text-sm text-amber-700 text-center">
-              {successMsg}
-            </div>
-          ) : null}
-        </>
-      )}
+        </div>
+
+        <div className="rounded-2xl border border-[#2b2b2b]/15 bg-white/80 p-3">
+          <GlassButton
+            variant="secondary"
+            size="md"
+            disabled={status === "processing"}
+            onClick={reserveOnly}
+            className="w-full justify-center"
+          >
+            Reserve only (24h)
+          </GlassButton>
+          <p className="mt-2 text-center text-xs text-[#62748e]">Hold it while you decide.</p>
+        </div>
+
+        <div className="rounded-2xl border border-[#2b2b2b]/15 bg-white/80 p-3">
+          <GlassButton
+            variant="ghost"
+            size="md"
+            disabled={status === "processing"}
+            onClick={() => {
+              void markBoughtElsewhere();
+            }}
+            className="w-full justify-center"
+          >
+            I bought it elsewhere
+          </GlassButton>
+          <p className="mt-2 text-center text-xs text-[#62748e]">Mark as purchased.</p>
+        </div>
+      </div>
     </GlassCard>
   );
 }

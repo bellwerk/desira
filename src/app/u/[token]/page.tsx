@@ -5,6 +5,8 @@ import { PublicListClient } from "./PublicListClient";
 import { CreateWishlistButton } from "./CreateWishlistButton";
 import { SharedPageTracker } from "./SharedPageTracker";
 import { getExperimentVariant } from "@/lib/experiments";
+import type { Metadata } from "next";
+import { toPublicUrl } from "@/lib/public-site";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +14,72 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   params: Promise<{ token: string }>;
 };
+
+function buildPublicListDescription(list: {
+  title: string;
+  occasion: string | null;
+  recipient_type: string | null;
+}): string {
+  const recipientLabel =
+    list.recipient_type === "person"
+      ? "wishlist"
+      : list.recipient_type === "group"
+      ? "registry"
+      : list.recipient_type === "shopping"
+      ? "shopping list"
+      : "gift list";
+
+  if (list.occasion) {
+    return `${list.title} (${list.occasion}) on Desira. Browse items, buy gifts, or contribute to shared goals.`;
+  }
+
+  return `${list.title} on Desira. Browse this ${recipientLabel}, buy gifts, or contribute to shared goals.`;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { token } = await params;
+
+  const { data: list } = await supabaseAdmin
+    .from("lists")
+    .select("title, occasion, recipient_type, visibility")
+    .eq("share_token", token)
+    .maybeSingle();
+
+  if (!list || list.visibility === "private") {
+    return {
+      title: "List not found | Desira",
+      description: "This shared list is unavailable.",
+    };
+  }
+
+  const description = buildPublicListDescription({
+    title: list.title,
+    occasion: list.occasion,
+    recipient_type: list.recipient_type,
+  });
+  const title = `${list.title} | Desira`;
+  const canonicalPath = `/u/${token}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalPath,
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: "Desira",
+      url: toPublicUrl(canonicalPath),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 type ReservationFlag = {
   item_id: string;
@@ -21,6 +89,14 @@ type ReservationFlag = {
 type ContributionTotal = {
   item_id: string;
   funded_amount_cents: number;
+};
+
+type ReservationRow = {
+  id: string;
+  item_id: string;
+  status: string;
+  created_at: string | null;
+  reserved_until?: string | null;
 };
 
 type RawItemRow = {
@@ -47,6 +123,22 @@ function formatEventDate(rawDate: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+const RESERVATION_DURATION_HOURS = 24;
+
+function getReservationExpiryIso(reservation: ReservationRow): string | null {
+  if (reservation.reserved_until) {
+    return reservation.reserved_until;
+  }
+  if (!reservation.created_at) {
+    return null;
+  }
+  const createdAtMs = new Date(reservation.created_at).getTime();
+  if (Number.isNaN(createdAtMs)) {
+    return null;
+  }
+  return new Date(createdAtMs + RESERVATION_DURATION_HOURS * 60 * 60 * 1000).toISOString();
 }
 
 export default async function PublicListPage({ params }: PageProps): Promise<React.ReactElement> {
@@ -130,13 +222,40 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
     ...item,
     has_product_link: typeof product_url === "string" && product_url.trim().length > 0,
   }));
+  const listUrl = toPublicUrl(`/u/${token}`);
+  const listStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: list.title,
+    url: listUrl,
+    description: buildPublicListDescription({
+      title: list.title,
+      occasion: list.occasion,
+      recipient_type: list.recipient_type,
+    }),
+    mainEntity: {
+      "@type": "ItemList",
+      name: list.title,
+      numberOfItems: typedItems.length,
+      itemListElement: typedItems.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          name: item.title,
+          url: toPublicUrl(`/api/go/${item.id}?token=${token}`),
+        },
+      })),
+    },
+  };
   const itemIds = typedItems.map((i) => i.id);
 
   let reservedFlags: ReservationFlag[] = [];
   let totals: ContributionTotal[] = [];
+  const reservedUntilMap = new Map<string, string | null>();
 
   if (itemIds.length > 0) {
-    const [r1, r2] = await Promise.all([
+    const [r1, r2, r3] = await Promise.all([
       supabaseAdmin
         .from("public_reservation_flags")
         .select("item_id,is_reserved")
@@ -145,10 +264,26 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
         .from("public_contribution_totals")
         .select("item_id,funded_amount_cents")
         .in("item_id", itemIds),
+      supabaseAdmin
+        .from("reservations")
+        .select("*")
+        .in("item_id", itemIds)
+        .eq("status", "reserved")
+        .order("created_at", { ascending: false }),
     ]);
 
     reservedFlags = (r1.data ?? []) as ReservationFlag[];
     totals = (r2.data ?? []) as ContributionTotal[];
+    for (const row of (r3.data ?? []) as ReservationRow[]) {
+      if (reservedUntilMap.has(row.item_id)) {
+        continue;
+      }
+      const expiryIso = getReservationExpiryIso(row);
+      if (!expiryIso) {
+        continue;
+      }
+      reservedUntilMap.set(row.item_id, expiryIso);
+    }
   }
 
   const reservedMap = new Map(reservedFlags.map((r) => [r.item_id, r.is_reserved]));
@@ -165,6 +300,12 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
 
   return (
     <div className="flex flex-col pb-8 pt-0 sm:pb-10 sm:pt-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(listStructuredData),
+        }}
+      />
       <SharedPageTracker
         listId={list.id}
         heroVariant={heroVariant}
@@ -245,6 +386,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
           listId={list.id}
           items={typedItems}
           reservedMap={reservedMap}
+          reservedUntilMap={reservedUntilMap}
           fundedMap={fundedMap}
           listAllowReservations={list.allow_reservations ?? true}
           listAllowContributions={list.allow_contributions ?? true}

@@ -43,11 +43,20 @@ export async function POST(req: Request) {
     });
   }
 
-  if (event.type !== "checkout.session.completed") {
+  const supportedSessionEvents = new Set([
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+  ]);
+
+  if (!supportedSessionEvents.has(event.type)) {
     return new Response("ok", { status: 200 });
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+
+  if (session.payment_status !== "paid") {
+    return new Response("ok", { status: 200 });
+  }
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
@@ -118,6 +127,21 @@ export async function POST(req: Request) {
       amount_cents: contributionCents,
       fee_cents: feeCents,
       currency,
+    },
+  });
+
+  void logAuditEvent({
+    eventType: AuditEventType.GUEST_CONTRIBUTE_SUCCESS,
+    actorType: "webhook",
+    resourceType: "item",
+    resourceId: itemId,
+    metadata: {
+      contribution_id: insertedContribution.id,
+      payment_intent_id: paymentIntentId,
+      amount_cents: contributionCents,
+      fee_cents: feeCents,
+      currency,
+      source: "shared_page",
     },
   });
 

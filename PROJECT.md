@@ -109,9 +109,9 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [x] Manual entry remains possible on preview failure
 
 #### Remaining M3 Follow-Ups
-- [ ] Link preview rate limiting
-- [ ] Link preview logging and metrics
-- [ ] Link preview tests for normalization, SSRF, and JSON-LD edge cases
+- [x] Link preview rate limiting
+- [x] Link preview logging and metrics
+- [x] Link preview tests for normalization, SSRF, and JSON-LD edge cases
 
 ### M4 - Buy-Lock Flow
 - [x] Atomic buy-lock flow
@@ -136,7 +136,7 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [x] Notifications for item added
 - [x] Notifications for item bought
 - [x] Notifications for contribution received
-- [ ] Email notifications
+- [x] Email notifications
 
 ### M7 - Hardening
 - [x] Error toasts and loading states
@@ -147,10 +147,10 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 
 #### Remaining Hardening Work
 - [x] Rate limit `/api/link-preview`
-- [ ] Add centralized error tracking
-- [ ] Add production alerting
-- [ ] Add rollback/runbook documentation
-- [ ] Add user bug-report flow
+- [x] Add centralized error tracking
+- [x] Add production alerting
+- [x] Add rollback/runbook documentation
+- [x] Add user bug-report flow
 
 ### M8 - Adaptive Design
 - [x] Hide sidebar on mobile
@@ -162,7 +162,7 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [x] Make item actions stack well on mobile
 - [x] Fix dashboard card fixed-width behavior
 - [x] Optimize add/edit forms for mobile
-- [ ] Test at 320, 375, 768, 1024, and 1280+ widths
+- [x] Test at 320, 375, 768, 1024, and 1280+ widths
 
 ### M9 - UI/UX Polish
 
@@ -185,46 +185,46 @@ Desira helps people organize gift wishlists for a person or a group. There are t
 - [x] Shared `ErrorStateCard`
 
 #### Remaining
-- [ ] Remove remaining inline color overrides
-- [ ] Show returning-user list summary on `/app`
-- [ ] Remove static placeholder sections from dashboard
-- [ ] Add upcoming-events countdown
-- [ ] Clarify app header primary toggle labels
-- [ ] Increase tiny profile text for readability
-- [ ] Add unread notification indicator
-- [ ] Improve `/app/lists` visual hierarchy
-- [ ] Add search/filter when a user has many lists
-- [ ] Differentiate "Shared with me" badge styling
-- [ ] Add list type thumbnail/icon treatment
-- [ ] Collapse share link after first-use emphasis
-- [ ] Add drag handles for `sort_order`
-- [ ] Improve back navigation affordance
+- [x] Remove remaining inline color overrides
+- [x] Show returning-user list summary on `/app`
+- [x] Remove static placeholder sections from dashboard
+- [x] Add upcoming-events countdown
+- [x] Clarify app header primary toggle labels
+- [x] Increase tiny profile text for readability
+- [x] Add unread notification indicator
+- [x] Improve `/app/lists` visual hierarchy
+- [x] Add search/filter when a user has many lists
+- [x] Differentiate "Shared with me" badge styling
+- [x] Add list type thumbnail/icon treatment
+- [x] Collapse share link after first-use emphasis
+- [x] Add drag handles for `sort_order`
+- [x] Improve back navigation affordance
 - [x] Polish `/app/lists/new`
 - [x] Polish login page
-- [ ] Polish `/app/settings`
-- [ ] Create shared `PageHeader`
-- [ ] Create shared `EmptyState`
-- [ ] Create shared `IconButton`
-- [ ] Extract shared modal shell
-- [ ] Consolidate duplicated owner/public item-card presentation
-- [ ] Replace remaining one-off button styles with `GlassButton` variants
-- [ ] Extract shared dark-form input styles
-- [ ] Replace equivalent inline progress markup with `ProgressBar`
-- [ ] Standardize "Most Desired" badge treatment
-- [ ] Add lightweight micro-interactions where they improve confirmation
+- [x] Polish `/app/settings`
+- [x] Create shared `PageHeader`
+- [x] Create shared `EmptyState`
+- [x] Create shared `IconButton`
+- [x] Extract shared modal shell
+- [x] Consolidate duplicated owner/public item-card presentation
+- [x] Replace remaining one-off button styles with `GlassButton` variants
+- [x] Extract shared dark-form input styles
+- [x] Replace equivalent inline progress markup with `ProgressBar`
+- [x] Standardize "Most Desired" badge treatment
+- [x] Add lightweight micro-interactions where they improve confirmation
 
 #### Current Correction Pass
 - [x] Move app navigation to a bottom bar on mobile while preserving desktop sidebar
 - [x] Route returning users to `/app/lists` by default when they already have lists, while keeping `/app` available as the dashboard
 - [x] Unify the add-item flow behind one product-first flow
 - [x] If the user has no lists, branch cleanly into create-list first
-- [ ] Make item title and image clickable in owner and public views
-- [ ] Route all product clicks through `/api/go/[itemId]` in owner and public views
-- [ ] Improve Amazon URL handling and preview reliability
-- [ ] Decide Amazon affiliate strategy:
+- [x] Make item title and image clickable in owner and public views
+- [x] Route all product clicks through `/api/go/[itemId]` in owner and public views
+- [x] Improve Amazon URL handling and preview reliability
+- [x] Decide Amazon affiliate strategy:
   - [ ] Option A: Skimlinks for Amazon too
-  - [ ] Option B: direct Amazon Associates for Amazon, Skimlinks for non-Amazon
-- [ ] Validate correction pass with manual sanity checks
+  - [x] Option B: direct Amazon Associates for Amazon, Skimlinks for non-Amazon
+- [x] Validate correction pass with manual sanity checks
 - [ ] Apply Supabase migration `017_add_personal_recipient_type.sql` in the target environment
 
 #### Task File - Minimal Card + Smart Buy (Guest) + Owner Buy Item / Item Received
@@ -276,9 +276,9 @@ Security:
 - Writes happen via server/edge endpoints with validation
 
 ##### 3) Anonymous Device Token (No Signup)
-- [ ] On first visit, generate `deviceToken = crypto.randomUUID()`
-- [ ] Persist in `localStorage` (optional cookie fallback)
-- [ ] Never store raw token; server stores and compares `hash(deviceToken)`
+- [x] On first visit, generate `deviceToken = crypto.randomUUID()`
+- [x] Persist in `localStorage` (optional cookie fallback)
+- [x] Never store raw token; server stores and compares `hash(deviceToken)`
 
 ##### 4) API / Server Endpoints (Core)
 ###### 4.1 Reserve (24h) - called when guest taps Buy gift or Reserve only
@@ -464,21 +464,21 @@ Track (minimum):
 This milestone replaces the duplicate Skimlinks track. It is the single roadmap for crawlable public commerce pages, compliance, and reviewer readiness.
 
 #### M10.1 Public Surfaces
-- [ ] Confirm `/u/[token]` is server-rendered with merchant links present in HTML source
-- [ ] Add metadata and OG tags to public list pages
-- [ ] Add public profile page at `/@/[username]`
-- [ ] Add `/explore` with featured and recent public lists
-- [ ] Add discoverable footer/navigation paths to public surfaces
+- [x] Confirm `/u/[token]` is server-rendered with merchant links present in HTML source
+- [x] Add metadata and OG tags to public list pages
+- [x] Add public profile page at `/@/[username]`
+- [x] Add `/explore` with featured and recent public lists
+- [x] Add discoverable footer/navigation paths to public surfaces
 - [ ] Optionally add `/l/[slugOrId]` only if aliasing materially helps SEO or reviewer clarity
 
 #### M10.2 Compliance And Trust
-- [ ] Add `/affiliate-disclosure`
-- [ ] Add `/privacy`
-- [ ] Add `/terms`
-- [ ] Add `/about`
-- [ ] Add `/contact`
-- [ ] Add cookie consent if required by the final affiliate script implementation
-- [ ] Ensure disclosure and legal links are visible from public pages/footer
+- [x] Add `/affiliate-disclosure`
+- [x] Add `/privacy`
+- [x] Add `/terms`
+- [x] Add `/about`
+- [x] Add `/contact`
+- [x] Add cookie consent if required by the final affiliate script implementation
+- [x] Ensure disclosure and legal links are visible from public pages/footer
 
 #### M10.3 Demo Content And Approval Readiness
 - [ ] Seed 5-10 Desira-owned public demo lists
@@ -487,11 +487,11 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 - [ ] Prepare 6-8 submission URLs for reapplication
 
 #### M10.4 SEO And QA
-- [ ] Add sitemap for public lists and public profiles
-- [ ] Confirm `robots.txt`
-- [ ] Add canonical tags on public pages
-- [ ] Add structured data if useful
-- [ ] Add Playwright coverage for public reviewer flows
+- [x] Add sitemap for public lists and public profiles
+- [x] Confirm `robots.txt`
+- [x] Add canonical tags on public pages
+- [x] Add structured data if useful
+- [x] Add Playwright coverage for public reviewer flows
 
 #### M10.5 Optional Expansion
 - [ ] Add guides/collections only after profiles and explore are live
@@ -527,9 +527,9 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 ---
 
 ## Definition Of Done
-- [ ] Typecheck passes
+- [x] Typecheck passes
 - [ ] Build passes
-- [ ] Lint passes
+- [x] Lint passes
 - [ ] No secrets or PII in logs
 - [ ] RLS reviewed for touched tables/routes
 - [ ] Zod or equivalent server validation for touched mutations
@@ -548,6 +548,79 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 ---
 
 ## Progress Log
+- 2026-03-08:
+  - Added legacy-schema compatibility fallbacks across Smart Buy APIs (`reserve`, `affiliate-click`, `pending-purchase`, `mark-purchased`, `mark-received`) so flows continue working when migrations `019-022` are not fully applied.
+  - Added owner Undo Received flow: new `POST /api/gifts/[id]/undo-received` endpoint (owner-only, Zod-validated) plus a 12-second undo affordance in owner item cards after marking received.
+  - Reworked `/u/[token]/reserve` to Option B guest flow: auto-reserve on entry, then present Buy sheet actions (Buy on store / Reserve only / I bought it elsewhere) with 24-hour hold messaging.
+  - Updated public Buy helper text and trigger behavior so Buy always routes through the new Option B reserve flow.
+  - Updated guest smoke coverage for the new reserve flow and added `e2e/smart-buy.locking.spec.ts` to validate two-browser reservation locking behavior.
+  - Added reserved-lock info sheet behavior in public item actions: tapping Buy on a reserved item now opens a "Gift reserved" sheet with `Reserved until ...` messaging when expiry data is available.
+  - Expanded Smart Buy coverage with owner-focused tests (`e2e/smart-buy.owner.spec.ts`) and additional contribution-gating assertions for reserved/received states in `e2e/smart-buy.api.spec.ts`.
+  - Added reserve guardrails: per-route rate limiting (`gift-reserve`, fail-open when RPC is unavailable) and per-device active reservation cap (max 3 active reservations).
+  - Hardened reservation ownership checks to require `cancelToken` fallback when hashed device-token columns are unavailable.
+  - Updated Smart Buy contribution lock checks to avoid missing-column bypasses in `/api/stripe/checkout` and `/u/[token]/contribute` by using compatibility-safe reservation reads.
+  - Added optional `cancelToken` support to `/api/gifts/pending-purchase` and wired the public-list client to send it when available for legacy environments.
+  - Added Smart Buy analytics event constants and expanded `/api/public-events` validation to accept return-banner and new guest smart-buy/contribution events.
+  - Added `guest_contribute_success` audit emission in the Stripe webhook path.
+  - Updated Smart Buy API Playwright coverage to pass `cancelToken` through the full reserve/click/mark/cancel lifecycle.
+  - Re-ran Smart Buy API tests after compatibility patches: `e2e/smart-buy.api.spec.ts` now passes (3/3).
+  - Added `POST /api/gifts/[id]/cancel-reservation` with device-token ownership validation, visibility access checks, and reservation-field cleanup.
+  - Added `POST /api/gifts/[id]/mark-purchased` to transition a reservation to `purchased` with `purchased_at` and ownership checks.
+  - Added `POST /api/gifts/[id]/mark-received` (owner-only) to mark item `received`, persist received audit fields, and clear active reservation locks.
+  - Added `/api/gifts/[id]/contribute/create-session` as the gift-scoped checkout entrypoint and switched `/u/[token]/pay` to use it.
+  - Updated reserve/contribution lock logic to treat both `reserved` and `purchased` as blocking states where appropriate.
+  - Added migration `021_smart_buy_lock_logic.sql` to update `public_reservation_flags` and `item_is_reserved()` for active reserved windows + purchased locks.
+  - Added migration `022_smart_buy_received_audit_columns.sql` for `items.received_at` and `items.received_by_owner_id`.
+  - Added `POST /api/gifts/[id]/affiliate-click` to validate reservation ownership by hashed device token, set `affiliate_click_at`, and return final `affiliate_url`.
+  - Updated guest reserve redirect flow to call `/api/gifts/[id]/affiliate-click` before outbound navigation and keep the 24-hour reservation active on failure.
+  - Added `POST /api/gifts/[id]/reserve` with 24h reservation windows, expired-reservation release-on-reserve, share-token/member access checks, and owner/self-gifting prevention.
+  - Added reservation lifecycle fields/indexes in `020_smart_buy_reservation_lifecycle.sql` (`reserved_at`, `reserved_until`, `reserved_by_token_hash`, `affiliate_click_at`, `purchased_at`).
+  - Switched public guest reserve flow (`/u/[token]/reserve`) to use the new gift reserve endpoint.
+  - Added anonymous guest `deviceToken` bootstrap on first public-list visit with `localStorage` primary storage and cookie fallback.
+  - Added hashed `device_token` support in reservation create/cancel API payloads and server-side comparison checks.
+  - Added Supabase migration `019_add_reservations_device_token_hash.sql` to persist hashed device tokens without storing raw tokens.
+  - Made item title and image clickable in owner and public item cards.
+  - Routed those title/image clicks through `/api/go/[itemId]` (with share token in public view).
+  - Improved Amazon link-preview reliability for redirected short links by re-detecting Amazon products after final redirect and canonicalizing cache keys.
+  - Implemented affiliate provider selection in `/api/go`: Amazon uses direct Associates tag, non-Amazon uses Skimlinks.
+  - Added unread notification indicator dots to desktop and mobile app navigation.
+  - Ran Playwright correction-pass sanity checks (`smoke.guest` + `smoke.owner`): 10 passed.
+  - Updated app-header primary toggle copy from "Create New" to "Create List" and increased profile text sizes for readability.
+  - Reworked `/app` dashboard: returning users now see a real list summary (totals + recent lists), while static create-list cards are shown only for first-time users without lists.
+  - Added an upcoming-event countdown card on `/app` based on the nearest non-past `event_date`.
+  - Improved `/app/lists` hierarchy by splitting owned vs shared sections with section counts and explicit "Shared with me" badge chips on shared cards.
+  - Added server-rendered search and scope filters on `/app/lists` (`q` + `scope`) for accounts with many lists.
+  - Added list-type icon chips and visibility chips on list cards to make card scanning faster.
+  - Updated list share cards to collapse the raw share-link display after first successful copy, with a quick "Show" affordance.
+  - Added drag-handle reordering in list detail with server-validated `sort_order` persistence.
+  - Added an explicit “Back to lists” affordance on list detail pages.
+  - Polished `/app/settings` with actionable quick links (notifications/lists/create), account summary, and cleaner navigation.
+  - Added a shared `PageHeader` component and adopted it on `/app/lists` and `/app/settings`.
+  - Added a shared `EmptyState` component and adopted it in `/app/lists` and list-detail item-empty states.
+  - Added a shared `IconButton` component and replaced one-off edit/delete icon-button markup in item cards.
+  - Added a shared `ModalShell` and migrated list share/add-wish modals to the shared backdrop/escape/scroll-lock behavior.
+  - Replaced duplicated inline funding progress bars with the shared `ProgressBar` component in owner and public item cards.
+  - Consolidated owner/public item-card presentation by extracting shared media and linked-title components.
+  - Replaced major one-off action buttons in list detail/add-wish flows with `GlassButton` variants.
+  - Extracted reusable dark-form input style constants and adopted them across add/list-settings modals.
+  - Standardized the "Most Desired" badge with one shared component across owner and public item cards.
+  - Added confirmation micro-interactions on copy actions (success icon, color shift, subtle scale) via the shared `CopyButton`.
+  - Removed remaining inline color overrides in auth/list settings/list card UI and replaced them with class-based tokens/utilities.
+  - Added Playwright responsive-width coverage at 320/375/768/1024/1366 for authenticated app shell and public list actions, including horizontal-overflow guards.
+  - Added structured link-preview request metrics logging (`[link-preview][metric]`) with status/source/error/duration fields across cache, rate-limit, success, and failure branches.
+  - Added deterministic link-preview logic tests covering URL normalization, SSRF validation, and JSON-LD parsing edge cases.
+  - Added optional email notification fan-out via Resend in the shared notifications library, including safe HTML escaping and best-effort delivery behavior.
+  - Added email notification configuration examples to `.env.example` (`RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`).
+  - Added centralized error tracking primitives (`trackClientError` / `trackServerError`) with a validated `/api/errors` intake route and app error-boundary integration.
+  - Added `docs/RUNBOOK.md` with deploy prechecks, rollback procedure, incident triage, recovery verification, and post-incident follow-up workflow.
+  - Added a user bug-report flow: `/app/feedback` form, validated `/api/bug-reports` route, settings quick-link entry point, and API coverage for auth + success paths.
+  - Added production-only ops alert forwarding for tracked server errors via `OPS_ALERT_WEBHOOK_URL` in the centralized error-tracking pipeline.
+  - Added public legal/compliance pages (`/affiliate-disclosure`, `/privacy`, `/terms`, `/about`, `/contact`) and exposed them from the global footer on public surfaces.
+  - Added dynamic public-list metadata/OG tags and HTML-source Playwright coverage verifying `/u/[token]` includes server-rendered merchant links.
+  - Added public discovery surfaces: `/explore` and `/@/[username]` (via `/@/:username` rewrite), plus Playwright coverage for public reviewer-facing SEO/legal/discovery flows.
+  - Added metadata routes for `robots.txt` and dynamic `sitemap.xml`, plus canonical tags on public pages and verification tests for indexing endpoints.
+  - Added JSON-LD structured data on public list/profile pages and extended SEO tests to verify structured-data output in HTML source.
+  - Added a persisted cookie-consent banner on public surfaces and Playwright coverage for consent accept/dismiss persistence.
 - 2026-03-04:
   - Added DB-backed rate limiting for `/api/link-preview` with hashed client keys, per-window counters, and 429 handling on cache misses.
   - Added Smart Buy task spec under M9 current correction pass, including status model, API contracts, DB fields, UX flow, analytics, guardrails, and required tests.

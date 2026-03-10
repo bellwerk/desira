@@ -30,6 +30,7 @@ export default defineConfig({
     env: {
       ...process.env,
       ALLOW_SEED: process.env.ALLOW_SEED ?? "true",
+      DISABLE_AUDIT_LOGGING: process.env.DISABLE_AUDIT_LOGGING ?? "true",
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? baseURL,
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? baseURL,
     },

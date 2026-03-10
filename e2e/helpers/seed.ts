@@ -9,6 +9,7 @@ type SeedResult = {
   demo_owner: {
     email: string;
     password: string;
+    handle?: string;
   };
 };
 

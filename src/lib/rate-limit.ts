@@ -8,6 +8,9 @@ const IP_HEADER_CANDIDATES = [
   "true-client-ip",
 ] as const;
 const TRUST_PROXY_IP_HEADERS = process.env.TRUST_PROXY_IP_HEADERS === "true";
+const ALLOW_LOCAL_RATE_LIMIT_FALLBACK =
+  process.env.ALLOW_LOCAL_RATE_LIMIT_FALLBACK === "true" ||
+  process.env.NODE_ENV !== "production";
 
 interface TakeRateLimitOptions {
   scope: string;
@@ -33,8 +36,68 @@ export class RateLimitUnavailableError extends Error {
   }
 }
 
+type LocalRateLimitBucket = {
+  requestCount: number;
+  resetAtMs: number;
+};
+
+const localRateLimitBuckets = new Map<string, LocalRateLimitBucket>();
+
 function hashKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
+}
+
+function takeLocalRateLimit({
+  scope,
+  key,
+  maxRequests,
+  windowSeconds,
+}: TakeRateLimitOptions): RateLimitDecision {
+  const nowMs = Date.now();
+  const windowMs = windowSeconds * 1000;
+  const windowStartMs = Math.floor(nowMs / windowMs) * windowMs;
+  const resetAtMs = windowStartMs + windowMs;
+  const bucketKey = `${scope}:${hashKey(key)}:${windowStartMs}`;
+
+  for (const [existingKey, bucket] of localRateLimitBuckets) {
+    if (bucket.resetAtMs <= nowMs) {
+      localRateLimitBuckets.delete(existingKey);
+    }
+  }
+
+  const bucket = localRateLimitBuckets.get(bucketKey);
+  if (!bucket) {
+    localRateLimitBuckets.set(bucketKey, {
+      requestCount: 1,
+      resetAtMs,
+    });
+
+    return {
+      allowed: true,
+      remaining: Math.max(maxRequests - 1, 0),
+      resetAt: new Date(resetAtMs).toISOString(),
+      retryAfterSeconds: 0,
+    };
+  }
+
+  if (bucket.requestCount >= maxRequests) {
+    const retryAfterSeconds = Math.max(Math.ceil((bucket.resetAtMs - nowMs) / 1000), 1);
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date(bucket.resetAtMs).toISOString(),
+      retryAfterSeconds,
+    };
+  }
+
+  bucket.requestCount += 1;
+  localRateLimitBuckets.set(bucketKey, bucket);
+  return {
+    allowed: true,
+    remaining: Math.max(maxRequests - bucket.requestCount, 0),
+    resetAt: new Date(bucket.resetAtMs).toISOString(),
+    retryAfterSeconds: 0,
+  };
 }
 
 function normalizeIp(ip: string): string {
@@ -94,25 +157,39 @@ export async function takeRateLimit({
 }: TakeRateLimitOptions): Promise<RateLimitDecision> {
   const supabase = tryGetSupabaseAdmin();
   if (!supabase) {
+    if (ALLOW_LOCAL_RATE_LIMIT_FALLBACK) {
+      return takeLocalRateLimit({ scope, key, maxRequests, windowSeconds });
+    }
     throw new RateLimitUnavailableError(`Rate limit client unavailable for ${scope}`, {
-      shouldBypass: true,
+      shouldBypass: false,
     });
   }
 
+  const keyHash = hashKey(key);
   const { data, error } = await supabase.rpc("take_rate_limit", {
     p_scope: scope,
-    p_key_hash: hashKey(key),
+    p_key_hash: keyHash,
     p_max_requests: maxRequests,
     p_window_seconds: windowSeconds,
   });
 
   if (error) {
-    const shouldBypass =
+    const shouldFallback =
       /take_rate_limit/i.test(error.message) &&
       /(could not find|does not exist|not found)/i.test(error.message);
 
+    if (shouldFallback) {
+      if (ALLOW_LOCAL_RATE_LIMIT_FALLBACK) {
+        return takeLocalRateLimit({ scope, key, maxRequests, windowSeconds });
+      }
+      throw new RateLimitUnavailableError(
+        `Rate limit RPC unavailable for ${scope}: ${error.message}`,
+        { shouldBypass: false }
+      );
+    }
+
     throw new RateLimitUnavailableError(`Rate limit RPC failed for ${scope}: ${error.message}`, {
-      shouldBypass,
+      shouldBypass: false,
     });
   }
 

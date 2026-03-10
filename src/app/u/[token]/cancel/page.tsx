@@ -1,14 +1,9 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { ErrorStateCard, GlassCard, GlassButton, Spinner } from "@/components/ui";
-
-type State =
-  | { status: "loading" }
-  | { status: "ready"; reservationId: string; cancelToken: string }
-  | { status: "missing" }
-  | { status: "error"; message: string };
+import { useState } from "react";
+import { ErrorStateCard, GlassCard, GlassButton } from "@/components/ui";
+import { getOrCreateDeviceToken } from "@/lib/device-token";
 
 export default function CancelPage(): React.ReactElement {
   const { token } = useParams<{ token: string }>();
@@ -16,59 +11,10 @@ export default function CancelPage(): React.ReactElement {
   const search = useSearchParams();
   const itemId = search.get("item");
 
-  const [state, setState] = useState<State>({ status: "loading" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const ticketKey = useMemo(() => (itemId ? `desira_cancel_${itemId}` : null), [itemId]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!itemId || !ticketKey) {
-      queueMicrotask(() => setState({ status: "missing" }));
-      return;
-    }
-
-    try {
-      const raw = localStorage.getItem(ticketKey);
-      if (!raw) {
-        queueMicrotask(() =>
-          setState({
-            status: "error",
-            message: "No cancel ticket found in this browser.",
-          })
-        );
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as {
-        reservation_id?: string;
-        cancel_token?: string;
-      };
-      const reservationId = parsed?.reservation_id;
-      const cancelToken = parsed?.cancel_token;
-      if (!reservationId || !cancelToken) {
-        queueMicrotask(() =>
-          setState({
-            status: "error",
-            message: "Cancel ticket is invalid.",
-          })
-        );
-        return;
-      }
-
-      queueMicrotask(() =>
-        setState({
-          status: "ready",
-          reservationId,
-          cancelToken,
-        })
-      );
-    } catch {
-      queueMicrotask(() =>
-        setState({ status: "error", message: "Cannot access localStorage." })
-      );
-    }
-  }, [itemId, ticketKey]);
-
-  if (state.status === "missing") {
+  if (!itemId) {
     return (
       <ErrorStateCard
         title="Missing item"
@@ -80,29 +26,38 @@ export default function CancelPage(): React.ReactElement {
     );
   }
 
-  if (state.status === "error") {
-    return (
-      <ErrorStateCard
-        title="Cancel unavailable"
-        message={state.message}
-        actionLabel="Back to list"
-        actionHref={`/u/${token}`}
-        className="mx-auto max-w-md"
-      />
-    );
-  }
-
   async function confirmCancel(): Promise<void> {
-    if (!itemId || state.status !== "ready") return;
+    if (!itemId) return;
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      setErrorMessage("Could not initialize this browser session.");
+      return;
+    }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
 
-    const res = await fetch("/api/reservations", {
-      method: "PATCH",
+    let cancelToken: string | undefined;
+    try {
+      const raw = localStorage.getItem(`desira_cancel_${itemId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { cancel_token?: string };
+        if (typeof parsed.cancel_token === "string" && parsed.cancel_token.length > 10) {
+          cancelToken = parsed.cancel_token;
+        }
+      }
+    } catch {
+      // Ignore malformed local storage values.
+    }
+
+    const res = await fetch(`/api/gifts/${itemId}/cancel-reservation`, {
+      method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        reservation_id: state.reservationId,
-        cancel_token: state.cancelToken,
+        deviceToken,
+        cancelToken,
+        share_token: token,
       }),
     });
 
@@ -110,15 +65,14 @@ export default function CancelPage(): React.ReactElement {
 
     if (!res.ok) {
       setIsSubmitting(false);
-      alert(json?.error ?? "Cancel failed.");
+      setErrorMessage(json?.error ?? "Cancel failed.");
       return;
     }
 
-    // clear ticket
     try {
       localStorage.removeItem(`desira_cancel_${itemId}`);
     } catch {
-      // ignore
+      // ignore local storage cleanup errors
     }
 
     router.push(`/u/${token}`);
@@ -127,7 +81,6 @@ export default function CancelPage(): React.ReactElement {
 
   return (
     <GlassCard className="mx-auto max-w-md">
-      {/* Warning icon */}
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100/80">
         <svg
           className="h-8 w-8 text-amber-600"
@@ -144,44 +97,39 @@ export default function CancelPage(): React.ReactElement {
         </svg>
       </div>
 
-      <h1 className="mt-4 text-xl font-semibold tracking-tight text-[#2B2B2B] text-center">
+      <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
         Undo buy mark
       </h1>
+      <p className="mt-2 text-center text-sm text-[#62748e]">
+        This will make the gift available again so others can buy or contribute.
+        This only works from the same browser/device that reserved it.
+      </p>
 
-      {state.status === "loading" ? (
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#62748e]">
-          <Spinner size="sm" />
-          <span>Loading...</span>
+      {errorMessage ? (
+        <div className="mt-4 rounded-xl bg-red-50/80 px-3 py-2 text-center text-sm text-red-600">
+          {errorMessage}
         </div>
-      ) : (
-        <>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
-            This will make the gift available again so others can buy or
-            contribute. This only works from the same browser/device that marked
-            it as bought.
-          </p>
+      ) : null}
 
-          <div className="mt-5 flex gap-2">
-            <GlassButton
-              variant="primary"
-              size="md"
-              onClick={confirmCancel}
-              loading={isSubmitting}
-              className="flex-1 justify-center"
-            >
-              Confirm cancellation
-            </GlassButton>
-            <GlassButton
-              variant="secondary"
-              size="md"
-              onClick={() => router.push(`/u/${token}`)}
-              className="flex-1 justify-center"
-            >
-              Back
-            </GlassButton>
-          </div>
-        </>
-      )}
+      <div className="mt-5 flex gap-2">
+        <GlassButton
+          variant="primary"
+          size="md"
+          onClick={confirmCancel}
+          loading={isSubmitting}
+          className="flex-1 justify-center"
+        >
+          Confirm cancellation
+        </GlassButton>
+        <GlassButton
+          variant="secondary"
+          size="md"
+          onClick={() => router.push(`/u/${token}`)}
+          className="flex-1 justify-center"
+        >
+          Back
+        </GlassButton>
+      </div>
     </GlassCard>
   );
 }

@@ -1,11 +1,9 @@
 /**
- * Affiliate link utilities for Skimlinks integration
+ * Affiliate link utilities.
  *
- * Skimlinks automatically monetizes outbound product links by wrapping them
- * through their redirect service. This module provides helpers to generate
- * affiliate-wrapped URLs.
- *
- * @see https://skimlinks.com
+ * Strategy:
+ * - Amazon links: direct Amazon Associates tag (Option B)
+ * - Non-Amazon links: Skimlinks redirect wrapping
  */
 
 /**
@@ -13,6 +11,10 @@
  * Required for affiliate link monetization
  */
 const SKIMLINKS_PUBLISHER_ID = process.env.SKIMLINKS_PUBLISHER_ID ?? "";
+const AMAZON_ASSOCIATES_TAG =
+  process.env.AMAZON_ASSOCIATES_TAG ??
+  process.env.AMAZON_PAAPI_PARTNER_TAG ??
+  "";
 
 /**
  * Skimlinks redirect base URL
@@ -28,6 +30,8 @@ type WrappedUrlCacheEntry = {
 };
 
 const wrappedUrlCache = new Map<string, WrappedUrlCacheEntry>();
+
+export type AffiliateProvider = "none" | "skimlinks" | "amazon_associates";
 
 function pruneWrappedUrlCache(nowMs: number): void {
   for (const [key, entry] of wrappedUrlCache) {
@@ -55,6 +59,44 @@ function buildBaseAffiliateUrl(originalUrl: string): string {
   return `${SKIMLINKS_REDIRECT_BASE}?${params.toString()}`;
 }
 
+function getAmazonBaseDomain(hostname: string): "amazon.com" | "amazon.ca" | null {
+  const normalized = hostname.toLowerCase();
+  if (normalized === "amazon.com" || normalized.endsWith(".amazon.com")) {
+    return "amazon.com";
+  }
+  if (normalized === "amazon.ca" || normalized.endsWith(".amazon.ca")) {
+    return "amazon.ca";
+  }
+  return null;
+}
+
+function isAmazonMerchantUrl(originalUrl: string): boolean {
+  try {
+    const parsed = new URL(originalUrl);
+    return getAmazonBaseDomain(parsed.hostname) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function buildAmazonAssociatesUrl(originalUrl: string): string {
+  if (!isAmazonAssociatesEnabled()) {
+    return originalUrl;
+  }
+
+  try {
+    const parsed = new URL(originalUrl);
+    if (!getAmazonBaseDomain(parsed.hostname)) {
+      return originalUrl;
+    }
+
+    parsed.searchParams.set("tag", AMAZON_ASSOCIATES_TAG);
+    return parsed.toString();
+  } catch {
+    return originalUrl;
+  }
+}
+
 function getCachedBaseAffiliateUrl(originalUrl: string): string {
   const nowMs = Date.now();
   const cached = wrappedUrlCache.get(originalUrl);
@@ -79,6 +121,20 @@ export function isSkimlinksEnabled(): boolean {
   return SKIMLINKS_PUBLISHER_ID.length > 0;
 }
 
+export function isAmazonAssociatesEnabled(): boolean {
+  return AMAZON_ASSOCIATES_TAG.length > 0;
+}
+
+export function getAffiliateProvider(originalUrl: string): AffiliateProvider {
+  if (isAmazonMerchantUrl(originalUrl) && isAmazonAssociatesEnabled()) {
+    return "amazon_associates";
+  }
+  if (isSkimlinksEnabled()) {
+    return "skimlinks";
+  }
+  return "none";
+}
+
 /**
  * Generate a Skimlinks affiliate URL
  *
@@ -90,8 +146,14 @@ export function generateAffiliateUrl(
   originalUrl: string,
   xcust?: string
 ): string {
-  // If Skimlinks is not configured, return original URL
-  if (!isSkimlinksEnabled()) {
+  const provider = getAffiliateProvider(originalUrl);
+
+  if (provider === "amazon_associates") {
+    return buildAmazonAssociatesUrl(originalUrl);
+  }
+
+  // If no provider is configured, pass through original URL.
+  if (provider === "none") {
     return originalUrl;
   }
 

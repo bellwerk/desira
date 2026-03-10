@@ -128,8 +128,7 @@ export function LoginForm(): React.ReactElement {
         {error && (
           <div
             role="alert"
-            className="rounded-xl border border-red-300/50 px-3 py-2.5 text-[13px] leading-snug text-red-700 sm:px-4 sm:py-3 sm:text-sm"
-            style={{ background: "rgba(254, 202, 202, 0.7)", backdropFilter: "blur(10px)" }}
+            className="rounded-xl border border-red-300/50 bg-red-200/70 px-3 py-2.5 text-[13px] leading-snug text-red-700 backdrop-blur-sm sm:px-4 sm:py-3 sm:text-sm"
           >
             {error}
           </div>
@@ -138,8 +137,7 @@ export function LoginForm(): React.ReactElement {
         {message && (
           <div
             role="status"
-            className="rounded-xl border border-emerald-300/50 px-3 py-2.5 text-[13px] leading-snug text-emerald-700 sm:px-4 sm:py-3 sm:text-sm"
-            style={{ background: "rgba(167, 243, 208, 0.7)", backdropFilter: "blur(10px)" }}
+            className="rounded-xl border border-emerald-300/50 bg-emerald-200/70 px-3 py-2.5 text-[13px] leading-snug text-emerald-700 backdrop-blur-sm sm:px-4 sm:py-3 sm:text-sm"
           >
             {message}
           </div>

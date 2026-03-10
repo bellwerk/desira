@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
-import { AuditEventType, getClientIP, logAuditEvent } from "@/lib/audit";
+import { POST as reserveGift } from "@/app/api/gifts/[id]/reserve/route";
 
 export const runtime = "nodejs";
 
@@ -11,12 +10,14 @@ const CreateSchema = z.object({
   item_id: z.string().uuid(),
   reserved_by_name: z.string().trim().max(80).optional(),
   reserved_by_email: z.string().trim().email().max(120).optional(),
+  device_token: z.string().uuid().optional(),
   share_token: z.string().min(1).max(200).optional(),
 });
 
 const CancelSchema = z.object({
   reservation_id: z.string().uuid(),
   cancel_token: z.string().min(10).max(200),
+  device_token: z.string().uuid().optional(),
 });
 
 function sha256(s: string) {
@@ -35,132 +36,58 @@ export async function POST(req: Request) {
     );
   }
 
-  const { item_id, reserved_by_name, reserved_by_email, share_token } = parsed.data;
+  const { item_id, device_token, share_token } = parsed.data;
 
-  const { data: item, error: itemErr } = await supabaseAdmin
-    .from("items")
-    .select("id,status,list_id")
-    .eq("id", item_id)
-    .single();
-
-  if (itemErr || !item) {
-    return NextResponse.json({ error: "Item not found" }, { status: 404 });
-  }
-
-  if (item.status !== "active") {
+  if (!device_token || !share_token) {
     return NextResponse.json(
-      { error: "Item is not available for buying" },
-      { status: 409 }
+      {
+        error:
+          "This endpoint now requires both device_token and share_token. Use /api/gifts/[id]/reserve.",
+      },
+      { status: 400 }
     );
   }
 
-  // Fetch list with owner_id and share_token to enable self-gifting prevention and access validation
-  const { data: list, error: listErr } = await supabaseAdmin
-    .from("lists")
-    .select("owner_id,allow_reservations,visibility,share_token")
-    .eq("id", item.list_id)
-    .single();
-
-  if (listErr || !list) {
-    return NextResponse.json({ error: "List not found" }, { status: 404 });
-  }
-
-  if (!list.allow_reservations) {
-    return NextResponse.json(
-      { error: "Buying is disabled for this list" },
-      { status: 403 }
-    );
-  }
-
-  // Get authenticated user (if any) for access validation and self-gifting prevention
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Helper: check if user is an authenticated list member
-  const checkMembership = async (): Promise<boolean> => {
-    if (!user) return false;
-    const { data: membership } = await supabaseAdmin
-      .from("list_members")
-      .select("id")
-      .eq("list_id", item.list_id)
-      .eq("user_id", user.id)
-      .eq("status", "accepted")
-      .maybeSingle();
-    return Boolean(membership);
-  };
-
-  // For private lists, require authenticated membership
-  if (list.visibility === "private") {
-    const isMember = await checkMembership();
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
-    }
-  }
-
-  // For unlisted lists, validate share token access or authenticated membership
-  if (list.visibility === "unlisted") {
-    const hasValidToken = share_token && list.share_token === share_token;
-    const isMember = await checkMembership();
-    if (!hasValidToken && !isMember) {
-      return NextResponse.json(
-        { error: "Invalid or missing share token" },
-        { status: 403 }
-      );
-    }
-  }
-
-  // Self-gifting prevention: check if authenticated user is the list owner
-  if (user && list.owner_id === user.id) {
-    return NextResponse.json(
-      { error: "Cannot mark your own list items as bought" },
-      { status: 403 }
-    );
-  }
-
-  const cancelToken = crypto.randomBytes(24).toString("base64url");
-  const cancelTokenHash = sha256(cancelToken);
-
-  const { data: created, error: createErr } = await supabaseAdmin
-    .from("reservations")
-    .insert({
-      item_id,
-      status: "reserved",
-      reserved_by_name: reserved_by_name ?? null,
-      reserved_by_email: reserved_by_email ?? null,
-      cancel_token_hash: cancelTokenHash,
-    })
-    .select("id,item_id,status,created_at")
-    .single();
-
-  if (createErr) {
-    return NextResponse.json(
-      { error: "Already marked as bought", details: createErr.message },
-      { status: 409 }
-    );
-  }
-
-  void logAuditEvent({
-    eventType: AuditEventType.RESERVATION_CREATED,
-    actorType: user ? "user" : "guest",
-    actorId: user?.id ?? null,
-    resourceType: "reservation",
-    resourceId: created.id,
-    metadata: {
-      item_id: item_id,
-      list_id: item.list_id,
-      source: "shared_page",
+  const proxiedReq = new Request(req.url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      cookie: req.headers.get("cookie") ?? "",
+      "x-forwarded-for": req.headers.get("x-forwarded-for") ?? "",
+      "x-real-ip": req.headers.get("x-real-ip") ?? "",
     },
-    ipAddress: getClientIP(req),
+    body: JSON.stringify({
+      deviceToken: device_token,
+      share_token,
+    }),
   });
+
+  const reserveRes = await reserveGift(proxiedReq, {
+    params: Promise.resolve({ id: item_id }),
+  });
+  const reserveJson = await reserveRes.json().catch(() => null);
+
+  if (!reserveRes.ok) {
+    return NextResponse.json(
+      reserveJson ?? { error: "Failed to create reservation" },
+      { status: reserveRes.status }
+    );
+  }
 
   return NextResponse.json({
     ok: true,
-    reservation_id: created.id,
-    reservation: created,
-    cancel_token: cancelToken,
+    reservation_id: reserveJson?.reservation_id ?? null,
+    reservation: reserveJson?.reservation_id
+      ? {
+          id: reserveJson.reservation_id,
+          item_id,
+          status: reserveJson.status ?? "reserved",
+          created_at: null,
+        }
+      : null,
+    cancel_token: reserveJson?.cancel_token ?? null,
+    reserved_until: reserveJson?.reserved_until ?? null,
+    already_reserved: Boolean(reserveJson?.already_reserved),
   });
 }
 
@@ -176,12 +103,12 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const { reservation_id, cancel_token } = parsed.data;
+  const { reservation_id, cancel_token, device_token } = parsed.data;
   const hash = sha256(cancel_token);
 
   const { data: r, error: rErr } = await supabaseAdmin
     .from("reservations")
-    .select("id,status,cancel_token_hash")
+    .select("id,status,cancel_token_hash,device_token_hash")
     .eq("id", reservation_id)
     .single();
 
@@ -195,6 +122,15 @@ export async function PATCH(req: Request) {
 
   if (!r.cancel_token_hash || r.cancel_token_hash !== hash) {
     return NextResponse.json({ error: "Invalid cancel token" }, { status: 403 });
+  }
+
+  if (r.device_token_hash) {
+    if (!device_token || sha256(device_token) !== r.device_token_hash) {
+      return NextResponse.json(
+        { error: "This buy mark can only be changed from the same browser/device" },
+        { status: 403 }
+      );
+    }
   }
 
   const { data: updated, error: upErr } = await supabaseAdmin

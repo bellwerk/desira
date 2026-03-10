@@ -11,12 +11,17 @@ const EventSchema = z
       AuditEventType.SHARED_ITEM_CONTRIBUTE_CLICKED,
       AuditEventType.SHARED_ITEM_RESERVE_CLICKED,
       AuditEventType.SHARED_CREATE_LIST_CTA_CLICKED,
+      AuditEventType.GUEST_BUY_TAP,
+      AuditEventType.GUEST_CONTRIBUTE_TAP,
+      AuditEventType.GUEST_BANNER_SHOWN,
+      AuditEventType.GUEST_MARK_PURCHASED,
     ]),
     list_id: z.string().uuid().optional(),
     item_id: z.string().uuid().optional(),
     hero_variant: z.enum(["a", "b"]).optional(),
     action_label_variant: z.enum(["a", "b"]).optional(),
-    placement: z.enum(["header", "footer", "item_card"]).optional(),
+    placement: z.enum(["header", "footer", "item_card", "return_banner"]).optional(),
+    status: z.string().max(40).optional(),
   })
   .strict();
 

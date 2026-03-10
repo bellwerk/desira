@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { generateAffiliateUrl, isSkimlinksEnabled } from "@/lib/affiliate";
-import { logAuditEvent, type AuditEventType } from "@/lib/audit";
+import { generateAffiliateUrl, getAffiliateProvider } from "@/lib/affiliate";
+import { AuditEventType, logAuditEvent } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,9 @@ type RouteContext = {
  *   - public: anyone can access
  *   - unlisted: requires valid share token in query param
  *   - private: requires authenticated list member
- * - Wraps URL with Skimlinks affiliate URL (if configured)
+ * - Wraps URL with the configured affiliate provider
+ *   - Amazon links: direct Amazon Associates tag
+ *   - Non-Amazon links: Skimlinks (if configured)
  * - Logs click event for analytics
  * - Redirects user to the (affiliate-wrapped) product URL
  */
@@ -71,20 +73,21 @@ export async function GET(
     | "unlisted"
     | "private";
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isOwnerActor = Boolean(user && user.id === list.owner_id);
+
   // Validate access based on visibility
   let hasAccess = false;
 
   // Helper to check if current user is the list owner or an authenticated list member
   const checkOwnerOrMembership = async (): Promise<boolean> => {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     if (!user) return false;
 
     // Check if user is the list owner
-    if (user.id === list.owner_id) return true;
+    if (isOwnerActor) return true;
 
     // Check if user is an accepted list member
     const { data: membership } = await supabaseAdmin
@@ -124,8 +127,9 @@ export async function GET(
   // Build custom tracking param: only item ID (do NOT include share token
   // as it would leak sensitive access tokens to third-party affiliates)
   const xcust = itemId;
+  const affiliateProvider = getAffiliateProvider(item.product_url);
 
-  // Generate affiliate URL (or pass through if Skimlinks not configured)
+  // Generate affiliate URL (or pass through if no provider is configured)
   const affiliateUrl = generateAffiliateUrl(item.product_url, xcust);
 
   if (resolveOnly) {
@@ -133,16 +137,21 @@ export async function GET(
   }
 
   // Log click event for analytics (do NOT log share_token to avoid leaking it)
+  const eventType = isOwnerActor
+    ? AuditEventType.OWNER_BUY_ITEM_CLICK
+    : AuditEventType.PRODUCT_LINK_CLICK;
   await logAuditEvent({
-    eventType: "product_link.click" as AuditEventType,
-    actorType: "guest",
-    actorId: null,
+    eventType,
+    actorType: user ? "user" : "guest",
+    actorId: user?.id ?? null,
     resourceType: "item",
     resourceId: itemId,
     metadata: {
       original_url: item.product_url,
-      affiliate_enabled: isSkimlinksEnabled(),
+      affiliate_enabled: affiliateProvider !== "none",
+      affiliate_provider: affiliateProvider,
       list_id: item.list_id,
+      source: isOwnerActor ? "owner_sheet" : "go_redirect",
     },
   }).catch(() => {
     // Don't block redirect if audit logging fails

@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { BadgeChip, GlassCard } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ItemCardMedia } from "@/components/item-card/ItemCardMedia";
+import { LinkedItemTitle } from "@/components/item-card/LinkedItemTitle";
+import { MostDesiredBadge } from "@/components/item-card/MostDesiredBadge";
+import { BadgeChip, GlassCard, ProgressBar } from "@/components/ui";
 import { ItemActions } from "@/components/ItemActions";
+import { getItemRedirectPath } from "@/lib/affiliate";
 import { formatCurrency } from "@/lib/currency";
+import { getOrCreateDeviceToken } from "@/lib/device-token";
 import type { ExperimentVariant } from "@/lib/experiments";
 
 type ItemRow = {
@@ -24,6 +30,7 @@ type PublicListClientProps = {
   listId: string;
   items: ItemRow[];
   reservedMap: Map<string, boolean>;
+  reservedUntilMap: Map<string, string | null>;
   fundedMap: Map<string, number>;
   listAllowReservations: boolean;
   listAllowContributions: boolean;
@@ -37,11 +44,19 @@ type PublicListClientProps = {
 type SortOption = "default" | "price-low" | "price-high" | "most-desired";
 type FilterOption = "all" | "available" | "bought" | "funded";
 
+type PendingPurchaseItem = {
+  item_id: string;
+  title: string;
+  reserved_until: string | null;
+  affiliate_click_at: string | null;
+};
+
 export function PublicListClient({
   token,
   listId,
   items: initialItems,
   reservedMap,
+  reservedUntilMap,
   fundedMap,
   listAllowReservations,
   listAllowContributions,
@@ -51,9 +66,202 @@ export function PublicListClient({
   recipientTypeLabel,
   eventDateLabel,
 }: PublicListClientProps): React.ReactElement {
+  const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [pendingPurchaseItem, setPendingPurchaseItem] = useState<PendingPurchaseItem | null>(null);
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+  const [isMarkingPurchased, setIsMarkingPurchased] = useState(false);
+
+  useEffect(() => {
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      return;
+    }
+
+    const cancelToken = (() => {
+      try {
+        const pendingKeys = Object.keys(window.localStorage).filter((key) =>
+          key.startsWith("desira_pending_purchase_")
+        );
+        const matchingItemId = pendingKeys
+          .map((key) => {
+            const raw = window.localStorage.getItem(key);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as { item_id?: string; token?: string };
+            if (parsed.token !== token || !parsed.item_id) {
+              return null;
+            }
+            return parsed.item_id;
+          })
+          .find((id): id is string => Boolean(id));
+
+        if (!matchingItemId) {
+          return undefined;
+        }
+        const cancelRaw = window.localStorage.getItem(`desira_cancel_${matchingItemId}`);
+        if (!cancelRaw) {
+          return undefined;
+        }
+        const cancelParsed = JSON.parse(cancelRaw) as { cancel_token?: string };
+        return typeof cancelParsed.cancel_token === "string" &&
+          cancelParsed.cancel_token.length > 10
+          ? cancelParsed.cancel_token
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+
+    let cancelled = false;
+
+    void (async () => {
+      const res = await fetch("/api/gifts/pending-purchase", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          deviceToken,
+          cancelToken,
+          share_token: token,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || cancelled) {
+        return;
+      }
+
+      const item = json?.item as PendingPurchaseItem | null | undefined;
+      if (!item || typeof item.item_id !== "string") {
+        const fallbackKeys = Object.keys(window.localStorage).filter((key) =>
+          key.startsWith("desira_pending_purchase_")
+        );
+        const fallbackItemId = fallbackKeys
+          .map((key) => {
+            try {
+              const raw = window.localStorage.getItem(key);
+              if (!raw) return null;
+              const parsed = JSON.parse(raw) as { item_id?: string; token?: string };
+              if (parsed.token !== token || !parsed.item_id) return null;
+              return parsed.item_id;
+            } catch {
+              return null;
+            }
+          })
+          .find((id): id is string => Boolean(id));
+
+        if (fallbackItemId) {
+          const fallbackTitle =
+            initialItems.find((entry) => entry.id === fallbackItemId)?.title ??
+            "This gift";
+          queueMicrotask(() => {
+            if (!cancelled) {
+              setPendingPurchaseItem({
+                item_id: fallbackItemId,
+                title: fallbackTitle,
+                reserved_until: null,
+                affiliate_click_at: null,
+              });
+            }
+          });
+        }
+        return;
+      }
+
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setPendingPurchaseItem(item);
+          void fetch("/api/public-events", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              event_type: "guest_banner_shown",
+              list_id: listId,
+              item_id: item.item_id,
+              placement: "return_banner",
+            }),
+            keepalive: true,
+          }).catch(() => {
+            // Ignore analytics failures.
+          });
+        }
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialItems, listId, token]);
+
+  async function markPendingPurchase(): Promise<void> {
+    if (!pendingPurchaseItem || isMarkingPurchased) {
+      return;
+    }
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      return;
+    }
+
+    setIsMarkingPurchased(true);
+    let cancelToken: string | undefined;
+    try {
+      const raw = localStorage.getItem(`desira_cancel_${pendingPurchaseItem.item_id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { cancel_token?: string };
+        if (typeof parsed.cancel_token === "string" && parsed.cancel_token.length > 10) {
+          cancelToken = parsed.cancel_token;
+        }
+      }
+    } catch {
+      // Ignore malformed local storage values.
+    }
+
+    const res = await fetch(`/api/gifts/${pendingPurchaseItem.item_id}/mark-purchased`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        deviceToken,
+        cancelToken,
+        share_token: token,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      setIsMarkingPurchased(false);
+      return;
+    }
+
+    try {
+      localStorage.removeItem(`desira_cancel_${pendingPurchaseItem.item_id}`);
+      localStorage.removeItem(`desira_pending_purchase_${pendingPurchaseItem.item_id}`);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+
+    queueMicrotask(() => {
+      setPendingPurchaseItem(null);
+      setDismissedBanner(false);
+      setIsMarkingPurchased(false);
+    });
+    router.refresh();
+
+    void fetch("/api/public-events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        event_type: "guest_mark_purchased",
+        list_id: listId,
+        item_id: pendingPurchaseItem.item_id,
+        placement: "return_banner",
+        status: json?.status,
+      }),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore analytics failures.
+    });
+  }
 
   function isItemFunded(item: ItemRow): boolean {
     const funded = fundedMap.get(item.id) ?? 0;
@@ -114,6 +322,40 @@ export function PublicListClient({
 
   return (
     <>
+      {pendingPurchaseItem && !dismissedBanner && (
+        <GlassCard className="mb-4 rounded-2xl border border-[#2b2b2b]/15 bg-white/90 p-3 sm:mb-6 sm:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#2b2b2b] sm:text-base">
+                Did you buy this gift?
+              </p>
+              <p className="mt-1 text-xs text-[#5f5f5f] sm:text-sm">
+                {pendingPurchaseItem.title}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void markPendingPurchase();
+                }}
+                disabled={isMarkingPurchased}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2b2b2b] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isMarkingPurchased ? "Saving..." : "Mark purchased"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedBanner(true)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#2b2b2b]/20 bg-white px-4 text-sm font-medium text-[#2b2b2b] transition-colors hover:bg-[#f4f4f4]"
+              >
+                Not yet
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {initialItems.length > 0 && (
         <div className="mb-6 flex flex-col gap-3 sm:mb-8 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
           <div className="h-11 w-full max-w-[240px] overflow-hidden rounded-[30px] bg-white px-3 font-[family-name:var(--font-urbanist)] sm:w-[240px]">
@@ -206,6 +448,7 @@ export function PublicListClient({
               token={token}
               listId={listId}
               reservedMap={reservedMap}
+              reservedUntilMap={reservedUntilMap}
               fundedMap={fundedMap}
               listAllowReservations={listAllowReservations}
               listAllowContributions={listAllowContributions}
@@ -261,6 +504,7 @@ function ItemCardComponent({
   token,
   listId,
   reservedMap,
+  reservedUntilMap,
   fundedMap,
   listAllowReservations,
   listAllowContributions,
@@ -271,6 +515,7 @@ function ItemCardComponent({
   token: string;
   listId: string;
   reservedMap: Map<string, boolean>;
+  reservedUntilMap: Map<string, string | null>;
   fundedMap: Map<string, number>;
   listAllowReservations: boolean;
   listAllowContributions: boolean;
@@ -278,6 +523,7 @@ function ItemCardComponent({
   actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
   const isReserved = Boolean(reservedMap.get(item.id));
+  const reservedUntil = reservedUntilMap.get(item.id) ?? null;
   const funded = fundedMap.get(item.id) ?? 0;
   const target = item.target_amount_cents ?? item.price_cents ?? 0;
   const isReceived = item.status === "received";
@@ -285,6 +531,9 @@ function ItemCardComponent({
   const isFunded =
     item.status === "funded" || (target > 0 && funded >= target);
   const isComplete = isReceived || isFunded || isUnavailable;
+  const productRedirectPath = item.has_product_link
+    ? `${getItemRedirectPath(item.id)}?token=${encodeURIComponent(token)}`
+    : null;
 
   const contributeDisabled =
     !listAllowContributions || isComplete || isReserved;
@@ -323,39 +572,28 @@ function ItemCardComponent({
         <div className="relative mb-1.5 aspect-square overflow-hidden rounded-[16px] bg-white sm:mb-2 sm:rounded-[20px]">
           {item.most_desired && (
             <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 z-10">
-              <div className="flex items-center gap-1 rounded-full bg-[#f5a623] px-2 py-0.5 text-[10px] font-semibold text-[#2b2b2b] sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-                <div className="flex h-3 w-3 items-center justify-center rounded-full border-2 border-[#2b2b2b] bg-white sm:h-3.5 sm:w-3.5">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#2b2b2b]" />
-                </div>
-                <span className="max-w-[90px] truncate sm:max-w-none">Most Desired</span>
-              </div>
+              <MostDesiredBadge active />
             </div>
           )}
 
-          {item.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.image_url}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.svg"
-                alt=""
-                className="h-24 w-24 opacity-35"
-              />
-            </div>
-          )}
+          <ItemCardMedia
+            title={item.title}
+            imageUrl={item.image_url}
+            productRedirectPath={productRedirectPath}
+            linkClassName="block h-full w-full"
+            imageClassName="w-full h-full object-cover transition-opacity hover:opacity-95"
+          />
         </div>
 
         <div className="space-y-[6px] font-[family-name:var(--font-urbanist)]">
           <div className="flex items-start justify-between gap-2 sm:gap-2.5">
             <div className="flex-1 min-w-0">
               <h3 className="line-clamp-2 text-xs font-bold leading-tight text-[#2b2b2b] sm:text-sm md:text-base">
-                {item.title}
+                <LinkedItemTitle
+                  title={item.title}
+                  productRedirectPath={productRedirectPath}
+                  className="underline-offset-2 hover:underline"
+                />
               </h3>
               {isUnavailable && (
                 <div className="mt-1">
@@ -388,12 +626,12 @@ function ItemCardComponent({
                 </span>
               </div>
 
-              <div className="h-1 w-full rounded-full bg-[#3a3a3a] overflow-hidden flex">
-                <div
-                  className="h-full bg-[#b4a0f2] rounded-l-full transition-all duration-500"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={pct}
+                heightClassName="h-1"
+                trackClassName="bg-[#3a3a3a]"
+                barClassName="bg-[#b4a0f2]"
+              />
 
               <div className="text-xs font-semibold text-[#505050] sm:text-sm">
                 {pct}% funded
@@ -415,6 +653,7 @@ function ItemCardComponent({
             contributeDisabledReason={contributeDisabledReason}
             canReserve={!reserveDisabled}
             reserveDisabledReason={reserveDisabledReason}
+            reservedUntil={reservedUntil}
             hasProductLink={item.has_product_link}
             actionLabelVariant={actionLabelVariant}
           />

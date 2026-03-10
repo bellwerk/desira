@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { GlassButton } from "@/components/ui";
 import { ItemsGrid } from "./ItemsGrid";
 import { ShareModal } from "./ShareModal";
 import { ListSettingsModal } from "../ListSettingsModal";
@@ -78,14 +80,33 @@ export function ListDetailClient({
   return (
     <>
       <div className="mt-6 flex flex-col justify-start sm:mt-8 md:mt-10">
+        <div className="mb-3 flex justify-start sm:mb-4">
+          <Link
+            href="/app/lists"
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#2b2b2b]/20 bg-white/70 px-4 text-sm font-medium text-[#2b2b2b] transition-colors hover:bg-white"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            Back to lists
+          </Link>
+        </div>
         {/* Header section with Add New Wish button and Edit/Share buttons */}
         <div>
           <header className="mb-6 grid grid-cols-1 gap-3 sm:mb-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
             {/* Add New Wish button - left side */}
             <div className="flex items-center justify-center lg:justify-start">
-              <button
+              <GlassButton
                 onClick={() => setIsAddWishModalOpen(true)}
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#9d8df1] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#8a7be0] active:scale-[0.98]"
+                variant="primary"
+                size="md"
+                className="h-11 rounded-full px-5"
               >
                 <svg
                   className="h-4 w-4"
@@ -101,7 +122,7 @@ export function ListDetailClient({
                   />
                 </svg>
                 Add New Wish
-              </button>
+              </GlassButton>
             </div>
 
             {/* Title centered */}
@@ -111,9 +132,11 @@ export function ListDetailClient({
 
             {/* Settings/Share buttons - right side */}
             <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end lg:gap-3">
-              <button
+              <GlassButton
                 onClick={() => setIsSettingsModalOpen(true)}
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#D4D7C2] px-5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
+                variant="secondary"
+                size="md"
+                className="h-11 rounded-full px-5 text-[#2b2b2b]"
               >
                 <svg
                   className="h-4 w-4"
@@ -134,10 +157,12 @@ export function ListDetailClient({
                   />
                 </svg>
                 List Settings
-              </button>
-              <button
+              </GlassButton>
+              <GlassButton
                 onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#D4D7C2] px-5 text-sm font-medium text-[#2b2b2b] transition-all hover:bg-[#c8cbb6]"
+                variant="secondary"
+                size="md"
+                className="h-11 rounded-full px-5 text-[#2b2b2b]"
               >
                 Share
                 <svg
@@ -153,7 +178,7 @@ export function ListDetailClient({
                     d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
                   />
                 </svg>
-              </button>
+              </GlassButton>
             </div>
           </header>
         </div>

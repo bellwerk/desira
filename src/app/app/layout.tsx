@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { trackServerError } from "@/lib/error-tracking";
 import type { Metadata } from "next";
 
 /** Check if an error is a Next.js redirect (must be re-thrown, never swallowed) */
@@ -129,10 +130,33 @@ export default async function AppLayout({
     const email = userData.user.email ?? "";
     const displayName = profile?.display_name ?? email.split("@")[0];
     const username = email.split("@")[0];
+    let unreadNotificationCount = 0;
+
+    try {
+      const { count, error: notificationError } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userData.user.id)
+        .eq("is_read", false);
+
+      if (notificationError) {
+        console.error(
+          "[AppLayout] Notification unread-count fetch error:",
+          notificationError.message,
+          notificationError.code,
+          notificationError.details
+        );
+      } else {
+        unreadNotificationCount = count ?? 0;
+      }
+    } catch (err) {
+      if (isNextRedirect(err)) throw err;
+      console.error("[AppLayout] Notification unread-count exception:", err);
+    }
 
     return (
       <div className="min-h-screen bg-[#EAEAEA] dark:bg-[#eaeaea]">
-        <Sidebar />
+        <Sidebar unreadNotificationCount={unreadNotificationCount} />
         <div className="flex flex-col min-h-screen">
           <AppHeader
             displayName={displayName}
@@ -148,7 +172,10 @@ export default async function AppLayout({
   } catch (error) {
     // Let Next.js redirect errors pass through — never swallow them
     if (isNextRedirect(error)) throw error;
-    console.error("[AppLayout] Unexpected error:", error);
+    await trackServerError(error, {
+      scope: "app.layout.unexpected",
+      metadata: { safe_login_next: safeLoginNext },
+    });
     // Safest fallback: send to login
     redirect(loginHref);
   }

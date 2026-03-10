@@ -5,16 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cloudflare": "opennextjs-cloudflare build",
+    "prebuild:cloudflare": "node scripts/patch-opennext-windows.mjs",
+    "build:cloudflare": "pnpm -s prebuild:cloudflare && opennextjs-cloudflare build",
     "start": "next start",
+    "test": "pnpm -s e2e",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:install": "playwright install chromium",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "preview": "pnpm -s build:cloudflare && opennextjs-cloudflare preview",
+    "deploy": "pnpm -s build:cloudflare && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.16.1",

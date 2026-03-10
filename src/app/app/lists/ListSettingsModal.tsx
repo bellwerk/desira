@@ -4,6 +4,7 @@ import { useState, useActionState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateList, deleteList, type ActionResult } from "./actions";
 import { GlassButton, useToastActions } from "@/components/ui";
+import { DARK_INPUT_BASE_CLASS } from "@/lib/dark-form-styles";
 
 type ListSettingsModalProps = {
   list: {
@@ -100,7 +101,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
 
   if (!isOpen) return null;
 
-  const inputBaseClass = "block w-full rounded-[20px] bg-[#3a3a3a] border-0 px-4 py-3.5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50 font-[family-name:var(--font-urbanist)]";
+  const inputBaseClass = `${DARK_INPUT_BASE_CLASS} rounded-[20px]`;
 
   return (
     <div
@@ -337,9 +338,9 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
         </form>
 
         {/* Danger Zone */}
-        <div className="mt-6 rounded-[20px] border p-4" style={{ backgroundColor: 'rgba(255, 111, 89, 0.10)', borderColor: 'rgba(255, 111, 89, 0.30)' }}>
-          <h3 className="text-sm font-semibold" style={{ color: '#FF6F59' }}>Danger zone</h3>
-          <p className="mt-1 text-base" style={{ color: 'rgba(255, 111, 89, 0.80)' }}>
+        <div className="mt-6 rounded-[20px] border border-[#FF6F59]/30 bg-[#FF6F59]/10 p-4">
+          <h3 className="text-sm font-semibold text-[#FF6F59]">Danger zone</h3>
+          <p className="mt-1 text-base text-[#FF6F59]/80">
             Deleting a list is permanent. All items, buy marks, and contributions will be lost.
           </p>
 
@@ -356,15 +357,11 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           ) : (
             <div className="mt-3 space-y-2">
               {deleteError && (
-                <div className="rounded-lg border p-2 text-xs" style={{ 
-                  backgroundColor: 'rgba(255, 111, 89, 0.20)', 
-                  borderColor: 'rgba(255, 111, 89, 0.40)',
-                  color: 'rgba(255, 111, 89, 0.95)'
-                }}>
+                <div className="rounded-lg border border-[#FF6F59]/40 bg-[#FF6F59]/20 p-2 text-xs text-[#FF6F59]/95">
                   {deleteError}
                 </div>
               )}
-              <p className="text-xs font-medium" style={{ color: '#FF6F59' }}>
+              <p className="text-xs font-medium text-[#FF6F59]">
                 Are you sure? This cannot be undone.
               </p>
               <div className="flex items-center gap-2">

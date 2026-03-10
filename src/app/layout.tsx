@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Urbanist, Asul } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { PublicLegalLinks } from "@/components/PublicLegalLinks";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 
 const urbanist = Urbanist({
   variable: "--font-urbanist",
@@ -41,10 +43,11 @@ export default function RootLayout({
         <Providers>
           <div className="min-h-screen flex flex-col">
             <main className="flex-1">{children}</main>
-            <footer className="px-4 py-3 text-center font-[family-name:var(--font-urbanist)] text-[14px] text-white/65">
-              We may earn a commission for sales made through links on our
-              site.
+            <footer className="space-y-1.5 px-4 py-3 text-center font-[family-name:var(--font-urbanist)] text-[14px] text-white/65">
+              <p>We may earn a commission for sales made through links on our site.</p>
+              <PublicLegalLinks />
             </footer>
+            <CookieConsentBanner />
           </div>
         </Providers>
       </body>

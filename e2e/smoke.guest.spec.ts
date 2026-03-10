@@ -103,11 +103,12 @@ test("guest can reserve then cancel from same browser token", async ({ page, req
   await expect(reserveButton).toBeEnabled();
   await reserveButton.click();
 
-  const cancelButton = page.getByRole("button", { name: "Cancel" }).first();
-  await expect(cancelButton).toBeVisible();
-  await expect(page.getByRole("button", { name: "Confirm buy mark" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Buy on store" })).toBeVisible();
+  const reserveOnlyButton = page.getByRole("button", { name: "Reserve only (24h)" });
+  await expect(reserveOnlyButton).toBeVisible();
+  await expect(page.getByText("We'll hold it for 24h.").first()).toBeVisible();
 
-  await cancelButton.click();
+  await reserveOnlyButton.click();
   await expect(page).toHaveURL(new RegExp(`/u/${seed.share_token}$`));
   await expect(page.getByRole("button", { name: "Buy this gift" }).first()).toBeVisible();
 });

@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { addItem } from "../actions";
+import { DARK_INPUT_BASE_CLASS, DARK_TEXTAREA_BASE_CLASS } from "@/lib/dark-form-styles";
 import { useLinkPreview } from "@/hooks/useLinkPreview";
 
 type AddItemFormProps = {
@@ -231,8 +232,8 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
       : "";
 
   // Input base classes for dark modal style
-  const inputBaseClass = "block w-full rounded-xl bg-[#3a3a3a] border-0 px-4 py-3.5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50 font-[family-name:var(--font-urbanist)]";
-  const textareaClass = "block w-full rounded-xl bg-[#3a3a3a] border-0 px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50 font-[family-name:var(--font-urbanist)] resize-y min-h-[80px]";
+  const inputBaseClass = `${DARK_INPUT_BASE_CLASS} rounded-xl`;
+  const textareaClass = `${DARK_TEXTAREA_BASE_CLASS} rounded-xl`;
 
   // Form rendering function
   const formContent = (

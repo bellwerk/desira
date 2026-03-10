@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ModalShell } from "@/components/ModalShell";
 import { AuditEventType } from "@/lib/audit-events";
 import type { ExperimentVariant } from "@/lib/experiments";
 
@@ -14,6 +15,7 @@ export function ItemActions(props: {
   contributeDisabledReason?: string;
   canReserve: boolean;
   reserveDisabledReason?: string;
+  reservedUntil?: string | null;
   hasProductLink: boolean;
   actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
@@ -26,12 +28,14 @@ export function ItemActions(props: {
     contributeDisabledReason,
     canReserve,
     reserveDisabledReason,
+    reservedUntil,
     hasProductLink,
     actionLabelVariant,
   } = props;
   const contributeLabel = "Contribute";
   const buyLabel = "Buy this gift";
   const [openHelper, setOpenHelper] = useState<"contribute" | "buy" | null>(null);
+  const [isReservedInfoOpen, setIsReservedInfoOpen] = useState(false);
 
   // Lazy init instead of useEffect setState.
   const [hasTicket] = useState<boolean>(() => {
@@ -60,10 +64,8 @@ export function ItemActions(props: {
   }
 
   function buy(): void {
-    track(AuditEventType.SHARED_ITEM_RESERVE_CLICKED);
-    const nextUrl = hasProductLink
-      ? `/u/${token}/reserve?item=${itemId}&go=1`
-      : `/u/${token}/reserve?item=${itemId}`;
+    track(AuditEventType.GUEST_BUY_TAP);
+    const nextUrl = `/u/${token}/reserve?item=${itemId}`;
     router.push(nextUrl);
   }
 
@@ -99,6 +101,7 @@ export function ItemActions(props: {
   );
 
   const buyEnabled = canReserve;
+  const showReservedInfoAction = !buyEnabled && Boolean(reservedUntil);
   const buyDisabledReason = reserveDisabledReason;
   const contributeHelperText = contributeDisabled && contributeDisabledReason
     ? contributeDisabledReason
@@ -108,10 +111,19 @@ export function ItemActions(props: {
       ? "You can reopen the merchant page or undo your buy mark from this browser."
       : "You marked this gift as bought from this browser."
     : buyEnabled
-      ? hasProductLink
-        ? "Review and confirm first, then continue to the merchant page."
-        : "Review and confirm to mark this gift as bought."
+      ? "We'll hold it for 24h."
       : (buyDisabledReason ?? "Not available right now.");
+
+  const reservedUntilLabel = (() => {
+    if (!reservedUntil) {
+      return null;
+    }
+    const date = new Date(reservedUntil);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.toLocaleString();
+  })();
 
   return (
     <div className="grid grid-cols-1 items-start gap-2 min-[420px]:grid-cols-2 sm:gap-2.5">
@@ -129,7 +141,7 @@ export function ItemActions(props: {
             className="peer block"
             onClick={() => {
               setOpenHelper(null);
-              track(AuditEventType.SHARED_ITEM_CONTRIBUTE_CLICKED);
+              track(AuditEventType.GUEST_CONTRIBUTE_TAP);
             }}
           >
             <span className="flex h-11 w-full items-center justify-center rounded-full bg-[#b4a0f2] px-3 text-sm font-medium text-white transition-colors hover:bg-[#a68ce8] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base">
@@ -206,6 +218,17 @@ export function ItemActions(props: {
             <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
           </button>
+        ) : showReservedInfoAction ? (
+          <button
+            onClick={() => {
+              setOpenHelper(null);
+              setIsReservedInfoOpen(true);
+            }}
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+          >
+            <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
+            <span className="shrink-0">{arrowIcon}</span>
+          </button>
         ) : (
           <button
             disabled
@@ -239,6 +262,32 @@ export function ItemActions(props: {
           {buyHelperText}
         </p>
       </div>
+
+      <ModalShell
+        isOpen={isReservedInfoOpen}
+        onClose={() => setIsReservedInfoOpen(false)}
+        maxWidthClass="max-w-sm"
+        panelClassName="rounded-[24px] bg-[#2b2b2b] p-4 text-white shadow-2xl animate-modal-in sm:p-5"
+      >
+        <div className="space-y-3 pr-8">
+          <h3 className="text-lg font-semibold">Gift reserved</h3>
+          <p className="text-sm text-white/85">
+            {reservedUntilLabel
+              ? `Reserved until ${reservedUntilLabel}.`
+              : "This gift is currently reserved."}
+          </p>
+          <p className="text-xs text-white/70">
+            You can still contribute to other available gifts on this list.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsReservedInfoOpen(false)}
+            className="h-11 w-full rounded-full bg-white px-4 text-sm font-semibold text-[#2b2b2b] transition-colors hover:bg-[#f2f2f2]"
+          >
+            Got it
+          </button>
+        </div>
+      </ModalShell>
     </div>
   );
 }
