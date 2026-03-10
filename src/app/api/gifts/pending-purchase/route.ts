@@ -157,6 +157,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: true, item: null });
   }
 
+  let newestActiveOwnedReservation: {
+    item_id: string;
+    title: string;
+    reserved_until: string | null;
+    affiliate_click_at: string | null;
+  } | null = null;
+
   for (const candidate of candidates) {
     const ownerHash = hasReservedByTokenColumn
       ? candidate.reserved_by_token_hash ?? candidate.device_token_hash ?? null
@@ -171,11 +178,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       continue;
     }
 
-    if (hasAffiliateClickColumn) {
-      if (!candidate.affiliate_click_at) {
-        continue;
-      }
-    } else if (!cancelTokenHash) {
+    if (!hasAffiliateClickColumn && !cancelTokenHash) {
       // Legacy schema has no affiliate click column. Require cancel token fallback
       // so this endpoint does not surface reserve-only locks as "pending purchase".
       continue;
@@ -207,14 +210,30 @@ export async function POST(req: Request): Promise<NextResponse> {
       continue;
     }
 
+    const resultItem = {
+      item_id: item.id,
+      title: item.title,
+      reserved_until: expiryIso,
+      affiliate_click_at: hasAffiliateClickColumn ? candidate.affiliate_click_at ?? null : nowIso,
+    };
+
+    // Prefer reservations where the guest already clicked out to a merchant.
+    if (resultItem.affiliate_click_at) {
+      return NextResponse.json({
+        ok: true,
+        item: resultItem,
+      });
+    }
+
+    if (!newestActiveOwnedReservation) {
+      newestActiveOwnedReservation = resultItem;
+    }
+  }
+
+  if (newestActiveOwnedReservation) {
     return NextResponse.json({
       ok: true,
-      item: {
-        item_id: item.id,
-        title: item.title,
-        reserved_until: expiryIso,
-        affiliate_click_at: hasAffiliateClickColumn ? candidate.affiliate_click_at ?? null : nowIso,
-      },
+      item: newestActiveOwnedReservation,
     });
   }
 

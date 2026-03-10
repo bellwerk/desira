@@ -93,7 +93,7 @@ test("public list item actions stay visible across target breakpoints", async ({
       await page.goto(`/u/${seed.share_token}`);
 
       await expect(page.getByText("MAAP Jersey (Black)")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Buy this gift" }).first()).toBeVisible();
+      await expect(page.getByRole("button", { name: "Buy gift" }).first()).toBeVisible();
       await expect(page.getByRole("link", { name: "Contribute" }).first()).toBeVisible();
     });
   }

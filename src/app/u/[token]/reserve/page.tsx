@@ -10,6 +10,8 @@ export default function ReservePage(): React.ReactElement {
   const router = useRouter();
   const search = useSearchParams();
   const itemId = search.get("item");
+  const storeParam = search.get("store");
+  const storeLabel = storeParam?.trim() ? storeParam.trim() : "Store";
   const [reservedUntil, setReservedUntil] = useState<string | null>(null);
   const [cancelToken, setCancelToken] = useState<string | null>(null);
 
@@ -208,7 +210,7 @@ export default function ReservePage(): React.ReactElement {
     return (
       <ErrorStateCard
         title="Missing item"
-        message="Go back and tap Buy this gift from the list."
+        message="Go back and tap Buy gift from the list."
         actionLabel="Back to list"
         actionHref={`/u/${token}`}
         className="mx-auto max-w-md"
@@ -253,7 +255,7 @@ export default function ReservePage(): React.ReactElement {
         <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
           Holding this gift for 24h
         </h1>
-        <p className="mt-2 text-center text-sm text-[#62748e]">
+        <p className="mt-2 text-center text-sm text-[#4f5f74]">
           We&apos;re reserving it now so nobody else can buy or contribute.
         </p>
       </GlassCard>
@@ -265,7 +267,7 @@ export default function ReservePage(): React.ReactElement {
       <h1 className="text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
         Buy gift
       </h1>
-      <p className="mt-2 text-center text-sm text-[#62748e]">
+      <p className="mt-2 text-center text-sm text-[#4f5f74]">
         We&apos;ll hold it for 24h. Choose what you want to do next.
       </p>
       {errorMsg ? (
@@ -274,7 +276,7 @@ export default function ReservePage(): React.ReactElement {
         </div>
       ) : null}
       {reservedUntilLabel ? (
-        <p className="mt-3 text-center text-xs text-[#62748e]">Hold ends: {reservedUntilLabel}</p>
+        <p className="mt-3 text-center text-xs text-[#4f5f74]">Hold ends: {reservedUntilLabel}</p>
       ) : null}
 
       <div className="mt-5 space-y-3">
@@ -288,9 +290,9 @@ export default function ReservePage(): React.ReactElement {
             }}
             className="w-full justify-center"
           >
-            Buy on store
+            Buy on {storeLabel}
           </GlassButton>
-          <p className="mt-2 text-center text-xs text-[#62748e]">
+          <p className="mt-2 text-center text-xs text-[#4f5f74]">
             We&apos;ll hold it for 24h. After checkout, come back to mark purchased.
           </p>
         </div>
@@ -305,7 +307,7 @@ export default function ReservePage(): React.ReactElement {
           >
             Reserve only (24h)
           </GlassButton>
-          <p className="mt-2 text-center text-xs text-[#62748e]">Hold it while you decide.</p>
+          <p className="mt-2 text-center text-xs text-[#4f5f74]">Hold it while you decide.</p>
         </div>
 
         <div className="rounded-2xl border border-[#2b2b2b]/15 bg-white/80 p-3">
@@ -320,9 +322,10 @@ export default function ReservePage(): React.ReactElement {
           >
             I bought it elsewhere
           </GlassButton>
-          <p className="mt-2 text-center text-xs text-[#62748e]">Mark as purchased.</p>
+          <p className="mt-2 text-center text-xs text-[#4f5f74]">Mark as purchased.</p>
         </div>
       </div>
     </GlassCard>
   );
 }
+

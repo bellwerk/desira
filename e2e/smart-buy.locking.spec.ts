@@ -23,14 +23,14 @@ test("two guest contexts enforce reservation lock", async ({ browser, request })
     await pageA.goto(`/u/${seed.share_token}`);
     await pageB.goto(`/u/${seed.share_token}`);
 
-    await pageA.getByRole("button", { name: "Buy this gift" }).first().click();
+    await pageA.getByRole("button", { name: "Buy gift" }).first().click();
     await expect(pageA).toHaveURL(/\/u\/.+\/reserve\?item=/);
     await expect(pageA.getByRole("button", { name: "Reserve only (24h)" })).toBeVisible();
     await pageA.getByRole("button", { name: "Reserve only (24h)" }).click();
     await expect(pageA).toHaveURL(new RegExp(`/u/${seed.share_token}$`));
 
     await pageB.reload();
-    const buyButtonB = pageB.getByRole("button", { name: "Buy this gift" }).first();
+    const buyButtonB = pageB.getByRole("button", { name: "Buy gift" }).first();
     await expect(buyButtonB).toBeVisible();
     await buyButtonB.click();
     await expect(pageB.getByText("Gift reserved")).toBeVisible();

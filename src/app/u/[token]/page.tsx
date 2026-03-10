@@ -114,6 +114,7 @@ type RawItemRow = {
 
 type ItemRow = Omit<RawItemRow, "product_url"> & {
   has_product_link: boolean;
+  store_label: string;
 };
 
 function formatEventDate(rawDate: string): string {
@@ -123,6 +124,20 @@ function formatEventDate(rawDate: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function getStoreLabel(productUrl: string | null): string {
+  if (!productUrl) {
+    return "Store";
+  }
+
+  try {
+    const host = new URL(productUrl).hostname.replace(/^www\./i, "");
+    const root = host.split(".")[0] ?? "store";
+    return root.charAt(0).toUpperCase() + root.slice(1);
+  } catch {
+    return "Store";
+  }
 }
 
 const RESERVATION_DURATION_HOURS = 24;
@@ -221,6 +236,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
   const typedItems: ItemRow[] = rawItems.map(({ product_url, ...item }) => ({
     ...item,
     has_product_link: typeof product_url === "string" && product_url.trim().length > 0,
+    store_label: getStoreLabel(product_url),
   }));
   const listUrl = toPublicUrl(`/u/${token}`);
   const listStructuredData = {
@@ -368,7 +384,7 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
           <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">
             {ownerName} hasn&apos;t added any items yet
           </h2>
-          <p className="mt-2 text-sm text-[#62748e]">
+          <p className="mt-2 text-sm text-[#4f5f74]">
             Check back soon, or start your own wishlist in under 2 minutes.
           </p>
           <div className="mt-4">
@@ -417,3 +433,4 @@ export default async function PublicListPage({ params }: PageProps): Promise<Rea
     </div>
   );
 }
+

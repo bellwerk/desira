@@ -11,12 +11,14 @@ import { getItemRedirectPath } from "@/lib/affiliate";
 import { formatCurrency } from "@/lib/currency";
 import { getOrCreateDeviceToken } from "@/lib/device-token";
 import type { ExperimentVariant } from "@/lib/experiments";
+import { isReceivedItemStatus } from "@/lib/item-status";
 
 type ItemRow = {
   id: string;
   title: string;
   image_url: string | null;
   has_product_link: boolean;
+  store_label: string;
   price_cents: number | null;
   target_amount_cents: number | null;
   note_public: string | null;
@@ -80,38 +82,80 @@ export function PublicListClient({
       return;
     }
 
-    const cancelToken = (() => {
+    const localReservation = (() => {
+      let localReservationItemId: string | undefined;
+      let cancelToken: string | undefined;
+      const listItemIds = new Set(initialItems.map((entry) => entry.id));
+
       try {
         const pendingKeys = Object.keys(window.localStorage).filter((key) =>
           key.startsWith("desira_pending_purchase_")
         );
-        const matchingItemId = pendingKeys
-          .map((key) => {
-            const raw = window.localStorage.getItem(key);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw) as { item_id?: string; token?: string };
-            if (parsed.token !== token || !parsed.item_id) {
-              return null;
-            }
-            return parsed.item_id;
-          })
-          .find((id): id is string => Boolean(id));
+        for (const key of pendingKeys) {
+          const raw = window.localStorage.getItem(key);
+          if (!raw) {
+            continue;
+          }
+          const parsed = JSON.parse(raw) as { item_id?: string; token?: string };
+          if (
+            parsed.token === token &&
+            parsed.item_id &&
+            listItemIds.has(parsed.item_id)
+          ) {
+            localReservationItemId = parsed.item_id;
+            break;
+          }
+        }
 
-        if (!matchingItemId) {
-          return undefined;
+        if (!localReservationItemId) {
+          const cancelPrefix = "desira_cancel_";
+          const cancelKeys = Object.keys(window.localStorage).filter((key) =>
+            key.startsWith(cancelPrefix)
+          );
+          for (const key of cancelKeys) {
+            const itemId = key.slice(cancelPrefix.length);
+            if (!itemId || !listItemIds.has(itemId)) {
+              continue;
+            }
+            const cancelRaw = window.localStorage.getItem(key);
+            if (!cancelRaw) {
+              continue;
+            }
+            const cancelParsed = JSON.parse(cancelRaw) as { cancel_token?: string };
+            if (
+              typeof cancelParsed.cancel_token === "string" &&
+              cancelParsed.cancel_token.length > 10
+            ) {
+              localReservationItemId = itemId;
+              cancelToken = cancelParsed.cancel_token;
+              break;
+            }
+          }
         }
-        const cancelRaw = window.localStorage.getItem(`desira_cancel_${matchingItemId}`);
-        if (!cancelRaw) {
-          return undefined;
+
+        if (!cancelToken && localReservationItemId) {
+          const cancelRaw = window.localStorage.getItem(`desira_cancel_${localReservationItemId}`);
+          if (cancelRaw) {
+            const cancelParsed = JSON.parse(cancelRaw) as { cancel_token?: string };
+            if (
+              typeof cancelParsed.cancel_token === "string" &&
+              cancelParsed.cancel_token.length > 10
+            ) {
+              cancelToken = cancelParsed.cancel_token;
+            }
+          }
         }
-        const cancelParsed = JSON.parse(cancelRaw) as { cancel_token?: string };
-        return typeof cancelParsed.cancel_token === "string" &&
-          cancelParsed.cancel_token.length > 10
-          ? cancelParsed.cancel_token
-          : undefined;
       } catch {
-        return undefined;
+        return {
+          localReservationItemId: undefined,
+          cancelToken: undefined,
+        };
       }
+
+      return {
+        localReservationItemId,
+        cancelToken,
+      };
     })();
 
     let cancelled = false;
@@ -122,7 +166,7 @@ export function PublicListClient({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           deviceToken,
-          cancelToken,
+          cancelToken: localReservation.cancelToken,
           share_token: token,
         }),
       });
@@ -133,24 +177,8 @@ export function PublicListClient({
 
       const item = json?.item as PendingPurchaseItem | null | undefined;
       if (!item || typeof item.item_id !== "string") {
-        const fallbackKeys = Object.keys(window.localStorage).filter((key) =>
-          key.startsWith("desira_pending_purchase_")
-        );
-        const fallbackItemId = fallbackKeys
-          .map((key) => {
-            try {
-              const raw = window.localStorage.getItem(key);
-              if (!raw) return null;
-              const parsed = JSON.parse(raw) as { item_id?: string; token?: string };
-              if (parsed.token !== token || !parsed.item_id) return null;
-              return parsed.item_id;
-            } catch {
-              return null;
-            }
-          })
-          .find((id): id is string => Boolean(id));
-
-        if (fallbackItemId) {
+        const fallbackItemId = localReservation.localReservationItemId;
+        if (fallbackItemId && initialItems.some((entry) => entry.id === fallbackItemId)) {
           const fallbackTitle =
             initialItems.find((entry) => entry.id === fallbackItemId)?.title ??
             "This gift";
@@ -263,14 +291,19 @@ export function PublicListClient({
     });
   }
 
+  function isItemReceived(item: ItemRow): boolean {
+    return isReceivedItemStatus(item.status);
+  }
+
   function isItemFunded(item: ItemRow): boolean {
     const funded = fundedMap.get(item.id) ?? 0;
     const target = item.target_amount_cents ?? item.price_cents ?? 0;
-    return item.status === "funded" || (target > 0 && funded >= target);
+    return item.status === "funded" || isItemReceived(item) || (target > 0 && funded >= target);
   }
 
-  function isItemUnavailable(item: ItemRow): boolean {
-    return item.status === "archived";
+  function isItemUnavailable(_item: ItemRow): boolean {
+    void _item;
+    return false;
   }
 
   // Apply filtering
@@ -327,11 +360,24 @@ export function PublicListClient({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-[#2b2b2b] sm:text-base">
-                Did you buy this gift?
+                Did you buy this gift? We&apos;ll hold it for 24h.
               </p>
               <p className="mt-1 text-xs text-[#5f5f5f] sm:text-sm">
                 {pendingPurchaseItem.title}
               </p>
+              {pendingPurchaseItem.reserved_until ? (
+                (() => {
+                  const expiry = new Date(pendingPurchaseItem.reserved_until);
+                  if (Number.isNaN(expiry.getTime())) {
+                    return null;
+                  }
+                  return (
+                    <p className="mt-1 text-[11px] text-[#5f5f5f] sm:text-xs">
+                      Hold ends: {expiry.toLocaleString()}
+                    </p>
+                  );
+                })()
+              ) : null}
             </div>
             <div className="flex gap-2">
               <button
@@ -480,7 +526,7 @@ export function PublicListClient({
           <h2 className="mt-4 text-lg font-medium text-[#2B2B2B]">
             No gifts match this filter
           </h2>
-          <p className="mt-2 text-sm text-[#62748e]">
+          <p className="mt-2 text-sm text-[#4f5f74]">
             Try a different filter, or show all gifts again.
           </p>
           <button
@@ -526,8 +572,8 @@ function ItemCardComponent({
   const reservedUntil = reservedUntilMap.get(item.id) ?? null;
   const funded = fundedMap.get(item.id) ?? 0;
   const target = item.target_amount_cents ?? item.price_cents ?? 0;
-  const isReceived = item.status === "received";
-  const isUnavailable = item.status === "archived";
+  const isReceived = isReceivedItemStatus(item.status);
+  const isUnavailable = false;
   const isFunded =
     item.status === "funded" || (target > 0 && funded >= target);
   const isComplete = isReceived || isFunded || isUnavailable;
@@ -655,6 +701,7 @@ function ItemCardComponent({
             reserveDisabledReason={reserveDisabledReason}
             reservedUntil={reservedUntil}
             hasProductLink={item.has_product_link}
+            storeLabel={item.store_label}
             actionLabelVariant={actionLabelVariant}
           />
         </div>
@@ -662,3 +709,4 @@ function ItemCardComponent({
     </div>
   );
 }
+

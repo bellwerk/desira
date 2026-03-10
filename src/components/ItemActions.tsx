@@ -17,6 +17,7 @@ export function ItemActions(props: {
   reserveDisabledReason?: string;
   reservedUntil?: string | null;
   hasProductLink: boolean;
+  storeLabel?: string;
   actionLabelVariant: ExperimentVariant;
 }): React.ReactElement {
   const router = useRouter();
@@ -30,21 +31,13 @@ export function ItemActions(props: {
     reserveDisabledReason,
     reservedUntil,
     hasProductLink,
+    storeLabel,
     actionLabelVariant,
   } = props;
   const contributeLabel = "Contribute";
-  const buyLabel = "Buy this gift";
+  const buyLabel = "Buy gift";
   const [openHelper, setOpenHelper] = useState<"contribute" | "buy" | null>(null);
   const [isReservedInfoOpen, setIsReservedInfoOpen] = useState(false);
-
-  // Lazy init instead of useEffect setState.
-  const [hasTicket] = useState<boolean>(() => {
-    try {
-      return Boolean(localStorage.getItem(`desira_cancel_${itemId}`));
-    } catch {
-      return false;
-    }
-  });
 
   function track(eventType: string): void {
     void fetch("/api/public-events", {
@@ -65,17 +58,9 @@ export function ItemActions(props: {
 
   function buy(): void {
     track(AuditEventType.GUEST_BUY_TAP);
-    const nextUrl = `/u/${token}/reserve?item=${itemId}`;
+    const buyStoreLabel = (storeLabel?.trim() || "Store");
+    const nextUrl = `/u/${token}/reserve?item=${itemId}&store=${encodeURIComponent(buyStoreLabel)}`;
     router.push(nextUrl);
-  }
-
-  function cancel(): void {
-    // Go to cancel page (which validates ticket + cancels)
-    router.push(`/u/${token}/cancel?item=${itemId}`);
-  }
-
-  function reopenMerchant(): void {
-    window.location.assign(`/api/go/${itemId}?token=${encodeURIComponent(token)}`);
   }
 
   function toggleHelper(which: "contribute" | "buy"): void {
@@ -106,13 +91,11 @@ export function ItemActions(props: {
   const contributeHelperText = contributeDisabled && contributeDisabledReason
     ? contributeDisabledReason
     : "Chip in with friends.";
-  const buyHelperText = hasTicket
+  const buyHelperText = buyEnabled
     ? hasProductLink
-      ? "You can reopen the merchant page or undo your buy mark from this browser."
-      : "You marked this gift as bought from this browser."
-    : buyEnabled
       ? "We'll hold it for 24h."
-      : (buyDisabledReason ?? "Not available right now.");
+      : "We'll hold it for 24h while you decide."
+    : (buyDisabledReason ?? "Not available right now.");
 
   const reservedUntilLabel = (() => {
     if (!reservedUntil) {
@@ -131,7 +114,7 @@ export function ItemActions(props: {
         {contributeDisabled ? (
           <button
             disabled
-            className="peer flex h-11 w-full items-center justify-center rounded-full bg-[#b4a0f2] px-3 text-sm font-medium text-white opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:text-base"
+            className="peer flex h-11 w-full items-center justify-center rounded-full bg-[#4a3a78] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:text-base"
           >
             {contributeLabel}
           </button>
@@ -144,7 +127,7 @@ export function ItemActions(props: {
               track(AuditEventType.GUEST_CONTRIBUTE_TAP);
             }}
           >
-            <span className="flex h-11 w-full items-center justify-center rounded-full bg-[#b4a0f2] px-3 text-sm font-medium text-white transition-colors hover:bg-[#a68ce8] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base">
+            <span className="flex h-11 w-full items-center justify-center rounded-full bg-[#3d267a] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#311f63] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base">
               {contributeLabel}
             </span>
           </Link>
@@ -175,45 +158,13 @@ export function ItemActions(props: {
       </div>
 
       <div className="relative">
-        {hasTicket ? hasProductLink ? (
-          <div className="space-y-2">
-            <button
-              onClick={() => {
-                setOpenHelper(null);
-                reopenMerchant();
-              }}
-              className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
-            >
-              <span className="flex-1 truncate pr-2 text-center">Open merchant again</span>
-              <span className="shrink-0">{arrowIcon}</span>
-            </button>
-            <button
-              onClick={() => {
-                setOpenHelper(null);
-                cancel();
-              }}
-              className="flex h-11 w-full items-center justify-center rounded-full border border-[#202020] bg-white px-3 text-center text-sm font-medium text-[#202020] transition-colors hover:bg-[#f4f4f4] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base"
-            >
-              Undo buy mark
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              setOpenHelper(null);
-              cancel();
-            }}
-            className="peer flex h-11 w-full items-center justify-center rounded-full border border-[#202020] bg-white px-3 text-center text-sm font-medium text-[#202020] transition-colors hover:bg-[#f4f4f4] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:text-base"
-          >
-            Undo buy mark
-          </button>
-        ) : buyEnabled ? (
+        {buyEnabled ? (
           <button
             onClick={() => {
               setOpenHelper(null);
               buy();
             }}
-            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-slate-900 px-2.5 text-sm font-medium text-white transition-colors hover:bg-black active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
           >
             <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
@@ -224,7 +175,7 @@ export function ItemActions(props: {
               setOpenHelper(null);
               setIsReservedInfoOpen(true);
             }}
-            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-[#2b2b2b] active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-slate-900 px-2.5 text-sm font-medium text-white transition-colors hover:bg-black active:scale-[0.98] font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
           >
             <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
@@ -232,7 +183,7 @@ export function ItemActions(props: {
         ) : (
           <button
             disabled
-            className="peer flex h-11 w-full items-center justify-between rounded-full bg-[#3a3a3a] px-2.5 text-sm font-medium text-white opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
+            className="peer flex h-11 w-full items-center justify-between rounded-full bg-slate-700 px-2.5 text-sm font-medium text-white/95 disabled:cursor-not-allowed font-[family-name:var(--font-urbanist)] sm:px-3 sm:text-base"
           >
             <span className="flex-1 truncate pr-2 text-center">{buyLabel}</span>
             <span className="shrink-0">{arrowIcon}</span>
@@ -276,7 +227,7 @@ export function ItemActions(props: {
               ? `Reserved until ${reservedUntilLabel}.`
               : "This gift is currently reserved."}
           </p>
-          <p className="text-xs text-white/70">
+          <p className="text-xs text-white/85">
             You can still contribute to other available gifts on this list.
           </p>
           <button
@@ -291,3 +242,4 @@ export function ItemActions(props: {
     </div>
   );
 }
+
