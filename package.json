@@ -19,7 +19,7 @@
     "deploy": "pnpm -s build:cloudflare && opennextjs-cloudflare deploy"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.16.1",
+    "@opennextjs/cloudflare": "^1.17.1",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@supabase/ssr": "^0.8.0",
