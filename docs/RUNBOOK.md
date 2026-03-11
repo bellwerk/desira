@@ -72,8 +72,12 @@ Fast checks:
 
 1. Auth failures: confirm Supabase env vars and auth service health.
 2. Payments failing: confirm Stripe webhook secret and dashboard webhook events.
-3. Link preview failures: check `[link-preview][metric]` logs and rate-limit/unavailable statuses.
+3. Link preview failures: check `[link-preview][metric]` and `[link-preview][merchant-failure]` logs for rate-limit, parser, and merchant fallback guidance.
 4. Notification failures: check `[notifications]` logs and email provider credentials.
+5. Guest smart-buy hold lifecycle:
+   - Reserve creates a 24h hold and stores local `desira_cancel_*` + `desira_pending_purchase_*` keys.
+   - `Undo hold` (reserve screen + return banner) calls `/api/gifts/[id]/cancel-reservation` and clears both local key families on success.
+   - If cancel returns ownership/expiry conflict, show clear messaging and force a state refresh; treat stale local keys as invalid.
 
 ## 5. Recovery Verification
 

@@ -113,7 +113,16 @@ test("guest can reserve then cancel from same browser token", async ({ page, req
   await expect(
     page.getByText("Did you buy this gift? We'll hold it for 24h.")
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Buy gift" }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Undo hold" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Hold removed. This gift is available again." })).toBeVisible();
+  await expect(page.getByText("Did you buy this gift? We'll hold it for 24h.")).not.toBeVisible();
+  await page.reload();
+
+  const buyAgainButton = page.getByRole("button", { name: "Buy gift" }).first();
+  await expect(buyAgainButton).toBeVisible();
+  await buyAgainButton.click();
+  await expect(page).toHaveURL(/\/u\/.+\/reserve\?item=/);
+  await expect(page.getByRole("button", { name: "Reserve only (24h)" })).toBeVisible();
 });
 
 test("guest can contribute and reach pay summary", async ({ page, request }) => {

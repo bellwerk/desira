@@ -225,7 +225,7 @@ Desira helps people organize gift wishlists for a person or a group. There are t
   - [ ] Option A: Skimlinks for Amazon too
   - [x] Option B: direct Amazon Associates for Amazon, Skimlinks for non-Amazon
 - [x] Validate correction pass with manual sanity checks
-- [ ] Apply Supabase migration `017_add_personal_recipient_type.sql` in the target environment
+- [x] Apply Supabase migration `017_add_personal_recipient_type.sql` in the target environment
 
 #### Task File - Minimal Card + Smart Buy (Guest) + Owner Buy Item / Item Received
 This task refines the existing buy-lock flow into explicit item lifecycle states: `available | reserved | purchased | received`.
@@ -548,6 +548,12 @@ This milestone replaces the duplicate Skimlinks track. It is the single roadmap 
 ---
 
 ## Progress Log
+- 2026-03-11:
+  - Restored guest `Undo hold` actions in both `/u/[token]/reserve` and the public return banner so guests can explicitly release a 24h hold from the same browser token.
+  - Updated guest cancel handling to clear `desira_cancel_*` and `desira_pending_purchase_*` keys and refresh state when ownership/expiry conflicts are detected.
+  - Re-tightened list-existence checks by owner scope (`owner_id = userId`) with a backward-compatible `userHasAnyLists` alias and explicit owner-intent helper naming.
+  - Fixed share-sheet success timing so "Share sheet opened." is only shown after `navigator.share(...)` resolves, while `AbortError` remains silent.
+  - Added regression coverage for reserve->cancel->available guest lifecycle, cross-context cancel unlock behavior, native-share success timing, native-share abort silence, and owner-scoped list lookup logic.
 - 2026-03-08:
   - Added legacy-schema compatibility fallbacks across Smart Buy APIs (`reserve`, `affiliate-click`, `pending-purchase`, `mark-purchased`, `mark-received`) so flows continue working when migrations `019-022` are not fully applied.
   - Added owner Undo Received flow: new `POST /api/gifts/[id]/undo-received` endpoint (owner-only, Zod-validated) plus a 12-second undo affordance in owner item cards after marking received.

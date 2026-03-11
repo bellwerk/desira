@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { parseHtml } from "../src/app/api/link-preview/route";
+import {
+  buildMerchantFailureLog,
+  MARKETPLACE_COVERAGE_TABLE,
+  MERCHANT_SEED_LIST,
+  resolveMerchantSupportEntry,
+} from "../src/lib/link-preview/merchant-support";
 import { normalizeUrl, validateUrlForSsrf } from "../src/lib/url";
 
 test("normalizeUrl strips tracking params and sorts remaining params", () => {
@@ -75,4 +81,40 @@ test("parseHtml handles invalid JSON-LD and falls back to OG metadata", () => {
   expect(data.description).toBe("Fallback description");
   expect(data.image).toBe("https://cdn.example.com/p/fallback.jpg");
   expect(data.price).toEqual({ amount: 89.5, currency: "CAD" });
+});
+
+test("resolveMerchantSupportEntry matches known merchant domains and subdomains", () => {
+  const amazon = resolveMerchantSupportEntry("www.amazon.com");
+  const shein = resolveMerchantSupportEntry("us.shein.com");
+  const unknown = resolveMerchantSupportEntry("unknown-shop.example");
+
+  expect(amazon?.merchant).toBe("Amazon");
+  expect(shein?.merchant).toBe("Shein");
+  expect(unknown).toBeNull();
+});
+
+test("buildMerchantFailureLog returns readable blocked guidance", () => {
+  const failure = buildMerchantFailureLog({
+    domain: "temu.com",
+    errorCode: "FETCH_BLOCKED",
+    rawReason: "HTTP 403",
+  });
+
+  expect(failure.merchant).toBe("Temu");
+  expect(failure.behaviorClass).toBe("anti-bot/captcha blocked");
+  expect(failure.failureReason).toContain("blocked automated preview requests");
+  expect(failure.fallbackRequirement).toBe("Manual URL/title/image/price entry required.");
+});
+
+test("marketplace coverage table includes all seed merchants and is relevance-sorted", () => {
+  const merchantsInCoverage = MARKETPLACE_COVERAGE_TABLE.map((entry) => entry.merchant);
+
+  expect(new Set(merchantsInCoverage).size).toBe(merchantsInCoverage.length);
+  expect(merchantsInCoverage).toEqual(expect.arrayContaining([...MERCHANT_SEED_LIST]));
+
+  for (let i = 1; i < MARKETPLACE_COVERAGE_TABLE.length; i += 1) {
+    expect(MARKETPLACE_COVERAGE_TABLE[i - 1].userRelevanceRank).toBeLessThanOrEqual(
+      MARKETPLACE_COVERAGE_TABLE[i].userRelevanceRank
+    );
+  }
 });

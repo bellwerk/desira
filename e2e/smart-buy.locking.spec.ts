@@ -39,6 +39,17 @@ test("two guest contexts enforce reservation lock", async ({ browser, request })
 
     await pageB.goto(`/u/${seed.share_token}/reserve?item=${itemId}`);
     await expect(pageB.getByText("Could not hold this gift")).toBeVisible();
+
+    await pageA.getByRole("button", { name: "Undo hold" }).click();
+    await expect(
+      pageA.getByRole("alert").filter({ hasText: "Hold removed. This gift is available again." })
+    ).toBeVisible();
+
+    await pageB.goto(`/u/${seed.share_token}`);
+    await pageB.reload();
+    await pageB.getByRole("button", { name: "Buy gift" }).first().click();
+    await expect(pageB).toHaveURL(/\/u\/.+\/reserve\?item=/);
+    await expect(pageB.getByRole("button", { name: "Reserve only (24h)" })).toBeVisible();
   } finally {
     await contextA.close();
     await contextB.close();
