@@ -44,6 +44,9 @@ yarn-error.log*
 .open-next
 .dev.vars
 
+# supabase local cli temp artifacts
+/supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
