@@ -31,12 +31,16 @@ function formatPreviewError(code?: string, message?: string): string {
       return "This site blocked the preview request. Try another link or add details manually.";
     case "TIMEOUT":
       return "Preview request timed out. Try again or add details manually.";
+    case "FETCH_ERROR":
+      return "Could not fetch a preview from this link. You can still add details manually.";
     case "INVALID_URL":
       return "That link doesn't look valid yet. Please paste a full URL.";
     case "RATE_LIMITED":
       return "You've requested too many previews in a short time. Wait a few minutes and try again.";
     default:
-      return message ?? "Failed to fetch preview.";
+      return message
+        ? `${message} You can still add details manually.`
+        : "Failed to fetch preview. You can still add details manually.";
   }
 }
 
@@ -241,6 +245,5 @@ export function useLinkPreview(): UseLinkPreviewResult {
     reset,
   };
 }
-
 
 

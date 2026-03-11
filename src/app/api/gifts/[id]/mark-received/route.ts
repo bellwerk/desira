@@ -107,15 +107,45 @@ export async function POST(req: Request, context: RouteContext): Promise<NextRes
     updateItemErr.message.toLowerCase().includes("invalid input value for enum") &&
     updateItemErr.message.toLowerCase().includes("received")
   ) {
-    const legacyUpdate = await supabaseAdmin
+    const legacyPrimaryUpdate = await supabaseAdmin
       .from("items")
-      .update({ status: "archived" })
+      .update({
+        status: "archived",
+        received_at: nowIso,
+        received_by_owner_id: user.id,
+      })
       .eq("id", item.id)
-      .select("id,status")
+      .select("id,status,received_at")
       .single();
-    updatedItem = legacyUpdate.data as { id: string; status: string; received_at?: string | null } | null;
-    updateItemErr = legacyUpdate.error;
-    usedLegacyArchivedFallback = Boolean(legacyUpdate.data);
+
+    let legacyItem = legacyPrimaryUpdate.data as
+      | { id: string; status: string; received_at?: string | null }
+      | null;
+    let legacyErr = legacyPrimaryUpdate.error;
+
+    if (
+      legacyErr &&
+      (
+        isMissingColumnError(legacyErr.message, "received_at") ||
+        isMissingColumnError(legacyErr.message, "received_by_owner_id")
+      )
+    ) {
+      const legacyFallbackUpdate = await supabaseAdmin
+        .from("items")
+        .update({ status: "archived" })
+        .eq("id", item.id)
+        .select("id,status")
+        .single();
+
+      legacyItem = legacyFallbackUpdate.data as
+        | { id: string; status: string; received_at?: string | null }
+        | null;
+      legacyErr = legacyFallbackUpdate.error;
+    }
+
+    updatedItem = legacyItem;
+    updateItemErr = legacyErr;
+    usedLegacyArchivedFallback = Boolean(legacyItem);
   }
 
   if (updateItemErr || !updatedItem) {

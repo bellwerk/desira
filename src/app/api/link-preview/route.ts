@@ -15,6 +15,7 @@ import {
   validateUrlForSsrf,
   isPrivateIp,
 } from "@/lib/url";
+import { buildMerchantFailureLog } from "@/lib/link-preview/merchant-support";
 
 // Use Node.js runtime to allow setting Host header for pinned-IP SSRF protection.
 // Edge runtime forbids the Host header per Web Fetch spec, which breaks TLS/SNI
@@ -917,6 +918,35 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       })
     );
   };
+  const logMerchantFailure = (
+    errorCode: ErrorCode,
+    rawReason: string,
+    phase: "fetch" | "parse"
+  ): void => {
+    const domainForLog = metricDomain ?? "unknown";
+    const failureLog = buildMerchantFailureLog({
+      domain: domainForLog,
+      errorCode,
+      rawReason,
+    });
+
+    console.warn(
+      "[link-preview][merchant-failure]",
+      JSON.stringify({
+        phase,
+        domain: domainForLog,
+        error_code: errorCode,
+        raw_reason: rawReason,
+        merchant: failureLog.merchant,
+        behavior_class: failureLog.behaviorClass,
+        sample_url: failureLog.sampleUrl,
+        fetch_result: failureLog.fetchResult,
+        parser_result: failureLog.parserResult,
+        failure_reason: failureLog.failureReason,
+        fallback_requirement: failureLog.fallbackRequirement,
+      })
+    );
+  };
 
   const supabase = await createClient();
   const {
@@ -1151,6 +1181,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       reason: fetchResult.error,
       errorCode: fetchResult.code,
     });
+    logMerchantFailure(fetchResult.code, fetchResult.error, "fetch");
 
     return NextResponse.json(
       { ok: false, error: { code: fetchResult.code, message: fetchResult.error } },
@@ -1224,6 +1255,7 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
   if (!data.title && !data.description && !data.image && !data.price) {
     await cachePreview(normalizedUrl, data, "error", 200, "NO_METADATA");
     logPreviewMetric("error", { source: "html", errorCode: "NO_METADATA" });
+    logMerchantFailure("NO_METADATA", "No metadata found on page", "parse");
     
     return NextResponse.json(
       { ok: false, error: { code: "NO_METADATA" as const, message: "No metadata found on page" } },

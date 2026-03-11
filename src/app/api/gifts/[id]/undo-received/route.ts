@@ -104,7 +104,7 @@ export async function POST(req: Request, context: RouteContext): Promise<NextRes
     );
   }
 
-  const isLegacyArchivedUndo = !canEnforceUndoWindow && item.status === "archived";
+  const isLegacyArchivedUndo = item.status === "archived";
   if (item.status !== "received" && !isLegacyArchivedUndo) {
     return NextResponse.json({ error: "Item is not currently marked as received" }, { status: 409 });
   }
