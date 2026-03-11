@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { userHasAnyLists } from "@/lib/lists/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { buildProfileIdentity } from "@/lib/profile";
 
@@ -24,7 +25,11 @@ function supabaseAnonKey(): string {
 export async function GET(request: Request): Promise<NextResponse> {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/app";
+  const requestedNext = requestUrl.searchParams.get("next");
+  const next =
+    requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/app";
 
   // On Cloudflare Workers, request.url origin can be internal (http://localhost:8787).
   // Always use the configured site URL for redirects.
@@ -107,7 +112,13 @@ export async function GET(request: Request): Promise<NextResponse> {
       );
     }
 
-    const redirectUrl = `${origin}${next}`;
+    let redirectPath = next;
+    if (user && redirectPath === "/app") {
+      const hasLists = await userHasAnyLists(supabase, user.id);
+      redirectPath = hasLists ? "/app/lists" : "/app";
+    }
+
+    const redirectUrl = `${origin}${redirectPath}`;
     console.log("[AuthCallback] redirecting to:", redirectUrl);
     console.log("[AuthCallback] cookies to set:", cookiesToSet.length);
 

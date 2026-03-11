@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { userHasAnyLists } from "@/lib/lists/server";
 import { getSiteURL } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,7 +72,17 @@ export async function signInWithEmail(
 
   revalidatePath("/", "layout");
   const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/app";
-  redirect(safeRedirect);
+  let destination = safeRedirect;
+
+  if (safeRedirect === "/app") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const hasLists = await userHasAnyLists(supabase, user?.id ?? "");
+    destination = hasLists ? "/app/lists" : "/app";
+  }
+
+  redirect(destination);
 }
 
 // Email/password signup
