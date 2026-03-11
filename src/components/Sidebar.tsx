@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  APP_DESKTOP_SIDEBAR_LEFT_INSET_PX,
+  APP_DESKTOP_SIDEBAR_WIDTH_PX,
+} from "@/lib/app-shell";
 
 interface NavItem {
   href: string;
@@ -137,7 +141,13 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="fixed left-4 top-1/2 z-50 hidden -translate-y-1/2 flex-col items-center rounded-2xl bg-white/80 px-2 py-3 dark:bg-[#eaeaea]/80 md:flex">
+      <aside
+        className="fixed top-1/2 z-40 hidden -translate-y-1/2 flex-col items-center rounded-2xl bg-white/80 px-2 py-3 dark:bg-[#eaeaea]/80 md:flex"
+        style={{
+          left: `${APP_DESKTOP_SIDEBAR_LEFT_INSET_PX}px`,
+          width: `${APP_DESKTOP_SIDEBAR_WIDTH_PX}px`,
+        }}
+      >
         {/* Navigation icons */}
         <nav className="flex flex-col items-center gap-1">
           {navItems.map((item) => (

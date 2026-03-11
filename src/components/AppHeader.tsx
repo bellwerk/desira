@@ -72,7 +72,7 @@ export function AppHeader({ displayName, username, avatarUrl }: AppHeaderProps):
           <span className="text-sm font-semibold leading-tight tracking-tight text-[#2B2B2B] transition-colors duration-200 group-hover:text-[#1a1a1a]">
             {displayName}
           </span>
-          <span className="text-xs leading-tight text-[#2B2B2B]/55 transition-colors duration-200 group-hover:text-[#2B2B2B]/75">
+          <span className="text-xs leading-tight text-[#4f4f4f] transition-colors duration-200 group-hover:text-[#2B2B2B]">
             @{username}
           </span>
         </div>

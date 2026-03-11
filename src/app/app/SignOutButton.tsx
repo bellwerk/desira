@@ -39,7 +39,7 @@ export function SignOutButton() {
       <span className="relative flex items-center justify-center gap-2.5">
         {isPending ? (
           <>
-            <svg className="h-4 w-4 animate-spin text-white/70" viewBox="0 0 24 24" fill="none">
+            <svg className="h-4 w-4 animate-spin text-white/85" viewBox="0 0 24 24" fill="none">
               <circle 
                 className="opacity-25" 
                 cx="12" 
@@ -54,12 +54,12 @@ export function SignOutButton() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="text-white/70">Signing out...</span>
+            <span className="text-white/85">Signing out...</span>
           </>
         ) : (
           <>
             <svg 
-              className="w-4 h-4 text-white/60 transition-all duration-300 group-hover:text-red-400 group-hover:rotate-12" 
+              className="w-4 h-4 text-white/80 transition-all duration-300 group-hover:text-red-400 group-hover:rotate-12" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
@@ -80,4 +80,5 @@ export function SignOutButton() {
     </button>
   );
 }
+
 

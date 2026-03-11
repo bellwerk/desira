@@ -198,7 +198,7 @@ export function ListCardWrapper({
               </Link>
             ) : (
               <span
-                className="flex h-11 flex-1 items-center justify-center rounded-[26px] bg-[#2b2b2b]/40 px-3 text-center text-[10px] font-semibold text-white/60 cursor-not-allowed md:text-xs lg:text-sm"
+                className="flex h-11 flex-1 items-center justify-center rounded-[26px] bg-[#2b2b2b]/40 px-3 text-center text-[10px] font-semibold text-white/80 cursor-not-allowed md:text-xs lg:text-sm"
                 title="Private lists cannot be shared via link"
               >
                 Share
@@ -227,3 +227,4 @@ export function ListCardWrapper({
     </>
   );
 }
+

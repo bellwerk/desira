@@ -66,7 +66,7 @@ export function AddWishModal({
             Add Wish
           </h2>
 
-          <p className="text-white/70 text-center mb-6 font-[family-name:var(--font-urbanist)]">
+          <p className="text-white/85 text-center mb-6 font-[family-name:var(--font-urbanist)]">
             Paste a link from anywhere on the web
           </p>
 
@@ -88,7 +88,7 @@ export function AddWishModal({
             Next
           </GlassButton>
 
-          <p className="text-center mt-5 text-white/60 font-[family-name:var(--font-urbanist)]">
+          <p className="text-center mt-5 text-white/80 font-[family-name:var(--font-urbanist)]">
             Don&apos;t have a link?{" "}
             <button
               onClick={handleAddManually}
@@ -109,3 +109,4 @@ export function AddWishModal({
     </ModalShell>
   );
 }
+

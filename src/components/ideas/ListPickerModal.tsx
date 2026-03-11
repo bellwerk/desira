@@ -56,7 +56,7 @@ export function ListPickerModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
           aria-label="Close"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -67,7 +67,7 @@ export function ListPickerModal({
         <h2 className="pr-10 text-center text-2xl font-bold text-white" style={{ fontFamily: "Asul" }}>
           Add this idea
         </h2>
-        <p className="mt-2 text-center text-sm text-white/70">
+        <p className="mt-2 text-center text-sm text-white/85">
           Choose a list for{" "}
           <span className="font-medium text-white">{suggestionTitle}</span>.
         </p>
@@ -94,7 +94,7 @@ export function ListPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-white/60 transition-all duration-150 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d8df1]/50"
+            className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-white/80 transition-all duration-150 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d8df1]/50"
           >
             Cancel
           </button>
@@ -110,4 +110,5 @@ export function ListPickerModal({
     </div>
   );
 }
+
 

@@ -5,9 +5,9 @@
   --foreground: #1a1625;
   
   /* Giftful-inspired warm palette */
-  --primary: #8b5cf6;      /* Purple */
-  --primary-light: #a78bfa;
-  --primary-dark: #7c3aed;
+  --primary: #5b21b6;      /* Purple */
+  --primary-light: #7c3aed;
+  --primary-dark: #4c1d95;
   --secondary: #f472b6;    /* Pink */
   --secondary-light: #f9a8d4;
   --accent: #fbbf24;       /* Warm yellow */
@@ -20,8 +20,8 @@
   
   /* Neutral tones */
   --text-primary: #1a1625;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
+  --text-secondary: #4b5563;
+  --text-muted: #667085;
   --border-color: #e5e7eb;
   --border-light: #f3e8ff;
 }
@@ -43,8 +43,8 @@
     --bg-pink: #1f1a24;
     --bg-yellow: #1a1914;
     --text-primary: #f8fafc;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    --text-secondary: #d1d5db;
+    --text-muted: #b6becb;
     --border-color: #27272a;
     --border-light: #2e2640;
   }
@@ -435,3 +435,4 @@ html {
   background: #2b2b2b;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
+

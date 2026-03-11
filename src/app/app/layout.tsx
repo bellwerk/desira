@@ -4,6 +4,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { trackServerError } from "@/lib/error-tracking";
+import { APP_DESKTOP_CONTENT_OFFSET_PX } from "@/lib/app-shell";
 import type { Metadata } from "next";
 
 /** Check if an error is a Next.js redirect (must be re-thrown, never swallowed) */
@@ -155,9 +156,16 @@ export default async function AppLayout({
     }
 
     return (
-      <div className="min-h-screen bg-[#EAEAEA] dark:bg-[#eaeaea]">
+      <div
+        className="min-h-screen bg-[#EAEAEA] dark:bg-[#eaeaea]"
+        style={
+          {
+            "--app-desktop-content-offset": `${APP_DESKTOP_CONTENT_OFFSET_PX}px`,
+          } as Record<string, string>
+        }
+      >
         <Sidebar unreadNotificationCount={unreadNotificationCount} />
-        <div className="flex flex-col min-h-screen">
+        <div className="flex min-h-screen flex-col md:pl-[var(--app-desktop-content-offset)]">
           <AppHeader
             displayName={displayName}
             username={username}

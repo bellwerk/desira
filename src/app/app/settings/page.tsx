@@ -27,7 +27,7 @@ function SettingsActionLink({
     >
       <div>
         <p className="text-sm font-semibold text-[#2b2b2b]">{title}</p>
-        <p className="mt-0.5 text-xs text-[#2b2b2b]/65">{description}</p>
+        <p className="mt-0.5 text-xs text-[#4f4f4f]">{description}</p>
       </div>
       <div className="flex items-center gap-2">
         {value && (
@@ -82,7 +82,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
       <GlassCard className="space-y-3 rounded-[24px] p-5 sm:p-6">
         <div>
           <h2 className="text-lg font-semibold text-[#2b2b2b]">Account</h2>
-          <p className="mt-1 text-xs text-[#2b2b2b]/65">Signed in as</p>
+          <p className="mt-1 text-xs text-[#4f4f4f]">Signed in as</p>
           <p className="mt-0.5 text-sm font-medium text-[#2b2b2b]">{email}</p>
         </div>
       </GlassCard>
@@ -111,7 +111,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
           title="Report a bug"
           description="Send a reproducible issue report to the team."
         />
-        <p className="pt-1 text-xs text-[#2b2b2b]/60">
+        <p className="pt-1 text-xs text-[#4f4f4f]">
           Payout and sharing controls are available inside each list&apos;s settings.
         </p>
       </GlassCard>
@@ -123,3 +123,4 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
     </div>
   );
 }
+

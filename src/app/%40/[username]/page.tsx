@@ -127,24 +127,24 @@ export default async function PublicProfilePage({ params }: PageProps): Promise<
             className="h-16 w-16 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#2b2b2b]/65">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#4f4f4f]">
             <span className="text-xl font-semibold">{displayName.slice(0, 1).toUpperCase()}</span>
           </div>
         )}
         <h1 className="mt-3 font-asul text-4xl">{displayName}</h1>
-        <p className="mt-1 text-sm text-[#2b2b2b]/70">@{typedProfile.handle}</p>
+        <p className="mt-1 text-sm text-[#4a4a4a]">@{typedProfile.handle}</p>
       </header>
 
       {typedLists.length === 0 ? (
         <GlassCard className="rounded-3xl p-8 text-center">
-          <p className="text-sm text-[#2b2b2b]/70">No public lists shared yet.</p>
+          <p className="text-sm text-[#4a4a4a]">No public lists shared yet.</p>
         </GlassCard>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {typedLists.map((list) => (
             <GlassCard key={list.id} className="rounded-3xl p-5">
               <h2 className="text-lg font-semibold text-[#2b2b2b]">{list.title}</h2>
-              {list.occasion && <p className="mt-1 text-xs text-[#2b2b2b]/65">Occasion: {list.occasion}</p>}
+              {list.occasion && <p className="mt-1 text-xs text-[#4f4f4f]">Occasion: {list.occasion}</p>}
               <Link
                 href={`/u/${list.share_token}`}
                 className="mt-4 inline-flex rounded-full border border-[#2b2b2b]/20 px-3 py-1.5 text-xs font-medium text-[#2b2b2b] transition-colors hover:bg-white"
@@ -158,3 +158,4 @@ export default async function PublicProfilePage({ params }: PageProps): Promise<
     </main>
   );
 }
+

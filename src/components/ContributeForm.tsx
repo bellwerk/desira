@@ -190,7 +190,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
             {props.title}
           </div>
           {props.targetCents ? (
-            <div className="mt-1 text-xs text-[#62748e]">
+            <div className="mt-1 text-xs text-[#4f5f74]">
               Target {formatCurrency(props.targetCents, props.currency)} · Funded{" "}
               {formatCurrency(props.fundedCents, props.currency)}
               {leftCents != null
@@ -198,7 +198,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
                 : null}
             </div>
           ) : (
-            <div className="mt-1 text-xs text-[#62748e]">
+            <div className="mt-1 text-xs text-[#4f5f74]">
               Funds go to the recipient.
             </div>
           )}
@@ -233,7 +233,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
             value={custom}
             onChange={(e) => setCustomAmount(e.target.value)}
             placeholder="Custom"
-            className="w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#62748e] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
+            className="w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#4f5f74] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
             inputMode="decimal"
             maxLength={10}
             pattern="^[0-9]*[.]?[0-9]{0,2}$"
@@ -241,7 +241,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
         </div>
 
         {props.closeWhenFunded && props.targetCents ? (
-          <div className="mt-2 text-xs text-[#62748e]">
+          <div className="mt-2 text-xs text-[#4f5f74]">
             If the item is fully funded, contributions close.
           </div>
         ) : null}
@@ -251,13 +251,13 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
       {contributionCents && feeCents && totalChargeCents ? (
         <div className="mt-4 rounded-2xl glass-2 p-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-[#62748e]">Contribution</span>
+            <span className="text-[#4f5f74]">Contribution</span>
             <span className="font-medium text-[#2B2B2B]">
               {formatCurrency(contributionCents, props.currency)}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-[#62748e]">Desira service fee</span>
+            <span className="text-[#4f5f74]">Desira service fee</span>
             <span className="font-medium text-[#2B2B2B]">
               {formatCurrency(feeCents, props.currency)}
             </span>
@@ -268,7 +268,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
               {formatCurrency(totalChargeCents, props.currency)}
             </span>
           </div>
-          <div className="mt-2 text-xs text-[#62748e]">
+          <div className="mt-2 text-xs text-[#4f5f74]">
             Recipient receives the contribution amount. Fee helps cover payment
             processing.
           </div>
@@ -278,9 +278,9 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
       {/* Optional fields */}
       <div className="mt-5 space-y-3">
         <div>
-          <label className="text-sm text-[#62748e]">Name (optional)</label>
+          <label className="text-sm text-[#4f5f74]">Name (optional)</label>
           <input
-            className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#62748e] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
+            className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#4f5f74] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Optional"
@@ -288,9 +288,9 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
         </div>
 
         <div>
-          <label className="text-sm text-[#62748e]">Message (optional)</label>
+          <label className="text-sm text-[#4f5f74]">Message (optional)</label>
           <textarea
-            className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#62748e] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
+            className="mt-1 w-full rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#4f5f74] focus:border-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#2B2B2B]/10"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Optional"
@@ -299,7 +299,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
         </div>
 
         {props.allowAnonymous ? (
-          <label className="flex items-center gap-2 text-sm text-[#62748e]">
+          <label className="flex items-center gap-2 text-sm text-[#4f5f74]">
             <input
               type="checkbox"
               checked={anon}
@@ -311,7 +311,7 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
         ) : null}
       </div>
 
-      <div className="mt-5 text-xs text-[#62748e]">
+      <div className="mt-5 text-xs text-[#4f5f74]">
         Payments processed by Stripe. Desira doesn&apos;t store card details.
       </div>
 
@@ -343,3 +343,4 @@ export function ContributeForm(props: ContributeFormProps): React.ReactElement {
     </GlassCard>
   );
 }
+

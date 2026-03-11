@@ -23,6 +23,31 @@ export default function ReservePage(): React.ReactElement {
 
   const canProceed = useMemo(() => Boolean(token) && Boolean(itemId), [token, itemId]);
 
+  function getStoredCancelToken(targetItemId: string): string | undefined {
+    try {
+      const raw = localStorage.getItem(`desira_cancel_${targetItemId}`);
+      if (!raw) {
+        return undefined;
+      }
+      const parsed = JSON.parse(raw) as { cancel_token?: string };
+      if (typeof parsed.cancel_token === "string" && parsed.cancel_token.length > 10) {
+        return parsed.cancel_token;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function clearLocalReservationState(targetItemId: string): void {
+    try {
+      localStorage.removeItem(`desira_cancel_${targetItemId}`);
+      localStorage.removeItem(`desira_pending_purchase_${targetItemId}`);
+    } catch {
+      // Ignore local storage cleanup failures.
+    }
+  }
+
   useEffect(() => {
     if (!canProceed || status !== "reserving") {
       return;
@@ -181,15 +206,65 @@ export default function ReservePage(): React.ReactElement {
       return;
     }
 
-    try {
-      localStorage.removeItem(`desira_cancel_${itemId}`);
-      localStorage.removeItem(`desira_pending_purchase_${itemId}`);
-    } catch {
-      // Ignore storage cleanup failures.
-    }
+    clearLocalReservationState(itemId);
 
     router.push(`/u/${token}`);
     router.refresh();
+  }
+
+  async function cancelHold(): Promise<void> {
+    if (!itemId) return;
+    setStatus("processing");
+    setErrorMsg(null);
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      setStatus("error");
+      setErrorMsg("Could not initialize this browser session. Please retry.");
+      return;
+    }
+
+    const activeCancelToken = cancelToken ?? getStoredCancelToken(itemId);
+    try {
+      const cancelRes = await fetch(`/api/gifts/${itemId}/cancel-reservation`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          deviceToken,
+          cancelToken: activeCancelToken,
+          share_token: token,
+        }),
+      });
+      const cancelJson = await cancelRes.json().catch(() => ({}));
+
+      if (!cancelRes.ok) {
+        if (cancelRes.status === 403 || cancelRes.status === 409) {
+          clearLocalReservationState(itemId);
+          setCancelToken(null);
+          setStatus("error");
+          setErrorMsg(
+            "This hold is no longer active for this browser (it may have expired or belongs elsewhere)."
+          );
+          router.refresh();
+          return;
+        }
+
+        setStatus("error");
+        setErrorMsg(cancelJson?.error ?? "Could not undo this hold right now.");
+        return;
+      }
+
+      clearLocalReservationState(itemId);
+      setCancelToken(null);
+      setReservedUntil(null);
+      router.push(`/u/${token}`);
+      router.refresh();
+    } catch {
+      setStatus("ready");
+      setErrorMsg(
+        "Network error while undoing this hold. Check your connection and try again."
+      );
+    }
   }
 
   function reserveOnly(): void {
@@ -323,6 +398,23 @@ export default function ReservePage(): React.ReactElement {
             I bought it elsewhere
           </GlassButton>
           <p className="mt-2 text-center text-xs text-[#4f5f74]">Mark as purchased.</p>
+        </div>
+
+        <div className="rounded-2xl border border-[#2b2b2b]/15 bg-white/80 p-3">
+          <GlassButton
+            variant="danger"
+            size="md"
+            disabled={status === "processing"}
+            onClick={() => {
+              void cancelHold();
+            }}
+            className="w-full justify-center"
+          >
+            Undo hold
+          </GlassButton>
+          <p className="mt-2 text-center text-xs text-[#4f5f74]">
+            Make this gift available again.
+          </p>
         </div>
       </div>
     </GlassCard>

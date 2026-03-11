@@ -85,7 +85,7 @@ function GiftSuggestionCard({
       {/* Info */}
       <p className="text-xs font-medium text-[#2b2b2b] truncate">{suggestion.name}</p>
       <div className="flex items-center gap-0.5 leading-3">
-        <span className="text-xs text-[#62748e]" aria-hidden="true">·</span>
+        <span className="text-xs text-[#4f5f74]" aria-hidden="true">·</span>
         <span className="text-[11px] text-[#2b2b2b]">{suggestion.price}</span>
       </div>
     </div>
@@ -226,7 +226,7 @@ export function EmptyListState({
 
           {/* Empty state message - Asul font */}
           <p
-            className="text-xl text-[#2b2b2b]/60 font-semibold mb-2.5 max-w-md"
+            className="text-xl text-[#4f4f4f] font-semibold mb-2.5 max-w-md"
             style={{ fontFamily: "var(--font-asul), serif" }}
           >
             Add your first wish
@@ -247,7 +247,7 @@ export function EmptyListState({
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-[#2b2b2b]">Popular gift ideas</span>
-          <button className="text-xs font-medium text-[#2b2b2b]/70 hover:text-[#2b2b2b] transition-colors">
+          <button className="text-xs font-medium text-[#4a4a4a] hover:text-[#2b2b2b] transition-colors">
             Explore All
           </button>
         </div>
@@ -288,3 +288,4 @@ export function EmptyListState({
     </div>
   );
 }
+

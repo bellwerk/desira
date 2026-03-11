@@ -7,6 +7,7 @@ import { EditItemModal } from "./EditItemModal";
 import { reorderItems } from "../actions";
 import { EmptyState } from "@/components/EmptyState";
 import { useToastActions } from "@/components/ui";
+import { isReceivedItemStatus } from "@/lib/item-status";
 
 type ItemRow = {
   id: string;
@@ -63,7 +64,7 @@ export function ItemsGrid({
     const target = item?.target_amount_cents ?? item?.price_cents ?? 0;
     const funded = fundedMap[itemId] ?? 0;
     const isReserved = Boolean(reservedMap[itemId]);
-    const isReceived = item?.status === "received";
+    const isReceived = item ? isReceivedItemStatus(item.status) : false;
     const isFunded =
       isReceived || item?.status === "funded" || (target > 0 && funded >= target);
 
@@ -215,7 +216,7 @@ export function ItemsGrid({
         />
       ) : (
         <div className="space-y-2">
-          <p className="text-xs text-[#2b2b2b]/60">
+          <p className="text-xs text-[#4f4f4f]">
             {statusFilter === "all"
               ? "Drag the handle on an item card to reorder."
               : "Switch to All items to reorder by drag handle."}
@@ -225,7 +226,7 @@ export function ItemsGrid({
             const isReserved = Boolean(reservedMap[item.id]);
             const funded = fundedMap[item.id] ?? 0;
             const target = item.target_amount_cents ?? item.price_cents ?? 0;
-            const isReceived = item.status === "received";
+            const isReceived = isReceivedItemStatus(item.status);
             const isFunded =
               isReceived || item.status === "funded" || (target > 0 && funded >= target);
 
@@ -284,3 +285,4 @@ export function ItemsGrid({
     </div>
   );
 }
+

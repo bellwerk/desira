@@ -164,7 +164,7 @@ export function ListDetailClient({
                 size="md"
                 className="h-11 rounded-full px-5 text-[#2b2b2b]"
               >
-                Share
+                Share list
                 <svg
                   className="h-4 w-4"
                   fill="none"

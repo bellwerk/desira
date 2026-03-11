@@ -22,7 +22,7 @@ export function ModalShell({
   panelClassName = "rounded-[30px] bg-[#2b2b2b] p-4 shadow-2xl animate-modal-in sm:p-6",
   showCloseButton = true,
   titleId,
-  closeButtonClassName = "absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4",
+  closeButtonClassName = "absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4",
 }: ModalShellProps): React.ReactElement | null {
   useEffect(() => {
     if (!isOpen) return;
@@ -80,3 +80,4 @@ export function ModalShell({
     </div>
   );
 }
+

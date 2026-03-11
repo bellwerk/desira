@@ -157,13 +157,13 @@ export default function ThanksPage(): React.ReactElement {
       </h1>
 
       {state.status === "loading" ? (
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#62748e]">
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#4f5f74]">
           <Spinner size="sm" />
           <span>Confirming payment...</span>
         </div>
       ) : (
         <>
-          <p className="mt-2 text-sm text-[#62748e] text-center">
+          <p className="mt-2 text-sm text-[#4f5f74] text-center">
             {state.status === "already"
               ? "Your contribution has been recorded."
               : "Your contribution has been recorded."}
@@ -172,14 +172,14 @@ export default function ThanksPage(): React.ReactElement {
           {/* Receipt summary */}
           <div className="mt-4 rounded-2xl glass-2 p-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[#62748e]">Contribution (to recipient)</span>
+              <span className="text-[#4f5f74]">Contribution (to recipient)</span>
               <span className="font-medium text-[#2B2B2B]">
                 {formatCurrency(state.contributionCents, state.currency)}
               </span>
             </div>
 
             <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-[#62748e]">Desira service fee</span>
+              <span className="text-[#4f5f74]">Desira service fee</span>
               <span className="font-medium text-[#2B2B2B]">
                 {formatCurrency(state.feeCents, state.currency)}
               </span>
@@ -192,7 +192,7 @@ export default function ThanksPage(): React.ReactElement {
               </span>
             </div>
 
-            <div className="mt-2 text-xs text-[#62748e]">
+            <div className="mt-2 text-xs text-[#4f5f74]">
               Recipient receives the contribution amount. Fee helps cover payment
               processing.
             </div>
@@ -224,3 +224,4 @@ export default function ThanksPage(): React.ReactElement {
     </GlassCard>
   );
 }
+

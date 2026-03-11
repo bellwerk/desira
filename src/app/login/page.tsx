@@ -119,7 +119,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
           <p className="mt-2 text-center text-sm font-medium leading-snug text-[#452c37]/90 sm:mt-3 sm:text-base">
             Sign in to create, manage, and share your wishlists.
           </p>
-          <p className="mt-1 text-center text-[13px] leading-snug text-[#FCF8F7] sm:mt-1.5 sm:text-sm">
+          <p className="mt-1 text-center text-[13px] leading-snug text-[#3f2f38]/85 sm:mt-1.5 sm:text-sm">
             Guests don&apos;t need an account to view shared lists.
           </p>
         </header>
@@ -202,13 +202,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
         </section>
 
         <footer className="mt-6 px-2 text-center sm:mt-8">
-          <p className="text-[11px] leading-relaxed text-white/50 sm:text-xs">
+          <p className="text-[11px] leading-relaxed text-white/75 sm:text-xs">
             This site is protected by reCAPTCHA and the Google{" "}
             <a
               href="https://policies.google.com/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 transition-colors hover:text-white/70"
+              className="underline underline-offset-2 transition-colors hover:text-white/85"
             >
               Privacy Policy
             </a>{" "}
@@ -217,7 +217,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
               href="https://policies.google.com/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 transition-colors hover:text-white/70"
+              className="underline underline-offset-2 transition-colors hover:text-white/85"
             >
               Terms of Service
             </a>{" "}
@@ -228,3 +228,4 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
     </div>
   );
 }
+

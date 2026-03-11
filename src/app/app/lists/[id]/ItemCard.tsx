@@ -10,6 +10,7 @@ import { ModalShell } from "@/components/ModalShell";
 import { GlassCard, ProgressBar, useToastActions } from "@/components/ui";
 import { getItemRedirectPath } from "@/lib/affiliate";
 import { formatCurrency } from "@/lib/currency";
+import { isReceivedItemStatus } from "@/lib/item-status";
 import { deleteItem, toggleMostDesired } from "../actions";
 import { EditItemModal } from "./EditItemModal";
 
@@ -90,7 +91,7 @@ export function ItemCard({
 
   // Business rule: disable buy-lock if contributions exist
   const hasContributions = fundedAmount > 0;
-  const isReceived = item.status === "received" || undoExpiresAt !== null;
+  const isReceived = isReceivedItemStatus(item.status) || undoExpiresAt !== null;
 
   useEffect(() => {
     if (!isOwner || isPreview) {
@@ -385,8 +386,8 @@ export function ItemCard({
 
           {/* Private note (owner only) */}
           {item.note_private && isOwner && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-amber-900">
+            <div className="rounded-lg border border-amber-700 bg-amber-800 px-2 py-1.5 sm:px-3 sm:py-2">
+              <p className="text-[9px] text-amber-50 sm:text-[10px] md:text-xs">
                 <span className="font-semibold">Private note:</span> {item.note_private}
               </p>
             </div>

@@ -80,7 +80,7 @@ export default async function ExplorePage(): Promise<React.ReactElement> {
 
       {typedLists.length === 0 ? (
         <GlassCard className="rounded-3xl p-8 text-center">
-          <p className="text-sm text-[#2b2b2b]/70">No public lists yet. Check back soon.</p>
+          <p className="text-sm text-[#4a4a4a]">No public lists yet. Check back soon.</p>
         </GlassCard>
       ) : (
         <>
@@ -128,7 +128,7 @@ function ListCard({
   return (
     <GlassCard className="rounded-3xl p-5">
       <h3 className="line-clamp-2 text-lg font-semibold text-[#2b2b2b]">{list.title}</h3>
-      {list.occasion && <p className="mt-1 text-xs text-[#2b2b2b]/65">Occasion: {list.occasion}</p>}
+      {list.occasion && <p className="mt-1 text-xs text-[#4f4f4f]">Occasion: {list.occasion}</p>}
       <p className="mt-3 text-sm text-[#2b2b2b]/75">By {displayName}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
@@ -149,3 +149,4 @@ function ListCard({
     </GlassCard>
   );
 }
+

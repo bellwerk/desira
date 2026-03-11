@@ -26,6 +26,8 @@ const STATIC_PUBLIC_PATHS = [
   "/about",
   "/contact",
 ];
+const PROFILE_ID_BATCH_SIZE = 200;
+const PROFILE_PAGE_SIZE = 200;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -64,18 +66,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   if (ownerIds.length > 0) {
-    const { data: profiles } = await supabaseAdmin
-      .from("profiles")
-      .select("id, handle, created_at")
-      .in("id", ownerIds);
+    const seenProfileIds = new Set<string>();
 
-    for (const profile of (profiles ?? []) as ProfileRow[]) {
-      entries.push({
-        url: toPublicUrl(`/@/${profile.handle}`),
-        lastModified: new Date(profile.created_at),
-        changeFrequency: "weekly",
-        priority: 0.7,
-      });
+    for (let batchStart = 0; batchStart < ownerIds.length; batchStart += PROFILE_ID_BATCH_SIZE) {
+      const ownerBatch = ownerIds.slice(batchStart, batchStart + PROFILE_ID_BATCH_SIZE);
+      let pageStart = 0;
+
+      while (true) {
+        const { data: profiles, error: profilesError } = await supabaseAdmin
+          .from("profiles")
+          .select("id, handle, created_at")
+          .in("id", ownerBatch)
+          .range(pageStart, pageStart + PROFILE_PAGE_SIZE - 1);
+
+        if (profilesError || !profiles) {
+          break;
+        }
+
+        const typedProfiles = profiles as ProfileRow[];
+
+        for (const profile of typedProfiles) {
+          if (!profile.handle || seenProfileIds.has(profile.id)) {
+            continue;
+          }
+
+          seenProfileIds.add(profile.id);
+          entries.push({
+            url: toPublicUrl(`/@/${profile.handle}`),
+            lastModified: new Date(profile.created_at),
+            changeFrequency: "weekly",
+            priority: 0.7,
+          });
+        }
+
+        if (typedProfiles.length < PROFILE_PAGE_SIZE) {
+          break;
+        }
+
+        pageStart += PROFILE_PAGE_SIZE;
+      }
     }
   }
 

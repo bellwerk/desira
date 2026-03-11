@@ -130,7 +130,7 @@ export function BugReportForm(): React.ReactElement {
         <GlassButton type="submit" variant="primary" loading={isSubmitting} disabled={isSubmitting}>
           Submit report
         </GlassButton>
-        <span className="text-xs text-[#2b2b2b]/60">Current page: {pagePath || "N/A"}</span>
+        <span className="text-xs text-[#4f4f4f]">Current page: {pagePath || "N/A"}</span>
       </div>
 
       {resultMessage && (
@@ -141,3 +141,4 @@ export function BugReportForm(): React.ReactElement {
     </form>
   );
 }
+

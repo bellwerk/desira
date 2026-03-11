@@ -62,7 +62,7 @@ export function Spinner({
 export function PageSpinner({ label = "Loading..." }: { label?: string }): ReactElement {
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <Spinner size="lg" label={label} className="text-slate-500 dark:text-slate-400" />
+      <Spinner size="lg" label={label} className="text-slate-700 dark:text-slate-200" />
     </div>
   );
 }

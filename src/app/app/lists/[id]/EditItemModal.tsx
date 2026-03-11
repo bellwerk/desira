@@ -154,7 +154,7 @@ export function EditItemModal({
           </div>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white"
           >
             <svg
               className="h-5 w-5"
@@ -403,3 +403,4 @@ export function EditItemModal({
     </div>
   );
 }
+

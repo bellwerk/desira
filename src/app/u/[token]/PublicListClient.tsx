@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ItemCardMedia } from "@/components/item-card/ItemCardMedia";
 import { LinkedItemTitle } from "@/components/item-card/LinkedItemTitle";
 import { MostDesiredBadge } from "@/components/item-card/MostDesiredBadge";
-import { BadgeChip, GlassCard, ProgressBar } from "@/components/ui";
+import { BadgeChip, GlassCard, ProgressBar, useToastActions } from "@/components/ui";
 import { ItemActions } from "@/components/ItemActions";
 import { getItemRedirectPath } from "@/lib/affiliate";
 import { formatCurrency } from "@/lib/currency";
@@ -75,6 +75,33 @@ export function PublicListClient({
   const [pendingPurchaseItem, setPendingPurchaseItem] = useState<PendingPurchaseItem | null>(null);
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [isMarkingPurchased, setIsMarkingPurchased] = useState(false);
+  const [isCancelingHold, setIsCancelingHold] = useState(false);
+  const toast = useToastActions();
+
+  function getStoredCancelToken(itemId: string): string | undefined {
+    try {
+      const raw = localStorage.getItem(`desira_cancel_${itemId}`);
+      if (!raw) {
+        return undefined;
+      }
+      const parsed = JSON.parse(raw) as { cancel_token?: string };
+      if (typeof parsed.cancel_token === "string" && parsed.cancel_token.length > 10) {
+        return parsed.cancel_token;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function clearLocalReservationState(itemId: string): void {
+    try {
+      localStorage.removeItem(`desira_cancel_${itemId}`);
+      localStorage.removeItem(`desira_pending_purchase_${itemId}`);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+  }
 
   useEffect(() => {
     const deviceToken = getOrCreateDeviceToken();
@@ -232,18 +259,7 @@ export function PublicListClient({
     }
 
     setIsMarkingPurchased(true);
-    let cancelToken: string | undefined;
-    try {
-      const raw = localStorage.getItem(`desira_cancel_${pendingPurchaseItem.item_id}`);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { cancel_token?: string };
-        if (typeof parsed.cancel_token === "string" && parsed.cancel_token.length > 10) {
-          cancelToken = parsed.cancel_token;
-        }
-      }
-    } catch {
-      // Ignore malformed local storage values.
-    }
+    const cancelToken = getStoredCancelToken(pendingPurchaseItem.item_id);
 
     const res = await fetch(`/api/gifts/${pendingPurchaseItem.item_id}/mark-purchased`, {
       method: "POST",
@@ -261,12 +277,7 @@ export function PublicListClient({
       return;
     }
 
-    try {
-      localStorage.removeItem(`desira_cancel_${pendingPurchaseItem.item_id}`);
-      localStorage.removeItem(`desira_pending_purchase_${pendingPurchaseItem.item_id}`);
-    } catch {
-      // Ignore storage cleanup failures.
-    }
+    clearLocalReservationState(pendingPurchaseItem.item_id);
 
     queueMicrotask(() => {
       setPendingPurchaseItem(null);
@@ -289,6 +300,62 @@ export function PublicListClient({
     }).catch(() => {
       // Ignore analytics failures.
     });
+  }
+
+  async function cancelPendingReservation(): Promise<void> {
+    if (!pendingPurchaseItem || isCancelingHold || isMarkingPurchased) {
+      return;
+    }
+
+    const deviceToken = getOrCreateDeviceToken();
+    if (!deviceToken) {
+      toast.error("Could not initialize this browser session.");
+      return;
+    }
+
+    setIsCancelingHold(true);
+    const targetItem = pendingPurchaseItem;
+
+    try {
+      const cancelToken = getStoredCancelToken(targetItem.item_id);
+      const cancelRes = await fetch(`/api/gifts/${targetItem.item_id}/cancel-reservation`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          deviceToken,
+          cancelToken,
+          share_token: token,
+        }),
+      });
+      const cancelJson = await cancelRes.json().catch(() => ({}));
+
+      if (!cancelRes.ok) {
+        if (cancelRes.status === 403 || cancelRes.status === 409) {
+          clearLocalReservationState(targetItem.item_id);
+          setPendingPurchaseItem(null);
+          setDismissedBanner(false);
+          toast.warning(
+            "This hold is no longer active for this browser. Refreshed gift status."
+          );
+          router.refresh();
+          return;
+        }
+        toast.error(cancelJson?.error ?? "Could not undo this hold right now.");
+        return;
+      }
+
+      clearLocalReservationState(targetItem.item_id);
+      queueMicrotask(() => {
+        setPendingPurchaseItem(null);
+        setDismissedBanner(false);
+      });
+      toast.success("Hold removed. This gift is available again.");
+      router.refresh();
+    } catch {
+      toast.error("Network error while undoing this hold. Please retry.");
+    } finally {
+      setIsCancelingHold(false);
+    }
   }
 
   function isItemReceived(item: ItemRow): boolean {
@@ -379,20 +446,31 @@ export function PublicListClient({
                 })()
               ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => {
                   void markPendingPurchase();
                 }}
-                disabled={isMarkingPurchased}
+                disabled={isMarkingPurchased || isCancelingHold}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-[#2b2b2b] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isMarkingPurchased ? "Saving..." : "Mark purchased"}
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  void cancelPendingReservation();
+                }}
+                disabled={isMarkingPurchased || isCancelingHold}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#FF6F59]/60 bg-[#FFF0EC] px-4 text-sm font-semibold text-[#a03a2c] transition-colors hover:bg-[#FFE3DC] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCancelingHold ? "Undoing..." : "Undo hold"}
+              </button>
+              <button
+                type="button"
                 onClick={() => setDismissedBanner(true)}
+                disabled={isMarkingPurchased || isCancelingHold}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[#2b2b2b]/20 bg-white px-4 text-sm font-medium text-[#2b2b2b] transition-colors hover:bg-[#f4f4f4]"
               >
                 Not yet

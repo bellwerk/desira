@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { CopyButton } from "@/components/CopyButton";
+import { useToastActions } from "@/components/ui";
 import QRCode from "qrcode";
 
 type ShareCardProps = {
@@ -15,9 +16,11 @@ export function ShareCard({
   shareUrl,
   listTitle,
 }: ShareCardProps): React.ReactElement {
+  const toast = useToastActions();
   const collapseStorageKey = `desira_share_link_collapsed_${shareToken}`;
   const [showQR, setShowQR] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [isNativeSharePending, setIsNativeSharePending] = useState(false);
   const [isLinkCollapsed, setIsLinkCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem(collapseStorageKey) === "1";
@@ -34,6 +37,41 @@ export function ShareCard({
       localStorage.setItem(collapseStorageKey, "1");
     } catch {
       // Ignore storage failures and keep UI state only.
+    }
+    toast.success("Link copied.");
+  }
+
+  async function handleNativeShare(): Promise<void> {
+    if (isNativeSharePending) return;
+
+    const shareData = {
+      title: listTitle,
+      text: `Check out my wishlist: ${listTitle}`,
+      url: shareUrl,
+    };
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      setIsNativeSharePending(true);
+      try {
+        await navigator.share(shareData);
+        toast.success("Share sheet opened.");
+      } catch (error) {
+        if (
+          !(error instanceof DOMException && error.name === "AbortError")
+        ) {
+          toast.error("Could not open the share sheet.");
+        }
+      } finally {
+        setIsNativeSharePending(false);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      handleLinkCopied();
+    } catch {
+      toast.error("Could not copy link to clipboard.");
     }
   }
 
@@ -69,14 +107,13 @@ export function ShareCard({
     <>
       <div className="space-y-5">
         {/* Description */}
-        <p className="text-white/70 text-center font-[family-name:var(--font-urbanist)]">
+        <p className="text-white/85 text-center font-[family-name:var(--font-urbanist)]">
           Anyone with this link can view gifts, buy, or contribute.
         </p>
 
         {/* URL display and actions */}
-        <div className="flex items-center gap-2">
-          {/* URL display */}
-          <div className="flex-1 rounded-xl bg-[#3a3a3a] px-4 py-3">
+        <div className="space-y-3">
+          <div className="rounded-xl bg-[#3a3a3a] px-4 py-3">
             {isLinkCollapsed ? (
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm text-white/90 font-[family-name:var(--font-urbanist)]">
@@ -91,63 +128,57 @@ export function ShareCard({
                 </button>
               </div>
             ) : (
-              <code className="text-white/90 text-sm font-mono truncate block font-[family-name:var(--font-urbanist)]">
+              <code className="block truncate font-mono text-sm text-white/90 font-[family-name:var(--font-urbanist)]">
                 /u/{shareToken}
               </code>
             )}
           </div>
-          
-          <CopyButton text={shareUrl} variant="dark" onCopied={handleLinkCopied} />
-          
-          {/* QR Code button */}
-          <button
-            onClick={() => setShowQR(true)}
-            className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-[#4a4a4a] hover:bg-[#5a5a5a] text-white transition-colors"
-            title="Show QR code"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 4.5h4.5v4.5h-4.5v-4.5Zm0 10.5h4.5v4.5h-4.5v-4.5Zm10.5-10.5h4.5v4.5h-4.5v-4.5ZM12 12h1.5v3H12v-3Zm3 0h3v3h-3v-3Zm0 4.5h3v3h-3v-3Zm-3 0h1.5v1.5H12v-1.5Zm-6.75-6h1.5v1.5h-1.5v-1.5Zm10.5 0h1.5v1.5h-1.5v-1.5Z"
-              />
-            </svg>
-          </button>
 
-          {/* Open in new tab */}
-          <a
-            href={`/u/${shareToken}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-[#4a4a4a] hover:bg-[#5a5a5a] text-white transition-colors"
-            title="Open public preview"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <CopyButton
+              text={shareUrl}
+              variant="dark"
+              onCopied={handleLinkCopied}
+              idleLabel="Copy public link"
+              copiedLabel="Link copied"
+              className="w-full justify-center sm:w-auto sm:px-5"
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                void handleNativeShare();
+              }}
+              disabled={isNativeSharePending}
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#4a4a4a] px-4 text-sm font-medium text-white transition-colors hover:bg-[#5a5a5a] disabled:cursor-not-allowed disabled:bg-[#5a5a5a] font-[family-name:var(--font-urbanist)] sm:w-auto"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-              />
-            </svg>
-          </a>
+              {isNativeSharePending ? "Opening share..." : "Share list"}
+            </button>
+
+            <a
+              href={`/u/${shareToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-transparent px-4 text-sm font-medium text-white transition-colors hover:bg-white/10 font-[family-name:var(--font-urbanist)] sm:w-auto"
+            >
+              Preview public list
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setShowQR(true)}
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#4a4a4a] px-4 text-sm font-medium text-white transition-colors hover:bg-[#5a5a5a] font-[family-name:var(--font-urbanist)] sm:w-auto"
+              title="Show QR code"
+            >
+              Show QR code
+            </button>
+          </div>
         </div>
 
         {/* Social share buttons */}
         <div>
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <span className="text-sm text-white/60 mr-1 font-[family-name:var(--font-urbanist)]">
+            <span className="text-sm text-white/80 mr-1 font-[family-name:var(--font-urbanist)]">
               Quick share:
             </span>
             
@@ -215,7 +246,7 @@ export function ShareCard({
           <div className="relative rounded-[30px] bg-[#2b2b2b] p-6 shadow-2xl animate-modal-in max-w-sm w-full text-center">
             <button
               onClick={() => setShowQR(false)}
-              className="absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white"
+              className="absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -226,7 +257,7 @@ export function ShareCard({
               <h3 className="text-xl font-bold text-white" style={{ fontFamily: "Asul" }}>
                 Scan to view list
               </h3>
-              <p className="mt-1 text-sm text-white/70 font-[family-name:var(--font-urbanist)]">
+              <p className="mt-1 text-sm text-white/85 font-[family-name:var(--font-urbanist)]">
                 Point your phone camera at this code
               </p>
             </div>
@@ -250,7 +281,7 @@ export function ShareCard({
               )}
             </div>
 
-            <p className="text-xs text-white/60 break-all font-[family-name:var(--font-urbanist)]">
+            <p className="text-xs text-white/80 break-all font-[family-name:var(--font-urbanist)]">
               {shareUrl}
             </p>
           </div>
@@ -259,3 +290,4 @@ export function ShareCard({
     </>
   );
 }
+

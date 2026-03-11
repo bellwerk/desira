@@ -45,9 +45,10 @@ export function PageHeader({
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-2 text-sm font-medium text-[#2b2b2b]/70">{subtitle}</p>
+          <p className="mt-2 text-sm font-medium text-[#4a4a4a]">{subtitle}</p>
         )}
       </div>
     </header>
   );
 }
+

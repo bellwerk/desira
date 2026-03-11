@@ -241,7 +241,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
         >
           <svg
             className="h-4 w-4"
@@ -291,7 +291,12 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
               <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
               </svg>
-              <span>{previewError}</span>
+              <div className="space-y-1">
+                <p>{previewError}</p>
+                <p className="text-xs text-amber-100/90">
+                  Continue with manual entry: URL, title, image, and price.
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -323,7 +328,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
           {/* Product URL */}
           <div>
             <label htmlFor="product_url" className="block text-sm font-medium text-white mb-2 font-[family-name:var(--font-urbanist)]">
-              Product URL <span className="text-white/40">(optional)</span>
+              Product URL <span className="text-white/85">(optional)</span>
             </label>
             <input
               type="url"
@@ -377,7 +382,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                 min="0"
                 step="0.01"
                 placeholder="0.00"
-                className={`flex-1 bg-transparent border-0 px-3 py-3.5 text-white placeholder:text-white/40 focus:outline-none font-[family-name:var(--font-urbanist)] ${getAutofillClass("price")}`}
+                className={`flex-1 bg-transparent border-0 px-3 py-3.5 text-white placeholder:text-white/85 focus:outline-none font-[family-name:var(--font-urbanist)] ${getAutofillClass("price")}`}
               />
             </div>
           </div>
@@ -462,7 +467,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (
-                <svg className="h-6 w-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-6 w-6 text-white/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.158 0a.225.225 0 11-.45 0 .225.225 0 01.45 0z" />
                 </svg>
               )}
@@ -498,7 +503,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   }}
                 />
               ) : null}
-              <svg className={`h-6 w-6 text-white/70 ${imageOption === "url" && manualImageUrl ? "hidden" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className={`h-6 w-6 text-white/85 ${imageOption === "url" && manualImageUrl ? "hidden" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
               </svg>
               {imageOption === "url" && (
@@ -521,7 +526,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   : "bg-[#3a3a3a] hover:bg-[#4a4a4a]"
               }`}
             >
-              <svg className="h-6 w-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-6 w-6 text-white/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
               {imageOption === "none" && (
@@ -560,7 +565,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         >
           <svg
             className={`h-5 w-5 transition-colors ${
-              isMostDesired ? "text-yellow-400 fill-yellow-400" : "text-white/50"
+              isMostDesired ? "text-yellow-400 fill-yellow-400" : "text-white/75"
             }`}
             viewBox="0 0 24 24"
             fill={isMostDesired ? "currentColor" : "none"}
@@ -578,7 +583,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-full bg-[#9D8DF1] py-3.5 text-center text-base font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#8A7AE0] hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 font-[family-name:var(--font-urbanist)]"
+          className="w-full rounded-full bg-[var(--primary)] py-3.5 text-center text-base font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[var(--primary-dark)] hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 font-[family-name:var(--font-urbanist)]"
         >
           {isPending ? (
             <span className="inline-flex items-center gap-2 justify-center">
@@ -607,7 +612,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
         {/* Purple pill button */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-[#9d8df1] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#8a7be0] active:scale-[0.98]"
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[var(--primary-dark)] active:scale-[0.98]"
         >
           <svg
             className="h-4 w-4"
@@ -642,7 +647,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   {/* Close button */}
                   <button
                     onClick={handleClose}
-                    className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
+                    className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
                   >
                     <svg
                       className="h-4 w-4"
@@ -668,7 +673,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   </h2>
 
                   {/* Subtitle */}
-                  <p className="text-white/70 text-center mb-6 font-[family-name:var(--font-urbanist)]">
+                  <p className="text-white/85 text-center mb-6 font-[family-name:var(--font-urbanist)]">
                     Paste a link from anywhere on the web
                   </p>
 
@@ -679,7 +684,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                     onChange={(e) => setModalUrl(e.target.value)}
                     placeholder="https://"
                     autoFocus
-                    className="w-full rounded-xl bg-[#3a3a3a] border-0 px-4 py-3.5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50 mb-4 font-[family-name:var(--font-urbanist)]"
+                    className="w-full rounded-xl bg-[#3a3a3a] border-0 px-4 py-3.5 text-white placeholder:text-white/85 focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50 mb-4 font-[family-name:var(--font-urbanist)]"
                   />
 
                   {/* Next Button */}
@@ -691,7 +696,7 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
                   </button>
 
                   {/* Add Manually link */}
-                  <p className="text-center mt-5 text-white/60 font-[family-name:var(--font-urbanist)]">
+                  <p className="text-center mt-5 text-white/80 font-[family-name:var(--font-urbanist)]">
                     Don&apos;t have a link?{" "}
                     <button
                       onClick={handleAddManually}
@@ -717,3 +722,4 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
   // Non-standalone mode (used inside parent modal): just render the form
   return formContent;
 }
+

@@ -4,6 +4,7 @@ import { GlassCard } from "@/components/ui";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { PopularGiftIdeas } from "@/components/PopularGiftIdeas";
+import { isReceivedItemStatus } from "@/lib/item-status";
 import { ListCardWrapper } from "./ListCardWrapper";
 import { ShareProfileButton } from "./ShareProfileButton";
 
@@ -241,7 +242,7 @@ export default async function ListsPage({
                 <h3 className="font-asul text-2xl leading-tight text-[#2b2b2b] sm:text-[30px]">
                   Your Lists
                 </h3>
-                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#2b2b2b]/70">
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#4a4a4a]">
                   {visibleOwnedLists.length}
                   {query || scope !== "all" ? ` / ${ownedLists.length}` : ""}
                 </span>
@@ -250,7 +251,7 @@ export default async function ListsPage({
                 {visibleOwnedLists.map((list) => {
                   const listItems = itemsByList[list.id] || [];
                   const totalWishes = listItems.length;
-                  const receivedCount = listItems.filter((i) => i.status === "received").length;
+                  const receivedCount = listItems.filter((i) => isReceivedItemStatus(i.status)).length;
 
                   return (
                     <ListCardWrapper
@@ -273,7 +274,7 @@ export default async function ListsPage({
                 <h3 className="font-asul text-2xl leading-tight text-[#2b2b2b] sm:text-[30px]">
                   Shared With You
                 </h3>
-                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#2b2b2b]/70">
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-[#4a4a4a]">
                   {visibleSharedLists.length}
                   {query || scope !== "all" ? ` / ${sharedLists.length}` : ""}
                 </span>
@@ -282,7 +283,7 @@ export default async function ListsPage({
                 {visibleSharedLists.map((list) => {
                   const listItems = itemsByList[list.id] || [];
                   const totalWishes = listItems.length;
-                  const receivedCount = listItems.filter((i) => i.status === "received").length;
+                  const receivedCount = listItems.filter((i) => isReceivedItemStatus(i.status)).length;
 
                   return (
                     <ListCardWrapper
@@ -301,7 +302,7 @@ export default async function ListsPage({
 
           {visibleListCount === 0 && (
             <GlassCard className="rounded-2xl px-4 py-4 text-center">
-              <p className="text-sm text-[#2b2b2b]/70">
+              <p className="text-sm text-[#4a4a4a]">
                 No lists match your current search filters.
               </p>
             </GlassCard>
@@ -309,7 +310,7 @@ export default async function ListsPage({
 
           {ownedLists.length === 0 && (
             <GlassCard className="rounded-2xl px-4 py-3 text-center">
-              <p className="text-sm text-[#2b2b2b]/70">
+              <p className="text-sm text-[#4a4a4a]">
                 You don&apos;t own a list yet. Create one to start sharing.
               </p>
             </GlassCard>
@@ -319,3 +320,4 @@ export default async function ListsPage({
     </div>
   );
 }
+

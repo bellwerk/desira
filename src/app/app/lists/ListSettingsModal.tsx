@@ -112,7 +112,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/70 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4a4a4a] text-white/85 transition-colors hover:bg-[#5a5a5a] hover:text-white sm:right-4 sm:top-4"
         >
           <svg
             className="h-4 w-4"
@@ -178,7 +178,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                   defaultChecked={list.recipient_type === "person"}
                   className="peer sr-only"
                 />
-                <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-6 w-6 text-white/80 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
                 <p className="text-xs font-medium text-white/80">Wishlist</p>
@@ -192,7 +192,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                   defaultChecked={list.recipient_type === "group" || list.recipient_type === "shopping"}
                   className="peer sr-only"
                 />
-                <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-6 w-6 text-white/80 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                 </svg>
                 <p className="text-xs font-medium text-white/80">Registry</p>
@@ -206,7 +206,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
                   defaultChecked={list.recipient_type === "personal"}
                   className="peer sr-only"
                 />
-                <svg className="h-6 w-6 text-white/60 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-6 w-6 text-white/80 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386a1.125 1.125 0 011.098.883l.383 1.532m0 0 1.492 5.967a1.125 1.125 0 001.091.851h8.61a1.125 1.125 0 001.091-.851l1.005-4.019a1.125 1.125 0 00-1.091-1.399H5.117zm3.633 11.335a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Zm8.25 0a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0Z" />
                 </svg>
                 <p className="text-xs font-medium text-white/80">Personal</p>
@@ -235,7 +235,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           {/* Occasion */}
           <div>
             <label htmlFor="occasion" className="block text-sm font-medium text-white/90 mb-2">
-              Occasion <span className="text-white/40">(optional)</span>
+              Occasion <span className="text-white/85">(optional)</span>
             </label>
             <input
               type="text"
@@ -251,7 +251,7 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           {/* Event Date */}
           <div>
             <label htmlFor="event_date" className="block text-sm font-medium text-white/90 mb-2">
-              Event date <span className="text-white/40">(optional)</span>
+              Event date <span className="text-white/85">(optional)</span>
             </label>
             <input
               type="date"
@@ -263,46 +263,52 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
           </div>
 
           {/* Feature toggles */}
-          <div className="rounded-[20px] bg-[#3a3a3a] p-4">
-            <p className="text-sm font-medium text-white/90 mb-3">Features</p>
+          <div className="rounded-[20px] border border-white/15 bg-[#3a3a3a] p-4">
+            <p className="mb-3 text-sm font-semibold text-white">Gift control</p>
             <div className="space-y-3">
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-white/20 hover:bg-white/5">
                 <input
                   type="checkbox"
                   name="allow_reservations"
                   value="true"
                   defaultChecked={list.allow_reservations}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50"
+                  className="mt-0.5 h-4 w-4 rounded border-white/25 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Allow buy marks</p>
-                  <p className="text-xs text-white/60">People can mark gifts as bought to avoid duplicates</p>
+                  <p className="text-sm font-semibold text-white">Allow buy marks</p>
+                  <p className="text-xs text-white/80 transition-colors group-hover:text-white">
+                    People can mark gifts as bought to avoid duplicates
+                  </p>
                 </div>
               </label>
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-white/20 hover:bg-white/5">
                 <input
                   type="checkbox"
                   name="allow_contributions"
                   value="true"
                   defaultChecked={list.allow_contributions}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50"
+                  className="mt-0.5 h-4 w-4 rounded border-white/25 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Allow contributions</p>
-                  <p className="text-xs text-white/60">People can contribute money toward items</p>
+                  <p className="text-sm font-semibold text-white">Allow contributions</p>
+                  <p className="text-xs text-white/80 transition-colors group-hover:text-white">
+                    People can contribute money toward items
+                  </p>
                 </div>
               </label>
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-white/20 hover:bg-white/5">
                 <input
                   type="checkbox"
                   name="allow_anonymous"
                   value="true"
                   defaultChecked={list.allow_anonymous}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50"
+                  className="mt-0.5 h-4 w-4 rounded border-white/25 bg-[#2b2b2b] text-[#9d8df1] focus:ring-[#9d8df1]/50 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Allow anonymous</p>
-                  <p className="text-xs text-white/60">Contributors can remain anonymous</p>
+                  <p className="text-sm font-semibold text-white">Allow anonymous givers</p>
+                  <p className="text-xs text-white/80 transition-colors group-hover:text-white">
+                    Contributors can remain anonymous
+                  </p>
                 </div>
               </label>
             </div>
@@ -390,3 +396,4 @@ export function ListSettingsModal({ list, isOpen, onClose }: ListSettingsModalPr
     </div>
   );
 }
+

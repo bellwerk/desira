@@ -171,7 +171,7 @@ export default function PayPage(): React.ReactElement {
       </h1>
 
       {state.status === "loading" ? (
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#62748e]">
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#4f5f74]">
           <Spinner size="sm" />
           <span>Loading...</span>
         </div>
@@ -180,14 +180,14 @@ export default function PayPage(): React.ReactElement {
           {/* Summary */}
           <div className="mt-4 rounded-2xl glass-2 p-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[#62748e]">Contribution</span>
+              <span className="text-[#4f5f74]">Contribution</span>
               <span className="font-medium text-[#2B2B2B]">
                 {formatCurrency(draft.amount_cents, draft.currency)}
               </span>
             </div>
 
             <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-[#62748e]">Desira service fee</span>
+              <span className="text-[#4f5f74]">Desira service fee</span>
               <span className="font-medium text-[#2B2B2B]">
                 {formatCurrency(draft.fee_cents, draft.currency)}
               </span>
@@ -200,7 +200,7 @@ export default function PayPage(): React.ReactElement {
               </span>
             </div>
 
-            <div className="mt-2 text-xs text-[#62748e]">
+            <div className="mt-2 text-xs text-[#4f5f74]">
               Payments processed by Stripe. Desira doesn&apos;t store card details.
             </div>
           </div>
@@ -232,3 +232,4 @@ export default function PayPage(): React.ReactElement {
     </GlassCard>
   );
 }
+

@@ -160,7 +160,7 @@ export function LoginForm(): React.ReactElement {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email or username"
             aria-describedby={error ? "form-error" : undefined}
-            className="block w-full rounded-xl border border-white/50 px-4 py-3 text-[15px] text-slate-800 placeholder-slate-400 shadow-sm transition-all focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="block w-full rounded-xl border border-white/50 px-4 py-3 text-[15px] text-slate-800 placeholder-slate-500 shadow-sm transition-all focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
             style={glassInputStyle}
           />
         </div>
@@ -182,7 +182,7 @@ export function LoginForm(): React.ReactElement {
               minLength={6}
               placeholder="Enter your password"
               aria-describedby={error ? "form-error" : undefined}
-              className="block w-full rounded-xl border border-white/50 px-4 py-3 text-[15px] text-slate-800 placeholder-slate-400 shadow-sm transition-all focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="block w-full rounded-xl border border-white/50 px-4 py-3 text-[15px] text-slate-800 placeholder-slate-500 shadow-sm transition-all focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
               style={glassInputStyle}
             />
           </div>
@@ -300,3 +300,4 @@ export function LoginForm(): React.ReactElement {
     </div>
   );
 }
+

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { extractGreetingFirstName } from "@/lib/profile";
 import { PopularGiftIdeas } from "@/components/PopularGiftIdeas";
 import { GlassCard } from "@/components/ui";
 
@@ -100,7 +101,7 @@ function ListTypeCard({
       </p>
 
       {/* Descriptor */}
-      <p className="relative z-10 mt-[20px] min-h-[44px] max-w-[12.75rem] rounded-full bg-white/85 px-6 py-2 text-center text-[14px] font-medium leading-[13px] text-[#2b2b2b]/70 shadow-sm backdrop-blur-sm transition-colors duration-300 group-hover:text-[#2b2b2b]/60 font-[family-name:var(--font-urbanist)]">
+      <p className="relative z-10 mt-[20px] min-h-[44px] max-w-[12.75rem] rounded-full bg-white/85 px-6 py-2 text-center text-[14px] font-medium leading-[13px] text-[#4a4a4a] shadow-sm backdrop-blur-sm transition-colors duration-300 group-hover:text-[#4f4f4f] font-[family-name:var(--font-urbanist)]">
         {descriptor}
       </p>
     </Link>
@@ -117,7 +118,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   }
 
   // Fetch profile to get display name - use maybeSingle to handle missing profiles
-  let displayName = userData?.user?.email?.split("@")[0] ?? "there";
+  let greetingFirstName = extractGreetingFirstName(userData?.user?.email?.split("@")[0] ?? null);
   try {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
@@ -128,7 +129,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     if (profileError) {
       console.error("[DashboardPage] Profile fetch error:", profileError.message, profileError.code);
     } else if (profile?.display_name) {
-      displayName = profile.display_name;
+      greetingFirstName = extractGreetingFirstName(profile.display_name);
     }
   } catch (err) {
     console.error("[DashboardPage] Profile fetch exception:", err);
@@ -195,7 +196,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     <div className="relative flex min-h-full flex-col items-center justify-start pt-6 text-[#2b2b2b] sm:pt-10">
       {/* Greeting */}
       <h1 className="px-3 text-center font-asul text-[32px] leading-tight text-[#2b2b2b] sm:text-[42px]">
-        Hey {displayName}, let&apos;s make some wishes happen!
+        Hey {greetingFirstName}, let&apos;s make some wishes happen!
       </h1>
 
       {memberLists.length > 0 ? (
@@ -206,7 +207,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 <h2 className="font-asul text-[26px] leading-tight text-[#2b2b2b] sm:text-[30px]">
                   Your lists at a glance
                 </h2>
-                <p className="mt-1 text-sm text-[#2b2b2b]/70 font-[family-name:var(--font-urbanist)]">
+                <p className="mt-1 text-sm text-[#4a4a4a] font-[family-name:var(--font-urbanist)]">
                   Jump back into your most recent lists or start a new one.
                 </p>
               </div>
@@ -220,15 +221,15 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
 
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/75 px-4 py-3 text-left">
-                <p className="text-xs text-[#2b2b2b]/65">Total lists</p>
+                <p className="text-xs text-[#4f4f4f]">Total lists</p>
                 <p className="mt-1 text-2xl font-semibold text-[#2b2b2b]">{memberLists.length}</p>
               </div>
               <div className="rounded-2xl bg-white/75 px-4 py-3 text-left">
-                <p className="text-xs text-[#2b2b2b]/65">Owned by you</p>
+                <p className="text-xs text-[#4f4f4f]">Owned by you</p>
                 <p className="mt-1 text-2xl font-semibold text-[#2b2b2b]">{ownedLists.length}</p>
               </div>
               <div className="rounded-2xl bg-white/75 px-4 py-3 text-left">
-                <p className="text-xs text-[#2b2b2b]/65">Shared/public links</p>
+                <p className="text-xs text-[#4f4f4f]">Shared/public links</p>
                 <p className="mt-1 text-2xl font-semibold text-[#2b2b2b]">{shareableLists.length}</p>
               </div>
             </div>
@@ -251,11 +252,11 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[#2b2b2b]">{list.title}</p>
-                      <p className="mt-0.5 text-xs text-[#2b2b2b]/65">
+                      <p className="mt-0.5 text-xs text-[#4f4f4f]">
                         {isOwner ? "Owned by you" : "Shared with you"} · {visibilityLabel}
                       </p>
                     </div>
-                    <span className="ml-3 shrink-0 text-xs font-medium text-[#2b2b2b]/60">
+                    <span className="ml-3 shrink-0 text-xs font-medium text-[#4f4f4f]">
                       Open
                     </span>
                   </Link>
@@ -264,14 +265,14 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             </div>
 
             {sharedLists.length > 0 && (
-              <p className="mt-4 text-xs text-[#2b2b2b]/60">
+              <p className="mt-4 text-xs text-[#4f4f4f]">
                 You currently have {sharedLists.length} list{sharedLists.length === 1 ? "" : "s"} shared with you.
               </p>
             )}
 
             {nextUpcoming && upcomingDaysRemaining !== null && upcomingEventDateLabel && (
               <div className="mt-4 rounded-2xl border border-[#2b2b2b]/10 bg-white/70 px-4 py-3">
-                <p className="text-xs text-[#2b2b2b]/65">Upcoming event countdown</p>
+                <p className="text-xs text-[#4f4f4f]">Upcoming event countdown</p>
                 <p className="mt-1 text-sm font-semibold text-[#2b2b2b]">
                   {upcomingDaysRemaining === 0
                     ? "Today"
@@ -280,7 +281,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       : `${upcomingDaysRemaining} days left`}{" "}
                   for {nextUpcoming.list.occasion?.trim() || nextUpcoming.list.title}
                 </p>
-                <p className="mt-0.5 text-xs text-[#2b2b2b]/65">{upcomingEventDateLabel}</p>
+                <p className="mt-0.5 text-xs text-[#4f4f4f]">{upcomingEventDateLabel}</p>
               </div>
             )}
           </GlassCard>
@@ -321,3 +322,4 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     </div>
   );
 }
+

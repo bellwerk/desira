@@ -21,9 +21,10 @@ export function EmptyState({
       {icon && <div className="mx-auto mb-6">{icon}</div>}
       <h3 className="font-asul text-3xl font-medium text-[#2b2b2b]">{title}</h3>
       {description && (
-        <p className="mx-auto mt-2 max-w-sm text-sm text-[#2b2b2b]/65">{description}</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-[#4f4f4f]">{description}</p>
       )}
       {action && <div className="mt-8">{action}</div>}
     </GlassCard>
   );
 }
+

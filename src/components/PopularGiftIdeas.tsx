@@ -39,7 +39,7 @@ function GiftSuggestionCard({
       {/* Info */}
       <p className="text-xs font-medium text-[#2b2b2b] truncate">{suggestion.title}</p>
       <div className="flex items-center gap-0.5 leading-3">
-        <span className="text-xs text-[#62748e]" aria-hidden="true">·</span>
+        <span className="text-xs text-[#4f5f74]" aria-hidden="true">·</span>
         <span className="text-[11px] text-[#2b2b2b]">
           {typeof suggestion.priceCents === "number"
             ? formatCurrency(suggestion.priceCents, suggestion.currency ?? "CAD")
@@ -65,7 +65,7 @@ export async function PopularGiftIdeas(): Promise<React.ReactElement> {
         <span className="text-sm font-medium text-[#2b2b2b]">Popular gift ideas</span>
         <Link
           href="/app/ideas"
-          className="text-xs font-medium text-[#2b2b2b]/70 hover:text-[#2b2b2b] transition-colors"
+          className="text-xs font-medium text-[#4a4a4a] hover:text-[#2b2b2b] transition-colors"
         >
           Explore All
         </Link>
@@ -96,3 +96,4 @@ export async function PopularGiftIdeas(): Promise<React.ReactElement> {
     </GlassCard>
   );
 }
+

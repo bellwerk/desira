@@ -10,6 +10,7 @@ type ProfileIdentity = {
 };
 
 const HANDLE_FALLBACK = "user";
+const GREETING_NAME_FALLBACK = "there";
 
 function normalizeText(value: string): string {
   return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
@@ -40,4 +41,30 @@ export function buildProfileIdentity(input: ProfileIdentityInput): ProfileIdenti
     display_name,
     handle: `${baseHandle}-${userSuffix}`,
   };
+}
+
+function toDisplayNameCase(value: string): string {
+  const lower = value.toLocaleLowerCase();
+  return lower.replace(/(^|[-'])[\p{L}]/gu, (segment) => segment.toLocaleUpperCase());
+}
+
+export function extractGreetingFirstName(displayName: string | null | undefined): string {
+  if (typeof displayName !== "string") {
+    return GREETING_NAME_FALLBACK;
+  }
+
+  const trimmed = displayName.trim();
+  if (!trimmed) {
+    return GREETING_NAME_FALLBACK;
+  }
+
+  const firstToken = trimmed.split(/\s+/)[0] ?? "";
+  const firstSegment = firstToken.split(/[._+]/)[0] ?? "";
+  const cleaned = firstSegment.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}'-]+$/gu, "");
+
+  if (!cleaned) {
+    return GREETING_NAME_FALLBACK;
+  }
+
+  return toDisplayNameCase(cleaned);
 }

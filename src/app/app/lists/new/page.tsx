@@ -173,7 +173,7 @@ export default function NewListPage(): React.ReactElement {
           <h1 className="px-3 text-center font-asul text-[32px] leading-tight text-white sm:text-[42px]">
             Create a new list
           </h1>
-          <p className="mt-2 text-center text-sm text-white/70">
+          <p className="mt-2 text-center text-sm text-white/85">
             Start with your selected list type or customize it here
           </p>
         </header>
@@ -196,7 +196,7 @@ export default function NewListPage(): React.ReactElement {
 
           {/* Quick Templates */}
           <div className="mb-5">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/75">
               Quick start
             </p>
             <div className="flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ export default function NewListPage(): React.ReactElement {
                   className={`text-xs tabular-nums ${
                     charactersRemaining < 20
                       ? "text-amber-400"
-                      : "text-white/50"
+                      : "text-white/75"
                   }`}
                   aria-live="polite"
                 >
@@ -265,7 +265,7 @@ export default function NewListPage(): React.ReactElement {
                 aria-describedby={showListNameError ? `${formId}-title-error` : undefined}
                 className={`
                   block w-full rounded-xl border-0 bg-[#3a3a3a] px-4 py-3.5
-                  text-white placeholder:text-white/40
+                  text-white placeholder:text-white/85
                   transition-all duration-150
                   focus:outline-none focus:ring-2 focus:ring-[#9d8df1]/50
                   ${
@@ -293,7 +293,7 @@ export default function NewListPage(): React.ReactElement {
                 className="block text-sm font-medium text-white mb-2"
               >
                 Event date{" "}
-                <span className="font-normal text-white/50">(optional)</span>
+                <span className="font-normal text-white/75">(optional)</span>
               </label>
               <input
                 type="date"
@@ -345,7 +345,7 @@ export default function NewListPage(): React.ReactElement {
                     <span
                       className={`
                         shrink-0 rounded-xl p-2 transition-colors
-                        ${isSelected ? "bg-[#9d8df1] text-white" : "bg-[#4a4a4a] text-white/70"}
+                        ${isSelected ? "bg-[#9d8df1] text-white" : "bg-[#4a4a4a] text-white/85"}
                       `}
                     >
                       {config.icon}
@@ -353,7 +353,7 @@ export default function NewListPage(): React.ReactElement {
                     <p className="mt-2 text-sm font-medium text-white">
                       {config.label}
                     </p>
-                    <p className="mt-0.5 text-xs text-white/60 leading-tight">
+                    <p className="mt-0.5 text-xs text-white/80 leading-tight">
                       {config.description}
                     </p>
                     {isSelected && (
@@ -399,7 +399,7 @@ export default function NewListPage(): React.ReactElement {
                       ${
                         isSelected
                           ? "bg-[#9d8df1] text-white shadow-sm"
-                          : "text-white/60 hover:text-white"
+                          : "text-white/80 hover:text-white"
                       }
                     `}
                   >
@@ -409,7 +409,7 @@ export default function NewListPage(): React.ReactElement {
               })}
             </div>
 
-            <p className="mt-2 text-xs text-white/50">{visibilityHelper}</p>
+            <p className="mt-2 text-xs text-white/75">{visibilityHelper}</p>
             <input
               type="hidden"
               name="visibility"
@@ -432,14 +432,14 @@ export default function NewListPage(): React.ReactElement {
               aria-expanded={showAdvanced}
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-4 w-4 text-white/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 Gift controls
               </span>
               <svg
-                className={`h-4 w-4 text-white/70 transition-transform duration-200 ${
+                className={`h-4 w-4 text-white/85 transition-transform duration-200 ${
                   showAdvanced ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -494,7 +494,7 @@ export default function NewListPage(): React.ReactElement {
             <Link
               href="/app/lists"
               className="
-                inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-white/60
+                inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-white/80
                 transition-all duration-150
                 hover:bg-white/5 hover:text-white
                 focus-visible:outline-none focus-visible:ring-2
@@ -537,3 +537,4 @@ export default function NewListPage(): React.ReactElement {
     </div>
   );
 }
+

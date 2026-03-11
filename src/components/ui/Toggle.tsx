@@ -40,7 +40,7 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
             <p
               id={`${id}-description`}
               className={`mt-0.5 text-xs ${
-                disabled ? "text-gray-300 dark:text-gray-600" : "text-[var(--text-secondary)] dark:text-white/60"
+                disabled ? "text-gray-300 dark:text-gray-600" : "text-[var(--text-secondary)] dark:text-white/80"
               }`}
             >
               {helperText}
@@ -95,3 +95,4 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
 );
 
 Toggle.displayName = "Toggle";
+

@@ -250,59 +250,59 @@ export function SettingsForm({ list }: SettingsFormProps): React.ReactElement {
           />
         </div>
 
-        {/* Feature toggles */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-          <p className="text-sm font-medium text-slate-900 dark:text-white">
-            Features
+        {/* Gift control */}
+        <div className="rounded-lg border border-slate-300/80 bg-white/90 p-4 dark:border-slate-600 dark:bg-slate-800/70">
+          <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+            Gift control
           </p>
           <div className="mt-4 space-y-4">
-            <label className="flex items-center gap-3">
+            <label className="group flex items-start gap-3 rounded-lg border border-slate-300/80 bg-white/90 px-3 py-2 transition-colors hover:border-slate-400 hover:bg-white dark:border-slate-600 dark:bg-slate-800/80 dark:hover:border-slate-500">
               <input
                 type="checkbox"
                 name="allow_reservations"
                 value="true"
                 defaultChecked={list.allow_reservations}
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
+                className="mt-0.5 h-4 w-4 rounded border-slate-400 text-rose-500 focus:ring-rose-500 dark:border-slate-500 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                     Allow buy marks
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-700 transition-colors group-hover:text-slate-800 dark:text-slate-300 dark:group-hover:text-slate-200">
                     People can mark gifts as bought to avoid duplicates
                 </p>
               </div>
             </label>
-            <label className="flex items-center gap-3">
+            <label className="group flex items-start gap-3 rounded-lg border border-slate-300/80 bg-white/90 px-3 py-2 transition-colors hover:border-slate-400 hover:bg-white dark:border-slate-600 dark:bg-slate-800/80 dark:hover:border-slate-500">
               <input
                 type="checkbox"
                 name="allow_contributions"
                 value="true"
                 defaultChecked={list.allow_contributions}
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
+                className="mt-0.5 h-4 w-4 rounded border-slate-400 text-rose-500 focus:ring-rose-500 dark:border-slate-500 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                   Allow contributions
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-700 transition-colors group-hover:text-slate-800 dark:text-slate-300 dark:group-hover:text-slate-200">
                   People can contribute money toward items
                 </p>
               </div>
             </label>
-            <label className="flex items-center gap-3">
+            <label className="group flex items-start gap-3 rounded-lg border border-slate-300/80 bg-white/90 px-3 py-2 transition-colors hover:border-slate-400 hover:bg-white dark:border-slate-600 dark:bg-slate-800/80 dark:hover:border-slate-500">
               <input
                 type="checkbox"
                 name="allow_anonymous"
                 value="true"
                 defaultChecked={list.allow_anonymous}
-                className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700"
+                className="mt-0.5 h-4 w-4 rounded border-slate-400 text-rose-500 focus:ring-rose-500 dark:border-slate-500 dark:bg-slate-700"
               />
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  Allow anonymous
+                <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                  Allow anonymous givers
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-700 transition-colors group-hover:text-slate-800 dark:text-slate-300 dark:group-hover:text-slate-200">
                   Contributors can remain anonymous
                 </p>
               </div>

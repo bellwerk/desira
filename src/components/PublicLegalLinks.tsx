@@ -16,7 +16,7 @@ export function PublicLegalLinks(): React.ReactElement {
         <Link
           key={link.href}
           href={link.href}
-          className="text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+          className="text-[#3f2f38]/90 underline-offset-4 transition-colors hover:text-[#2b1f27] hover:underline dark:text-white/85 dark:hover:text-white"
         >
           {link.label}
         </Link>
@@ -24,3 +24,4 @@ export function PublicLegalLinks(): React.ReactElement {
     </nav>
   );
 }
+

@@ -36,7 +36,7 @@ export function ShareModal({
         className="mb-6 text-center text-2xl font-bold text-white"
         style={{ fontFamily: "Asul" }}
       >
-        Share your list
+        Share list
       </h2>
 
       {/* Share Card Content */}

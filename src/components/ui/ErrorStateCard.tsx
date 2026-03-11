@@ -44,7 +44,7 @@ export function ErrorStateCard({
       ) : null}
 
       <h1 className="mt-4 text-lg font-semibold text-[#2B2B2B]">{title}</h1>
-      <p className="mt-2 text-sm text-[#62748e]">{message}</p>
+      <p className="mt-2 text-sm text-[#4f5f74]">{message}</p>
 
       {shouldShowAction ? (
         <div className="mt-5">
@@ -59,4 +59,5 @@ export function ErrorStateCard({
     </GlassCard>
   );
 }
+
 

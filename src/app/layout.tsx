@@ -43,7 +43,7 @@ export default function RootLayout({
         <Providers>
           <div className="min-h-screen flex flex-col">
             <main className="flex-1">{children}</main>
-            <footer className="space-y-1.5 px-4 py-3 text-center font-[family-name:var(--font-urbanist)] text-[14px] text-white/65">
+            <footer className="space-y-1.5 px-4 py-3 text-center font-[family-name:var(--font-urbanist)] text-[14px] text-[#3f2f38]/85 dark:text-white/80">
               <p>We may earn a commission for sales made through links on our site.</p>
               <PublicLegalLinks />
             </footer>

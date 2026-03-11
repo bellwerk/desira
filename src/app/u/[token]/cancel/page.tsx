@@ -100,7 +100,7 @@ export default function CancelPage(): React.ReactElement {
       <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-[#2B2B2B]">
         Undo buy mark
       </h1>
-      <p className="mt-2 text-center text-sm text-[#62748e]">
+      <p className="mt-2 text-center text-sm text-[#4f5f74]">
         This will make the gift available again so others can buy or contribute.
         This only works from the same browser/device that reserved it.
       </p>
@@ -133,3 +133,4 @@ export default function CancelPage(): React.ReactElement {
     </GlassCard>
   );
 }
+
