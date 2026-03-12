@@ -1,13 +1,14 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import {
+  getSupabaseServiceRoleKey,
+  getSupabaseUrl,
+  hasSupabaseAdminCredentials as hasAdminCredentials,
+} from "@/lib/supabase/env";
 
 let _supabaseAdmin: SupabaseClient | null = null;
 
 export function hasSupabaseAdminCredentials(): boolean {
-  const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  return Boolean(url && serviceKey);
+  return hasAdminCredentials();
 }
 
 /**
@@ -17,12 +18,8 @@ export function hasSupabaseAdminCredentials(): boolean {
 export function getSupabaseAdmin(): SupabaseClient {
   if (_supabaseAdmin) return _supabaseAdmin;
 
-  const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url) throw new Error("Missing SUPABASE_URL env var");
-  if (!serviceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var");
+  const url = getSupabaseUrl();
+  const serviceKey = getSupabaseServiceRoleKey();
 
   _supabaseAdmin = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },

@@ -76,6 +76,22 @@ jobs:
           API_URL="$(echo "$SUPABASE_ENV" | awk -F= '$1=="API_URL"{print $2}')"
           ANON_KEY="$(echo "$SUPABASE_ENV" | awk -F= '$1=="ANON_KEY"{print $2}')"
           SERVICE_ROLE_KEY="$(echo "$SUPABASE_ENV" | awk -F= '$1=="SERVICE_ROLE_KEY"{print $2}')"
+          if [ -z "${API_URL}" ]; then
+            echo "Supabase status did not return API_URL"
+            exit 1
+          fi
+          if [[ ! "${API_URL}" =~ ^https?:// ]]; then
+            echo "Invalid API_URL from local Supabase status: ${API_URL}"
+            exit 1
+          fi
+          if [ -z "${ANON_KEY}" ]; then
+            echo "Supabase status did not return ANON_KEY"
+            exit 1
+          fi
+          if [ -z "${SERVICE_ROLE_KEY}" ]; then
+            echo "Supabase status did not return SERVICE_ROLE_KEY"
+            exit 1
+          fi
           echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"

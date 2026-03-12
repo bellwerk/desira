@@ -2,38 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-
-function supabaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_URL ??
-    process.env.SUPABASE_URL ??
-    ""
-  );
-}
-
-function supabaseAnonKey(): string {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.SUPABASE_ANON_KEY ??
-    ""
-  );
-}
+import {
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+  hasSupabasePublicCredentials,
+} from "@/lib/supabase/env";
 
 /** Check if Supabase env vars are configured */
 export function isSupabaseConfigured(): boolean {
-  return Boolean(supabaseUrl() && supabaseAnonKey());
+  return hasSupabasePublicCredentials();
 }
 
 export async function createClient(): Promise<SupabaseClient> {
-  const url = supabaseUrl();
-  const key = supabaseAnonKey();
-
-  if (!url || !key) {
-    throw new Error(
-      "Supabase is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables."
-    );
-  }
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
 
   const cookieStore = await cookies();
 
@@ -61,14 +43,8 @@ export async function createClient(): Promise<SupabaseClient> {
 }
 
 export function createPublicClient(): SupabaseClient {
-  const url = supabaseUrl();
-  const key = supabaseAnonKey();
-
-  if (!url || !key) {
-    throw new Error(
-      "Supabase is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables."
-    );
-  }
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
 
   return createSupabaseClient(url, key, {
     auth: {
