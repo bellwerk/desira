@@ -1,6 +1,10 @@
 -- ============================================================================
--- Add 'shopping' to recipient_type enum and migrate existing shared lists
+-- Add 'shopping' to recipient_type enum
 -- ============================================================================
+-- NOTE:
+-- PostgreSQL cannot safely use a newly-added enum value in the same transaction.
+-- The data backfill from 'shared' -> 'shopping' is intentionally done in a
+-- follow-up migration file so it runs after this migration commits.
 
 -- Add 'shopping' to recipient_type enum if it doesn't already exist.
 DO $$
@@ -15,8 +19,3 @@ BEGIN
   END IF;
 END
 $$;
-
--- Replace legacy 'shared' lists with 'shopping' so UI labels stay consistent.
-UPDATE public.lists
-SET recipient_type = 'shopping'
-WHERE recipient_type = 'shared';
