@@ -102,6 +102,49 @@ jobs:
           echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
 
+      - name: Preflight migrations and seed endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Resetting local Supabase DB to verify migrations..."
+          pnpm supabase db reset --local --no-seed --yes
+
+          echo "Starting Next.js app for seed preflight..."
+          pnpm dev --port 3000 > /tmp/next-preflight.log 2>&1 &
+          NEXT_PID=$!
+
+          cleanup() {
+            if kill -0 "${NEXT_PID}" 2>/dev/null; then
+              kill "${NEXT_PID}" || true
+              wait "${NEXT_PID}" || true
+            fi
+          }
+          trap cleanup EXIT
+
+          status_code=""
+          for attempt in {1..45}; do
+            status_code="$(curl -sS -o /tmp/seed-preflight-response.json -w '%{http_code}' \
+              'http://127.0.0.1:3000/api/seed?visibility=public' || true)"
+
+            if [ "${status_code}" = "200" ]; then
+              break
+            fi
+
+            if [ "${attempt}" -eq 45 ]; then
+              echo "Seed preflight failed after ${attempt} attempts. Last HTTP status: ${status_code}"
+              echo "--- /api/seed response ---"
+              cat /tmp/seed-preflight-response.json || true
+              echo "--- Next.js preflight logs (tail) ---"
+              tail -n 200 /tmp/next-preflight.log || true
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          node -e "const fs = require('fs'); const raw = fs.readFileSync('/tmp/seed-preflight-response.json', 'utf8'); let data; try { data = JSON.parse(raw); } catch (e) { console.error('Seed preflight returned non-JSON:', raw); process.exit(1); } if (!data.ok || !data.share_token) { console.error('Seed preflight returned invalid payload:', data); process.exit(1); } console.log('Seed preflight OK for token:', data.share_token);"
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 

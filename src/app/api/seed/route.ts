@@ -44,14 +44,20 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const userId = created.user.id;
 
-  // 2) Create profile
+  // 2) Ensure profile exists (idempotent)
+  // The auth signup trigger may auto-create profiles, so use upsert by id.
   const handle = `demo_${stamp}`;
-  const { error: profileErr } = await supabaseAdmin.from("profiles").insert({
-    id: userId,
-    handle,
-    display_name: "Demo Owner",
-    avatar_url: null,
-  });
+  const { error: profileErr } = await supabaseAdmin
+    .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        handle,
+        display_name: "Demo Owner",
+        avatar_url: null,
+      },
+      { onConflict: "id" }
+    );
 
   if (profileErr) {
     return NextResponse.json(
