@@ -106,12 +106,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          PRECHECK_PORT=3100
 
           echo "Resetting local Supabase DB to verify migrations..."
           pnpm supabase db reset --local --no-seed --yes
 
-          echo "Starting Next.js app for seed preflight..."
-          pnpm dev --port 3000 > /tmp/next-preflight.log 2>&1 &
+          echo "Starting Next.js app for seed preflight on port ${PRECHECK_PORT}..."
+          pnpm dev --port "${PRECHECK_PORT}" > /tmp/next-preflight.log 2>&1 &
           NEXT_PID=$!
 
           cleanup() {
@@ -119,13 +120,18 @@ jobs:
               kill "${NEXT_PID}" || true
               wait "${NEXT_PID}" || true
             fi
+            # pnpm can spawn child processes; ensure nothing remains on precheck port.
+            pids="$(lsof -ti tcp:${PRECHECK_PORT} || true)"
+            if [ -n "${pids}" ]; then
+              kill ${pids} || true
+            fi
           }
           trap cleanup EXIT
 
           status_code=""
           for attempt in {1..45}; do
             status_code="$(curl -sS -o /tmp/seed-preflight-response.json -w '%{http_code}' \
-              'http://127.0.0.1:3000/api/seed?visibility=public' || true)"
+              "http://127.0.0.1:${PRECHECK_PORT}/api/seed?visibility=public" || true)"
 
             if [ "${status_code}" = "200" ]; then
               break
