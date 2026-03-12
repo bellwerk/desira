@@ -73,9 +73,12 @@ jobs:
         run: |
           set -euo pipefail
           SUPABASE_ENV="$(pnpm supabase status -o env)"
-          API_URL="$(echo "$SUPABASE_ENV" | awk -F= '$1=="API_URL"{print $2}')"
-          ANON_KEY="$(echo "$SUPABASE_ENV" | awk -F= '$1=="ANON_KEY"{print $2}')"
-          SERVICE_ROLE_KEY="$(echo "$SUPABASE_ENV" | awk -F= '$1=="SERVICE_ROLE_KEY"{print $2}')"
+          API_URL_RAW="$(echo "$SUPABASE_ENV" | awk -F= '$1=="API_URL"{print $2}')"
+          ANON_KEY_RAW="$(echo "$SUPABASE_ENV" | awk -F= '$1=="ANON_KEY"{print $2}')"
+          SERVICE_ROLE_KEY_RAW="$(echo "$SUPABASE_ENV" | awk -F= '$1=="SERVICE_ROLE_KEY"{print $2}')"
+          API_URL="$(echo "$API_URL_RAW" | sed -e 's/^"//' -e 's/"$//')"
+          ANON_KEY="$(echo "$ANON_KEY_RAW" | sed -e 's/^"//' -e 's/"$//')"
+          SERVICE_ROLE_KEY="$(echo "$SERVICE_ROLE_KEY_RAW" | sed -e 's/^"//' -e 's/"$//')"
           if [ -z "${API_URL}" ]; then
             echo "Supabase status did not return API_URL"
             exit 1
