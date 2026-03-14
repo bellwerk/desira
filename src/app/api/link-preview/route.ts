@@ -1089,31 +1089,11 @@ export async function POST(req: Request): Promise<NextResponse<LinkPreviewRespon
       }
     } catch (error) {
       if (error instanceof RateLimitUnavailableError) {
-        if (error.shouldBypass) {
-          console.warn("[link-preview] Skipping rate limit:", error.message);
-          return null;
-        }
-
-        console.error("[link-preview] Rate limiting unavailable:", error.message);
-        logPreviewMetric("preview_unavailable", {
-          reason: "rate_limit_unavailable",
-          errorCode: "PREVIEW_UNAVAILABLE",
-        });
-        return NextResponse.json(
-          {
-            ok: false,
-            error: {
-              code: "PREVIEW_UNAVAILABLE",
-              message: "Link previews are temporarily unavailable. Please try again shortly.",
-            },
-          },
-          {
-            status: 503,
-            headers: {
-              "Retry-After": "60",
-            },
-          }
-        );
+        // Link previews are a best-effort feature. If rate-limit infrastructure is
+        // temporarily unavailable, continue fetching metadata instead of turning
+        // every preview request into a hard outage.
+        console.warn("[link-preview] Continuing without rate limit:", error.message);
+        return null;
       }
 
       throw error;
