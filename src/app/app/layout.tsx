@@ -74,6 +74,10 @@ function getSafeLoginNext(headerStore: Awaited<ReturnType<typeof headers>>): str
   for (const raw of candidates) {
     const normalized = normalizeCandidatePath(raw);
     if (normalized && (normalized === "/app" || normalized.startsWith("/app/"))) {
+      // Invite tokens should never be copied into login redirects.
+      if (normalized.startsWith("/app/invite/")) {
+        return "/app";
+      }
       return normalized;
     }
   }

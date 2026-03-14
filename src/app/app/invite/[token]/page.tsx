@@ -24,8 +24,7 @@ export default async function AcceptInvitePage({
 
   // If not logged in, redirect to login with return URL
   if (!user) {
-    const next = encodeURIComponent(`/app/invite/${token}`);
-    redirect(`/login?next=${next}`);
+    redirect("/login?next=%2Fapp");
   }
 
   // Validate the invite token exists
@@ -196,4 +195,3 @@ function InvalidInvite(): React.ReactElement {
     </div>
   );
 }
-
