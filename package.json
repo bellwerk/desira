@@ -19,7 +19,7 @@
     "deploy": "pnpm -s build:cloudflare && opennextjs-cloudflare deploy"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.16.1",
+    "@opennextjs/cloudflare": "^1.17.1",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@supabase/ssr": "^0.8.0",
@@ -45,15 +45,17 @@
     "supabase": "^2.70.5",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "wrangler": "^4.60.0"
+    "wrangler": "^4.73.0"
   },
   "packageManager": "pnpm@10.26.2",
   "pnpm": {
     "overrides": {
-      "qs": ">=6.14.1",
+      "qs": "6.15.0",
       "tar": ">=7.5.7",
       "@smithy/config-resolver": ">=4.4.0",
-      "fast-xml-parser": ">=5.3.4"
+      "fast-xml-parser": "5.5.5",
+      "glob@12>minimatch": "10.2.4",
+      "undici": "7.24.1"
     },
     "onlyBuiltDependencies": [
       "esbuild",

@@ -14,7 +14,7 @@ async function signInWithOAuthProvider(
 ): Promise<OAuthResult> {
   const supabase = await createClient();
 
-  const siteUrl = getSiteURL();
+  const siteUrl = await getSiteURL();
   const callbackUrl = new URL("/auth/callback", siteUrl);
   if (redirectTo) {
     callbackUrl.searchParams.set("next", redirectTo);
@@ -98,7 +98,7 @@ export async function signUpWithEmail(
   }
 
   const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/app";
-  const callbackUrl = new URL("/auth/callback", getSiteURL());
+  const callbackUrl = new URL("/auth/callback", await getSiteURL());
   callbackUrl.searchParams.set("next", safeRedirect);
 
   const { error } = await supabase.auth.signUp({
