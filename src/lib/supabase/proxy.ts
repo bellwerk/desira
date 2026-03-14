@@ -22,6 +22,14 @@ function supabaseAnonKey(): string {
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/app"];
 
+function getSafeLoginNext(pathname: string, search: string): string {
+  if (pathname.startsWith("/app/invite/")) {
+    return "/app";
+  }
+
+  return `${pathname}${search}`;
+}
+
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
   const search = request.nextUrl.search;
@@ -73,7 +81,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (isProtectedRoute && !user) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", requestPath);
+    loginUrl.searchParams.set("next", getSafeLoginNext(pathname, search));
     response = NextResponse.redirect(loginUrl);
   }
 
