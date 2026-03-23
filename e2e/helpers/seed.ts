@@ -15,6 +15,7 @@ type SeedResult = {
 
 type SeedOptions = {
   visibility?: "public" | "unlisted";
+  firstItemUrl?: string;
 };
 
 const MAX_SEED_ATTEMPTS = 5;
@@ -39,6 +40,9 @@ export async function createSeed(
   const params = new URLSearchParams();
   if (options.visibility) {
     params.set("visibility", options.visibility);
+  }
+  if (options.firstItemUrl) {
+    params.set("first_item_url", options.firstItemUrl);
   }
   const seedUrl = params.size > 0 ? `/api/seed?${params.toString()}` : "/api/seed";
 

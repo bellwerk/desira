@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { updateItem } from "../actions";
 import { GlassButton, useToastActions } from "@/components/ui";
+import { useLinkPreview } from "@/hooks/useLinkPreview";
 
 type ItemRow = {
   id: string;
@@ -40,8 +41,17 @@ export function EditItemModal({
   const toast = useToastActions();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [productUrlInput, setProductUrlInput] = useState(item.product_url ?? "");
   const modalRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const {
+    status: previewStatus,
+    data: previewData,
+    error: previewError,
+    notice: previewNotice,
+    fetch: fetchPreview,
+    reset: resetPreview,
+  } = useLinkPreview();
 
   // Focus trap and escape handling
   useEffect(() => {
@@ -68,6 +78,26 @@ export function EditItemModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      queueMicrotask(() => {
+        setProductUrlInput(item.product_url ?? "");
+        resetPreview();
+      });
+      return;
+    }
+
+    queueMicrotask(() => {
+      const initialUrl = item.product_url ?? "";
+      setProductUrlInput(initialUrl);
+      if (initialUrl) {
+        fetchPreview(initialUrl);
+      } else {
+        resetPreview();
+      }
+    });
+  }, [fetchPreview, isOpen, item.product_url, resetPreview]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +113,14 @@ export function EditItemModal({
   const handleSubmit = useCallback(
     async (formData: FormData) => {
       formData.set("id", item.id);
+      formData.set("product_url", productUrlInput);
+      const matchingPreview =
+        previewData && previewData.rawUrl === productUrlInput.trim() ? previewData : null;
+      if (matchingPreview?.normalizedUrl) {
+        formData.set("normalized_product_url", matchingPreview.normalizedUrl);
+      } else {
+        formData.delete("normalized_product_url");
+      }
       setError(null);
 
       startTransition(async () => {
@@ -96,7 +134,7 @@ export function EditItemModal({
         }
       });
     },
-    [item.id, onClose, router, toast]
+    [item.id, onClose, previewData, productUrlInput, router, toast]
   );
 
   const handleBackdropClick = useCallback(
@@ -258,11 +296,31 @@ export function EditItemModal({
                 type="url"
                 id="edit-product_url"
                 name="product_url"
-                defaultValue={item.product_url ?? ""}
+                value={productUrlInput}
+                onChange={(event) => {
+                  const nextUrl = event.target.value;
+                  setProductUrlInput(nextUrl);
+                  fetchPreview(nextUrl);
+                }}
                 placeholder="https://example.com/product"
                 className="block w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2.5 text-sm text-[#343338] placeholder:text-slate-400 transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-600/50 dark:bg-slate-800/50 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-violet-500"
               />
             </div>
+            {previewStatus === "loading" && (
+              <p className="mt-2 text-xs text-slate-300">
+                Loading product details...
+              </p>
+            )}
+            {previewError && (
+              <p className="mt-2 text-xs text-amber-300">
+                {previewError}
+              </p>
+            )}
+            {previewNotice && !previewError && (
+              <p className="mt-2 text-xs text-sky-300">
+                {previewNotice}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">

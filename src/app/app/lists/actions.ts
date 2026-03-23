@@ -11,6 +11,7 @@ import {
   NotificationType,
 } from "@/lib/notifications";
 import { buildProfileIdentity } from "@/lib/profile";
+import { resolveProductUrlForStorage } from "@/lib/affiliate";
 
 export type ActionResult = {
   success: boolean;
@@ -179,6 +180,7 @@ const addItemSchema = z.object({
   list_id: z.string().uuid(),
   title: z.string().min(1, "Title is required").max(200),
   product_url: z.string().url().optional().or(z.literal("")),
+  normalized_product_url: z.string().url().optional().or(z.literal("")),
   image_url: z.string().url().optional().or(z.literal("")),
   price_cents: z.number().int().min(0).optional(),
   target_amount_cents: z.number().int().min(0).optional(),
@@ -214,6 +216,7 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
     list_id: formData.get("list_id"),
     title: formData.get("title"),
     product_url: formData.get("product_url") || undefined,
+    normalized_product_url: formData.get("normalized_product_url") || undefined,
     image_url: formData.get("image_url") || undefined,
     price_cents: priceCents,
     target_amount_cents: priceCents, // default target = price
@@ -224,6 +227,11 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
   };
 
   const parsed = addItemSchema.safeParse(raw);
+
+  const productUrlToStore = resolveProductUrlForStorage(
+    parsed.success ? parsed.data.product_url : undefined,
+    parsed.success ? parsed.data.normalized_product_url : undefined
+  );
 
   if (!parsed.success) {
     return {
@@ -273,7 +281,7 @@ export async function addItem(formData: FormData): Promise<ActionResult> {
     .insert({
       list_id: parsed.data.list_id,
       title: parsed.data.title,
-      product_url: parsed.data.product_url || null,
+      product_url: productUrlToStore,
       image_url: parsed.data.image_url || null,
       price_cents: parsed.data.price_cents ?? null,
       target_amount_cents: parsed.data.target_amount_cents ?? null,
@@ -812,6 +820,7 @@ const updateItemSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1, "Title is required").max(200),
   product_url: z.string().url().optional().or(z.literal("")),
+  normalized_product_url: z.string().url().optional().or(z.literal("")),
   image_url: z.string().url().optional().or(z.literal("")),
   price_cents: z.number().int().min(0).optional().nullable(),
   target_amount_cents: z.number().int().min(0).optional().nullable(),
@@ -847,6 +856,7 @@ export async function updateItem(formData: FormData): Promise<ActionResult> {
     id: formData.get("id"),
     title: formData.get("title"),
     product_url: formData.get("product_url") || undefined,
+    normalized_product_url: formData.get("normalized_product_url") || undefined,
     image_url: formData.get("image_url") || undefined,
     price_cents: priceCents,
     target_amount_cents: priceCents, // default target = price
@@ -857,6 +867,11 @@ export async function updateItem(formData: FormData): Promise<ActionResult> {
   };
 
   const parsed = updateItemSchema.safeParse(raw);
+
+  const productUrlToStore = resolveProductUrlForStorage(
+    parsed.success ? parsed.data.product_url : undefined,
+    parsed.success ? parsed.data.normalized_product_url : undefined
+  );
 
   if (!parsed.success) {
     return {
@@ -902,7 +917,7 @@ export async function updateItem(formData: FormData): Promise<ActionResult> {
     .from("items")
     .update({
       title: parsed.data.title,
-      product_url: parsed.data.product_url || null,
+      product_url: productUrlToStore,
       image_url: parsed.data.image_url || null,
       price_cents: parsed.data.price_cents,
       target_amount_cents: parsed.data.target_amount_cents,

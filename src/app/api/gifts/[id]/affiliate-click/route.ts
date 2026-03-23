@@ -2,7 +2,11 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AuditEventType, getClientIP, logAuditEvent } from "@/lib/audit";
-import { generateAffiliateUrl, getAffiliateProvider } from "@/lib/affiliate";
+import {
+  generateAffiliateUrl,
+  getAffiliateProvider,
+  warnIfAmazonAffiliateConfigMissing,
+} from "@/lib/affiliate";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -248,6 +252,7 @@ export async function POST(req: Request, context: RouteContext): Promise<NextRes
     );
   }
 
+  warnIfAmazonAffiliateConfigMissing(item.product_url);
   const affiliateProvider = getAffiliateProvider(item.product_url);
   const affiliateUrl = generateAffiliateUrl(item.product_url, itemId);
 

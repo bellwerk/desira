@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { generateAffiliateUrl, getAffiliateProvider } from "@/lib/affiliate";
+import {
+  generateAffiliateUrl,
+  getAffiliateProvider,
+  warnIfAmazonAffiliateConfigMissing,
+} from "@/lib/affiliate";
 import { AuditEventType, logAuditEvent } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -127,6 +131,7 @@ export async function GET(
   // Build custom tracking param: only item ID (do NOT include share token
   // as it would leak sensitive access tokens to third-party affiliates)
   const xcust = itemId;
+  warnIfAmazonAffiliateConfigMissing(item.product_url);
   const affiliateProvider = getAffiliateProvider(item.product_url);
 
   // Generate affiliate URL (or pass through if no provider is configured)

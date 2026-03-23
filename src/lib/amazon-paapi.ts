@@ -1,6 +1,7 @@
 import { createHash, createHmac } from "crypto";
+import { parseAmazonRetailProductUrl } from "@/lib/amazon-url";
 
-const AMAZON_DOMAINS = new Set(["amazon.com", "amazon.ca"]);
+const AMAZON_PAAPI_DOMAINS = new Set(["amazon.com", "amazon.ca"]);
 
 const PAAPI_SERVICE = "ProductAdvertisingAPI";
 const PAAPI_TARGET = "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems";
@@ -59,55 +60,25 @@ function stripAmazonSubdomain(hostname: string): string {
   return hostname;
 }
 
-function extractAsin(pathname: string): string | null {
-  const patterns = [
-    /\/dp\/([A-Z0-9]{10})(?:[/?]|$)/i,
-    /\/gp\/product\/([A-Z0-9]{10})(?:[/?]|$)/i,
-    /\/gp\/aw\/d\/([A-Z0-9]{10})(?:[/?]|$)/i,
-    /\/gp\/offer-listing\/([A-Z0-9]{10})(?:[/?]|$)/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = pathname.match(pattern);
-    if (match?.[1]) {
-      return match[1].toUpperCase();
-    }
-  }
-
-  return null;
-}
-
 export function parseAmazonProductUrl(urlString: string): AmazonProductRef | null {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(urlString);
-  } catch {
+  const retailProduct = parseAmazonRetailProductUrl(urlString);
+  if (!retailProduct) {
     return null;
   }
 
-  const protocol = parsedUrl.protocol.toLowerCase();
-  if (protocol !== "http:" && protocol !== "https:") {
-    return null;
-  }
-
-  const normalizedDomain = stripAmazonSubdomain(parsedUrl.hostname.toLowerCase());
-  if (!AMAZON_DOMAINS.has(normalizedDomain)) {
-    return null;
-  }
-
-  const asin = extractAsin(parsedUrl.pathname);
-  if (!asin) {
+  const normalizedDomain = stripAmazonSubdomain(retailProduct.domain.toLowerCase());
+  if (!AMAZON_PAAPI_DOMAINS.has(normalizedDomain)) {
     return null;
   }
 
   const domain = normalizedDomain as "amazon.com" | "amazon.ca";
   return {
-    asin,
+    asin: retailProduct.asin,
     domain,
     host: `webservices.${domain}`,
     marketplace: `www.${domain}`,
     region: "us-east-1",
-    canonicalUrl: `https://www.${domain}/dp/${asin}`,
+    canonicalUrl: retailProduct.canonicalUrl,
   };
 }
 

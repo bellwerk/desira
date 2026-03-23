@@ -8,6 +8,24 @@ function parseSeedVisibility(value: string | null): "public" | "unlisted" {
   return value === "public" ? "public" : "unlisted";
 }
 
+function parseFirstItemUrl(value: string | null): string {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return "https://example.com/maap-jersey";
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    // Fall through to default URL below.
+  }
+
+  return "https://example.com/maap-jersey";
+}
+
 // GET /api/seed
 // Creates a demo auth user + profile + unlisted list + a few items.
 // Requires ALLOW_SEED=true env var to be explicitly set.
@@ -22,6 +40,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const url = new URL(request.url);
   const visibility = parseSeedVisibility(url.searchParams.get("visibility"));
+  const firstItemUrl = parseFirstItemUrl(url.searchParams.get("first_item_url"));
 
   // 1) Create demo auth user
   const stamp = Date.now();
@@ -94,7 +113,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     {
       list_id: list.id,
       title: "MAAP Jersey (Black)",
-      product_url: "https://example.com/maap-jersey",
+      product_url: firstItemUrl,
       image_url: "https://picsum.photos/seed/maap/600/600",
       merchant: "Example",
       price_cents: 16500,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { normalizeAmazonRetailHostname } from "@/lib/amazon-url";
 
 // Debounce delay in milliseconds
 const DEBOUNCE_MS = 500;
@@ -21,6 +22,7 @@ export interface LinkPreviewData {
   price: LinkPreviewPrice | null;
   domain: string;
   normalizedUrl: string;
+  rawUrl: string;
 }
 
 function formatPreviewError(code?: string, message?: string): string {
@@ -54,13 +56,7 @@ interface UseLinkPreviewResult {
 }
 
 function isAmazonDomain(domain: string): boolean {
-  const normalized = domain.toLowerCase();
-  return (
-    normalized === "amazon.com" ||
-    normalized === "amazon.ca" ||
-    normalized.endsWith(".amazon.com") ||
-    normalized.endsWith(".amazon.ca")
-  );
+  return normalizeAmazonRetailHostname(domain) !== null;
 }
 
 function getPartialPreviewNotice(data: LinkPreviewData): string | null {
@@ -209,6 +205,7 @@ export function useLinkPreview(): UseLinkPreviewResult {
             price: result.data.price,
             domain: result.domain,
             normalizedUrl: result.normalizedUrl,
+            rawUrl: trimmedUrl,
           };
 
           setStatus("success");
@@ -245,5 +242,3 @@ export function useLinkPreview(): UseLinkPreviewResult {
     reset,
   };
 }
-
-

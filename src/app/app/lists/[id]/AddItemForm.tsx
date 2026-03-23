@@ -203,6 +203,13 @@ export function AddItemForm({ listId, initialUrl, initialTitle, onClose }: AddIt
     if (effectiveUrl) {
       formData.set("product_url", effectiveUrl);
     }
+    const matchingPreview =
+      previewData && previewData.rawUrl === effectiveUrl.trim() ? previewData : null;
+    if (matchingPreview?.normalizedUrl) {
+      formData.set("normalized_product_url", matchingPreview.normalizedUrl);
+    } else {
+      formData.delete("normalized_product_url");
+    }
     setError(null);
 
     startTransition(async () => {

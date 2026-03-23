@@ -10,17 +10,17 @@
  * Skimlinks Publisher ID from environment
  * Required for affiliate link monetization
  */
-const SKIMLINKS_PUBLISHER_ID = process.env.SKIMLINKS_PUBLISHER_ID ?? "";
-const AMAZON_ASSOCIATES_TAG =
-  process.env.AMAZON_ASSOCIATES_TAG ??
-  process.env.AMAZON_PAAPI_PARTNER_TAG ??
-  "";
+import {
+  canonicalizeAmazonRetailUrl,
+  isAmazonRetailUrl,
+} from "@/lib/amazon-url";
+
+let hasWarnedMissingAmazonAssociatesConfig = false;
 
 /**
  * Skimlinks redirect base URL
  */
 const SKIMLINKS_REDIRECT_BASE = "https://go.redirectingat.com/";
-const SKIMLINKS_SREF = process.env.NEXT_PUBLIC_APP_URL ?? "https://desira.io";
 const WRAPPED_URL_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const WRAPPED_URL_CACHE_MAX_ENTRIES = 500;
 
@@ -32,6 +32,22 @@ type WrappedUrlCacheEntry = {
 const wrappedUrlCache = new Map<string, WrappedUrlCacheEntry>();
 
 export type AffiliateProvider = "none" | "skimlinks" | "amazon_associates";
+
+function getSkimlinksPublisherId(): string {
+  return process.env.SKIMLINKS_PUBLISHER_ID?.trim() ?? "";
+}
+
+function getAmazonAssociatesTag(): string {
+  return (
+    process.env.AMAZON_ASSOCIATES_TAG?.trim() ??
+    process.env.AMAZON_PAAPI_PARTNER_TAG?.trim() ??
+    ""
+  );
+}
+
+function getSkimlinksSref(): string {
+  return process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://desira.io";
+}
 
 function pruneWrappedUrlCache(nowMs: number): void {
   for (const [key, entry] of wrappedUrlCache) {
@@ -51,46 +67,44 @@ function pruneWrappedUrlCache(nowMs: number): void {
 
 function buildBaseAffiliateUrl(originalUrl: string): string {
   const params = new URLSearchParams({
-    id: SKIMLINKS_PUBLISHER_ID,
+    id: getSkimlinksPublisherId(),
     url: originalUrl,
-    sref: SKIMLINKS_SREF,
+    sref: getSkimlinksSref(),
   });
 
   return `${SKIMLINKS_REDIRECT_BASE}?${params.toString()}`;
 }
 
-function getAmazonBaseDomain(hostname: string): "amazon.com" | "amazon.ca" | null {
-  const normalized = hostname.toLowerCase();
-  if (normalized === "amazon.com" || normalized.endsWith(".amazon.com")) {
-    return "amazon.com";
-  }
-  if (normalized === "amazon.ca" || normalized.endsWith(".amazon.ca")) {
-    return "amazon.ca";
-  }
-  return null;
+export function canonicalizeProductUrlForStorage(originalUrl: string): string {
+  return canonicalizeAmazonRetailUrl(originalUrl) ?? originalUrl;
 }
 
-function isAmazonMerchantUrl(originalUrl: string): boolean {
-  try {
-    const parsed = new URL(originalUrl);
-    return getAmazonBaseDomain(parsed.hostname) !== null;
-  } catch {
-    return false;
+export function resolveProductUrlForStorage(
+  rawProductUrl?: string | null,
+  normalizedProductUrl?: string | null
+): string | null {
+  const preferredUrl = normalizedProductUrl?.trim() || rawProductUrl?.trim() || "";
+  if (!preferredUrl) {
+    return null;
   }
+
+  return canonicalizeProductUrlForStorage(preferredUrl);
 }
 
 function buildAmazonAssociatesUrl(originalUrl: string): string {
-  if (!isAmazonAssociatesEnabled()) {
+  const associatesTag = getAmazonAssociatesTag();
+  if (!associatesTag) {
     return originalUrl;
   }
 
   try {
-    const parsed = new URL(originalUrl);
-    if (!getAmazonBaseDomain(parsed.hostname)) {
+    const canonicalUrl = canonicalizeProductUrlForStorage(originalUrl);
+    const parsed = new URL(canonicalUrl);
+    if (!isAmazonRetailUrl(parsed.toString())) {
       return originalUrl;
     }
 
-    parsed.searchParams.set("tag", AMAZON_ASSOCIATES_TAG);
+    parsed.searchParams.set("tag", associatesTag);
     return parsed.toString();
   } catch {
     return originalUrl;
@@ -118,16 +132,16 @@ function getCachedBaseAffiliateUrl(originalUrl: string): string {
  * Check if Skimlinks integration is enabled
  */
 export function isSkimlinksEnabled(): boolean {
-  return SKIMLINKS_PUBLISHER_ID.length > 0;
+  return getSkimlinksPublisherId().length > 0;
 }
 
 export function isAmazonAssociatesEnabled(): boolean {
-  return AMAZON_ASSOCIATES_TAG.length > 0;
+  return getAmazonAssociatesTag().length > 0;
 }
 
 export function getAffiliateProvider(originalUrl: string): AffiliateProvider {
-  if (isAmazonMerchantUrl(originalUrl) && isAmazonAssociatesEnabled()) {
-    return "amazon_associates";
+  if (isAmazonRetailUrl(originalUrl)) {
+    return isAmazonAssociatesEnabled() ? "amazon_associates" : "none";
   }
   if (isSkimlinksEnabled()) {
     return "skimlinks";
@@ -146,25 +160,26 @@ export function generateAffiliateUrl(
   originalUrl: string,
   xcust?: string
 ): string {
+  const canonicalUrl = canonicalizeProductUrlForStorage(originalUrl);
   const provider = getAffiliateProvider(originalUrl);
 
   if (provider === "amazon_associates") {
-    return buildAmazonAssociatesUrl(originalUrl);
+    return buildAmazonAssociatesUrl(canonicalUrl);
   }
 
   // If no provider is configured, pass through original URL.
   if (provider === "none") {
-    return originalUrl;
+    return canonicalUrl;
   }
 
   // Validate URL
   try {
-    new URL(originalUrl);
+    new URL(canonicalUrl);
   } catch {
-    return originalUrl;
+    return canonicalUrl;
   }
 
-  const wrappedBaseUrl = getCachedBaseAffiliateUrl(originalUrl);
+  const wrappedBaseUrl = getCachedBaseAffiliateUrl(canonicalUrl);
   if (!xcust) {
     return wrappedBaseUrl;
   }
@@ -186,4 +201,17 @@ export function getItemRedirectPath(itemId: string): string {
   return `/api/go/${itemId}`;
 }
 
+export function warnIfAmazonAffiliateConfigMissing(originalUrl: string): void {
+  if (
+    hasWarnedMissingAmazonAssociatesConfig ||
+    !isAmazonRetailUrl(originalUrl) ||
+    isAmazonAssociatesEnabled()
+  ) {
+    return;
+  }
 
+  hasWarnedMissingAmazonAssociatesConfig = true;
+  console.warn(
+    "[affiliate] Amazon retail URL detected but AMAZON_ASSOCIATES_TAG/AMAZON_PAAPI_PARTNER_TAG is not configured. Amazon clicks will pass through without attribution."
+  );
+}
