@@ -1,0 +1,21 @@
+{
+  "taskId": "v2-owner-settings-visibility-20260505",
+  "result": "PASS",
+  "acceptanceCriteria": {
+    "AC1": { "status": "PASS", "evidence": "Owner settings inputs have visible idle border/fill styles." },
+    "AC2": { "status": "PASS", "evidence": "Inactive list type cards have visible idle border/fill styles." },
+    "AC3": { "status": "PASS", "evidence": "Share URL code field has visible idle border/fill styles." },
+    "AC4": { "status": "PASS", "evidence": "Danger confirmation input has visible idle border/fill styles and danger border color." },
+    "AC5": { "status": "PASS", "evidence": "Existing focus and active styles were preserved; only CSS idle presentation changed." },
+    "AC6": { "status": "PASS", "evidence": "lint and build passed." }
+  },
+  "commands": [
+    { "command": "npm run lint", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/lint.txt" },
+    { "command": "npm run build", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/build.txt" },
+    { "command": "CSS static check", "cwd": ".", "status": "PASS", "artifact": "raw/css-static-check.txt" }
+  ],
+  "notes": [
+    "In-app browser DOM check confirmed the settings panel and target controls were present after reload.",
+    "Screenshot capture timed out in the in-app browser session."
+  ]
+}

@@ -1,0 +1,84 @@
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+⚠ Server is approaching the used memory threshold, restarting...
+[browser] Failed to fetch RSC payload for http://localhost:3001/lists?page=1. Falling back to browser navigation. TypeError: Failed to fetch
+    at createFetch (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:8084:21)
+    at fetchServerResponse (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:7928:27)
+    at fetchMissingDynamicData (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:9341:75)
+    at spawnDynamicRequests (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:9149:35)
+    at navigateToKnownRoute (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:10033:54)
+    at refreshDynamicData (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:10653:49)
+    at hmrRefreshReducer (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:10802:51)
+    at clientReducer (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11398:65)
+    at Object.action (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11631:55)
+    at runAction (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11536:38)
+    at dispatchAction (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11599:9)
+    at Object.dispatch (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11629:40)
+    at <unknown> (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:963:29)
+    at startTransition (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_compiled_react-dom_0~c7xf4._.js:5469:31)
+    at nextDispatch (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:962:13)
+    at dispatchAppRouterAction (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:922:5)
+    at <unknown> (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11800:61)
+    at startTransition (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_compiled_0zasv-s._.js:1279:31)
+    at Object.hmrRefresh (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:11799:40)
+    at <unknown> (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:13967:64)
+    at startTransition (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_compiled_0zasv-s._.js:1279:31)
+    at processMessage (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:13966:44)
+    at WebSocket.handleMessage (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:13335:52) (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_client_0ctwra6._.js:8005:21)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+
+<--- Last few GCs --->
+
+[31592:0000018FFE790000] 10133275 ms: Scavenge 30099.5 (32394.5) -> 30071.9 (32394.5) MB, pooled: 0 MB, 56.50 / 0.00 ms  (average mu = 0.205, current mu = 0.117) allocation failure; 
+[31592:0000018FFE790000] 10154422 ms: Mark-Compact 30139.4 (32417.5) -> 29972.5 (32337.4) MB, pooled: 11 MB, 20897.60 / 90.61 ms  (average mu = 0.148, current mu = 0.081) allocation failure; scavenge might not succeed
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 00007FF6E12AAE1F node::OnFatalError+1343
+ 2: 00007FF6E1EF37B7 v8::Function::NewInstance+423
+ 3: 00007FF6E1CF3E77 v8::base::AddressSpaceReservation::AddressSpaceReservation+322071
+ 4: 00007FF6E1CF7B84 v8::base::AddressSpaceReservation::AddressSpaceReservation+337700
+ 5: 00007FF6E1D06B1C v8::internal::StrongRootAllocatorBase::deallocate_impl+16604
+ 6: 00007FF6E1D0635B v8::internal::StrongRootAllocatorBase::deallocate_impl+14619
+ 7: 00007FF6E316EBED v8::base::UnsignedDivisionByConstant<unsigned __int64>+2791309
+ 8: 00007FF6E1CF1940 v8::base::AddressSpaceReservation::AddressSpaceReservation+312544
+ 9: 00007FF6E1D0C1CA X509_STORE_set_cleanup+5098
+10: 00007FF6E1D18028 uv_timer_set_repeat+19096
+11: 00007FF6E1D2F9CC uv_timer_set_repeat+115772
+12: 00007FF6E1D2F965 uv_timer_set_repeat+115669
+13: 00007FF6E1A026AB v8::RegExp::GetFlags+16683
+14: 00007FF6E1A0257D v8::RegExp::GetFlags+16381
+15: 00007FF6E1A42176 v8::RegExp::GetFlags+277494
+16: 00007FF6E1A460C5 v8::RegExp::GetFlags+293701
+17: 00007FF6E1A434BE v8::RegExp::GetFlags+282430
+18: 00007FF6E1A428B4 v8::RegExp::GetFlags+279348
+19: 00007FF6E1F09010 v8::Object::GetPropertyNames+400
+20: 00007FF6E131829E napi_get_all_property_names+366
+21: 00007FF6E131811F napi_get_property_names+31
+22: 00007FF8391A1F52 napi_register_module_v1+33106
+23: 00007FF83A2A0CF4 napi_register_module_v1+17854196
+24: 00007FF83A3C35D1 napi_register_module_v1+19044305
+25: 00007FF83A23AB14 napi_register_module_v1+17435924
+26: 00007FF83A2471CA napi_register_module_v1+17486794
+27: 00007FF83A3BE7C7 napi_register_module_v1+19024327
+28: 00007FF83A26BD58 napi_register_module_v1+17637208
+29: 00007FF6E12FFD10 node_api_create_buffer_from_arraybuffer+4624
+30: 00007FF6E1F5B19B uv_run+1867
+31: 00007FF6E1F5AD0F uv_run+703
+32: 00007FF6E13BD4FF node::DecodeWrite+367
+33: 00007FF6E1238DE2 node::MultiIsolatePlatform::DisposeIsolate+242594
+34: 00007FF6E130549C node::Start+1052
+35: 00007FF6E2322042 AES_cbc_encrypt+2546
+36: 00007FF6E31782F4 v8::base::UnsignedDivisionByConstant<unsigned __int64>+2829972
+37: 00007FF99274E8D7 BaseThreadInitThunk+23
+38: 00007FF99404C3FC RtlUserThreadStart+44

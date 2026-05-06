@@ -1,0 +1,39 @@
+{
+  "taskId": "v2-owner-remaining-screens-20260505",
+  "status": "PASS",
+  "updatedAt": "2026-05-05",
+  "scope": "desira-v2",
+  "acceptanceCriteria": {
+    "AC1": "PASS",
+    "AC2": "PASS",
+    "AC3": "PASS",
+    "AC4": "PASS",
+    "AC5": "PASS",
+    "AC6": "PASS",
+    "AC7": "PASS",
+    "AC8": "PASS",
+    "AC9": "PASS",
+    "AC10": "PASS"
+  },
+  "commands": [
+    { "command": "npm run lint", "status": "PASS", "artifact": "raw/lint-final.txt" },
+    { "command": "npm run typecheck", "status": "PASS", "artifact": "raw/typecheck-final.txt" },
+    { "command": "npm run build", "status": "PASS", "artifact": "raw/build-final.txt" },
+    { "command": "npm run test:unit", "status": "PASS", "artifact": "raw/test-unit.txt" },
+    {
+      "command": "npm run test:integration",
+      "status": "SKIPPED",
+      "artifact": "raw/test-integration.txt",
+      "reason": "Missing SUPABASE_TEST_URL and SUPABASE_TEST_SERVICE_ROLE_KEY"
+    }
+  ],
+  "smoke": {
+    "devServer": "http://localhost:3001",
+    "artifact": "raw/http-smoke.txt",
+    "status": "PASS_WITH_AUTH_LIMITATION"
+  },
+  "knownGaps": [
+    "Authenticated browser interaction was not completed because the Playwright in-app browser session closed during protected-route navigation.",
+    "Integration tests did not run without Supabase test credentials."
+  ]
+}

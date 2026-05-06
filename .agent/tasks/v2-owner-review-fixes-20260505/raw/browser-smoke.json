@@ -1,0 +1,16 @@
+{
+  "notifications": {
+    "url": "http://localhost:3001/notifications",
+    "title": "desira v2",
+    "hasNotificationsHeading": true,
+    "readButtonCount": 0,
+    "rowCount": 0,
+    "nestedInteractiveCount": 0
+  },
+  "feedback": {
+    "url": "http://localhost:3001/feedback",
+    "title": "desira v2",
+    "panelCount": 1,
+    "nestedInteractiveCount": 0
+  }
+}

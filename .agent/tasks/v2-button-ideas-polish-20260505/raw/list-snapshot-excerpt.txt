@@ -1,0 +1,74 @@
+- banner:
+  - link "Go to lists":
+    - /url: /lists
+    - img "Desira"
+  - link "Igor 01":
+    - /url: /settings
+    - generic: Igor 01
+- complementary "Primary navigation":
+  - link "Lists":
+    - /url: /lists
+  - link "Ideas":
+    - /url: /ideas
+  - link "Settings":
+    - /url: /settings
+  - link "Notifications":
+    - /url: /notifications
+  - link "Create list":
+    - /url: /lists?create=1&type=wishlist
+- main:
+  - link "Edit profile avatar":
+    - /url: /settings
+  - heading "Baby Shower" [level=1]
+  - strong: Only you know what you want!
+  - button "Add a wish"
+  - generic: Popular gift ideas
+  - button "Explore All"
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+  - article:
+    - button "Add Maap Sport Shoes wit..."
+    - strong: Maap Sport Shoes wit...
+    - generic: CA$45.99
+- contentinfo:
+  - paragraph: We may earn a commission for sales made through links on our site.
+  - link "Explore":
+    - /url: /explore
+  - link "Affiliate disclosure":
+    - /url: /affiliate-disclosure
+  - link "Privacy":
+    - /url: /privacy
+  - link "Terms":
+    - /url: /terms
+  - link "About":
+    - /url: /about
+  - link "Contact":
+    - /url: /contact
+- button "Open Next.js Dev Tools":
+- alert

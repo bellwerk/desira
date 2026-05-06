@@ -1,0 +1,6 @@
+{
+  "taskId": "v2-remove-gift-controls-20260505",
+  "verdict": "PASS",
+  "checkedAt": "2026-05-05",
+  "summary": "Removed the V2 owner Gift Controls surface and mutation behavior while preserving legacy DB columns/defaults."
+}

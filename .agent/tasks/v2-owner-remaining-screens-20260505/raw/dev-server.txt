@@ -1,0 +1,115 @@
+
+> desira-v2@0.1.0 dev
+> next dev -p 3001
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.18.9:3001
+- Environments: .env.local
+✓ Ready in 286ms
+
+ GET /login 200 in 504ms (next.js: 199ms, proxy.ts: 84ms, application-code: 221ms)
+ GET /api/notifications 401 in 333ms (next.js: 277ms, proxy.ts: 5ms, application-code: 51ms)
+ GET /login?next=%2Fnotifications 200 in 191ms (next.js: 62ms, proxy.ts: 3ms, application-code: 126ms)
+ GET /notifications 200 in 2.9s (next.js: 56ms, proxy.ts: 1452ms, application-code: 1346ms)
+ GET /api/notifications?limit=50 500 in 464ms (next.js: 76ms, proxy.ts: 71ms, application-code: 317ms)
+ GET /feedback 200 in 1634ms (next.js: 456ms, proxy.ts: 955ms, application-code: 223ms)
+ GET /notifications 200 in 1034ms (next.js: 3ms, proxy.ts: 591ms, application-code: 440ms)
+ GET /feedback 200 in 277ms (next.js: 3ms, proxy.ts: 58ms, application-code: 216ms)
+ GET /api/notifications?limit=50 200 in 262ms (next.js: 2ms, proxy.ts: 79ms, application-code: 181ms)
+ GET /settings 200 in 1311ms (next.js: 34ms, proxy.ts: 1173ms, application-code: 103ms)
+⚠ Server is approaching the used memory threshold, restarting...
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.18.9:3001
+- Environments: .env.local
+✓ Ready in 245ms
+
+ GET /settings 200 in 1649ms (next.js: 175ms, proxy.ts: 265ms, application-code: 1209ms)
+ GET /lists 200 in 1102ms (next.js: 22ms, proxy.ts: 63ms, application-code: 1017ms)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+ GET /lists 200 in 603ms (next.js: 2ms, proxy.ts: 68ms, application-code: 533ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 594ms (next.js: 379ms, proxy.ts: 88ms, application-code: 127ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 1721ms (next.js: 14ms, proxy.ts: 929ms, application-code: 778ms)
+✓ Compiled in 405s
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 839ms (next.js: 135ms, proxy.ts: 501ms, application-code: 203ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 964ms (next.js: 124ms, proxy.ts: 237ms, application-code: 603ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 547ms (next.js: 10ms, proxy.ts: 234ms, application-code: 303ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 360ms (next.js: 105ms, proxy.ts: 112ms, application-code: 143ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 158ms (next.js: 8ms, proxy.ts: 81ms, application-code: 69ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 196ms (next.js: 10ms, proxy.ts: 132ms, application-code: 54ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 471ms (next.js: 108ms, proxy.ts: 166ms, application-code: 197ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 114ms (next.js: 6ms, proxy.ts: 59ms, application-code: 49ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 100ms (next.js: 3ms, proxy.ts: 41ms, application-code: 56ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 113ms (next.js: 12ms, proxy.ts: 47ms, application-code: 55ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 432ms (next.js: 107ms, proxy.ts: 136ms, application-code: 190ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 143ms (next.js: 6ms, proxy.ts: 74ms, application-code: 64ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 161ms (next.js: 11ms, proxy.ts: 93ms, application-code: 57ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 362ms (next.js: 87ms, proxy.ts: 121ms, application-code: 154ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 130ms (next.js: 7ms, proxy.ts: 59ms, application-code: 65ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 162ms (next.js: 10ms, proxy.ts: 65ms, application-code: 87ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 122ms (next.js: 5ms, proxy.ts: 63ms, application-code: 54ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 1465ms (next.js: 136ms, proxy.ts: 1127ms, application-code: 202ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 150ms (next.js: 5ms, proxy.ts: 72ms, application-code: 72ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 132ms (next.js: 11ms, proxy.ts: 54ms, application-code: 67ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 173ms (next.js: 6ms, proxy.ts: 111ms, application-code: 56ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 515ms (next.js: 113ms, proxy.ts: 198ms, application-code: 204ms)
+ GET /lists/4b9077ba-f2b0-4e66-9c20-ba001f6cbd08/settings 200 in 1053ms (next.js: 11ms, proxy.ts: 211ms, application-code: 832ms)
+ GET /ideas 200 in 2.4s (next.js: 28ms, proxy.ts: 1182ms, application-code: 1170ms)
+⚠ Server is approaching the used memory threshold, restarting...
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.18.9:3001
+- Environments: .env.local
+✓ Ready in 244ms
+
+ GET /ideas 200 in 1248ms (next.js: 312ms, proxy.ts: 133ms, application-code: 803ms)
+ GET /settings 200 in 141ms (next.js: 27ms, proxy.ts: 44ms, application-code: 70ms)
+ GET /notifications 200 in 98ms (next.js: 23ms, proxy.ts: 53ms, application-code: 23ms)
+ GET /api/notifications?limit=50 500 in 335ms (next.js: 79ms, proxy.ts: 47ms, application-code: 209ms)
+ GET /api/notifications?limit=50 500 in 181ms (next.js: 2ms, proxy.ts: 55ms, application-code: 124ms)
+ GET /settings 200 in 114ms (next.js: 2ms, proxy.ts: 45ms, application-code: 66ms)
+ GET /notifications 200 in 64ms (next.js: 3ms, proxy.ts: 46ms, application-code: 15ms)
+ GET /api/notifications?limit=50 500 in 241ms (next.js: 1969µs, proxy.ts: 51ms, application-code: 188ms)
+ GET /api/notifications?limit=50 500 in 132ms (next.js: 1982µs, proxy.ts: 46ms, application-code: 84ms)
+ GET /settings 200 in 314ms (next.js: 3ms, proxy.ts: 200ms, application-code: 111ms)
+ GET /ideas 200 in 471ms (next.js: 3ms, proxy.ts: 55ms, application-code: 414ms)
+ GET /lists 200 in 333ms (next.js: 22ms, proxy.ts: 55ms, application-code: 256ms)
+[browser] Image with src "https://images-dynamic-arcteryx.imgix.net/details/1350x1710/F25-X000009835-Norvan-4-Nivalis-Shoe-Dynasty-Dynasty-Profile.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+[browser] Image with src "http://cafeliegeois.ca/cdn/shop/files/lelit-bottomless-filterholder-wood-line-58mm-567749.jpg?v=1730809306" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/BELLWERK/Documents/PROJECTS/JQ33 LABS/desira/desira-v2/.next/dev/static/chunks/12gd_next_dist_0-x_s.1._.js:2431:13)
+ GET /notifications 200 in 72ms (next.js: 2ms, proxy.ts: 54ms, application-code: 16ms)
+ GET /api/notifications?limit=50 500 in 163ms (next.js: 1853µs, proxy.ts: 60ms, application-code: 101ms)
+ GET /api/notifications?limit=50 500 in 153ms (next.js: 1931µs, proxy.ts: 53ms, application-code: 99ms)
+ GET /ideas 200 in 285ms (next.js: 2ms, proxy.ts: 61ms, application-code: 221ms)
+ GET /lists 200 in 317ms (next.js: 2ms, proxy.ts: 75ms, application-code: 240ms)
+ GET /settings 200 in 120ms (next.js: 3ms, proxy.ts: 44ms, application-code: 73ms)
+ GET /ideas 200 in 317ms (next.js: 2ms, proxy.ts: 45ms, application-code: 270ms)
+ GET /ideas 200 in 54ms (next.js: 2ms, proxy.ts: 48ms, application-code: 5ms)
+ GET /ideas 200 in 235ms (next.js: 2ms, proxy.ts: 45ms, application-code: 188ms)
+ GET /lists 200 in 1174ms (next.js: 2ms, proxy.ts: 343ms, application-code: 829ms)
+ GET /lists/4414a5cf-0867-4580-98a1-0aef29f1a669 200 in 1003ms (next.js: 386ms, proxy.ts: 111ms, application-code: 507ms)
+ GET /settings 200 in 660ms (next.js: 3ms, proxy.ts: 569ms, application-code: 88ms)
+ GET /lists 200 in 980ms (next.js: 2ms, proxy.ts: 98ms, application-code: 879ms)
+ GET /lists/ffa1d324-935b-443a-b9ee-f719b5eb2473/settings 200 in 766ms (next.js: 399ms, proxy.ts: 190ms, application-code: 176ms)
+ GET /lists/ffa1d324-935b-443a-b9ee-f719b5eb2473 200 in 332ms (next.js: 9ms, proxy.ts: 78ms, application-code: 245ms)
+
+<--- Last few GCs --->
+
+[38504:000001B57762A000]  4863248 ms: Scavenge 31956.1 (32033.6) -> 31924.6 (32049.9) MB, pooled: 0 MB, 39.34 / 0.00 ms  (average mu = 0.225, current mu = 0.165) allocation failure; 
+[38504:000001B57762A000]  4877983 ms: Mark-Compact (reduce) 32031.5 (32108.9) -> 31688.2 (31711.9) MB, pooled: 0 MB, 9984.65 / 213.29 ms  (+ 4159.4 ms in 833 steps since start of marking, biggest step 5.1 ms, walltime since start of marking 14549 ms) (ave
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 00007FF6E12AAE1F node::OnFatalError+1343
+ 2: 00007FF6E1EF37B7 v8::Function::NewInstance+423
+ 3: 00007FF6E1CF3E77 v8::base::AddressSpaceReservation::AddressSpaceReservation+322071
+ 4: 00007FF6E1CF7B84 v8::base::AddressSpaceReservation::AddressSpaceReservation+337700
+ 5: 00007FF6E1D06B1C v8::internal::StrongRootAllocatorBase::deallocate_impl+16604
+ 6: 00007FF6E1D0635B v8::internal::StrongRootAllocatorBase::deallocate_impl+14619
+ 7: 00007FF6E316EBED v8::base::UnsignedDivisionByConstant<unsigned __int64>+2791309
+ 8: 00007FF6E1CF1940 v8::base::AddressSpaceReservation::AddressSpaceReservation+312544
+ 9: 00007FF6E1D75619 v8::Unlocker::~Unlocker+9273
+10: 00007FF6E18EB398 v8::String::Utf8Value::~Utf8Value+142680
+11: 000001B52FE7733A 
+[?25h

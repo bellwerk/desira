@@ -1,0 +1,41 @@
+{
+  "taskId": "v2-owner-review-fixes-20260505",
+  "result": "PASS",
+  "acceptanceCriteria": {
+    "AC1": {
+      "status": "PASS",
+      "evidence": "List creation reads profiles first and inserts only when missing; existing profile fields are preserved."
+    },
+    "AC2": {
+      "status": "PASS",
+      "evidence": "Migration normalizes handles and repairs LOWER(handle) duplicates before creating the unique expression index."
+    },
+    "AC3": {
+      "status": "PASS",
+      "evidence": "Notifications render row link/static content and Read button as siblings; static check found no nested interactive remnants."
+    },
+    "AC4": {
+      "status": "PASS",
+      "evidence": "Missing list query redirects to /lists and invalid explicit ids call notFound instead of falling back."
+    },
+    "AC5": {
+      "status": "PASS",
+      "evidence": "Later mobile .v2-modal-panel.v2-owner-settings-panel rule wins over generic .v2-modal-panel mobile rule."
+    },
+    "AC6": {
+      "status": "PASS",
+      "evidence": "lint, typecheck, build, and unit tests passed."
+    }
+  },
+  "commands": [
+    { "command": "npm run lint", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/lint.txt" },
+    { "command": "npm run typecheck", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/typecheck.txt" },
+    { "command": "npm run build", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/build.txt" },
+    { "command": "npm run test:unit", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/test-unit.txt" },
+    { "command": "targeted static checks", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/targeted-static-checks.txt" },
+    { "command": "browser smoke", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/browser-smoke.json" }
+  ],
+  "notes": [
+    "Viewport-specific Playwright backend smoke was unavailable because the target page/context was closed; CSS specificity/order was verified statically."
+  ]
+}

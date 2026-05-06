@@ -1,0 +1,21 @@
+{
+  "settings": {
+    "url": "http://localhost:3001/settings",
+    "hasSettings": true,
+    "logoutButtons": 1,
+    "userPillLinks": 1
+  },
+  "accountSettings": {
+    "url": "http://localhost:3001/settings/account",
+    "hasAccountSettings": true,
+    "logoutButtons": 1
+  },
+  "createListModal": {
+    "url": "http://localhost:3001/lists?page=1&create=1&type=wishlist",
+    "hasCreateModal": true,
+    "quickStartHasInitials": false,
+    "dateButtonCount": 1,
+    "calendarOpened": true,
+    "createButtons": 1
+  }
+}

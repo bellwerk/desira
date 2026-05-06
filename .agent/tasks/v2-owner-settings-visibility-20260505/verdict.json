@@ -1,0 +1,6 @@
+{
+  "taskId": "v2-owner-settings-visibility-20260505",
+  "verdict": "PASS",
+  "checkedAt": "2026-05-05",
+  "summary": "Owner list settings idle field/card visibility issues were fixed with scoped CSS, and lint/build passed."
+}

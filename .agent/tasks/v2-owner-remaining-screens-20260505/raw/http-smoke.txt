@@ -1,0 +1,6 @@
+login 200
+/settings/profile 307 unauthenticated redirect
+/notifications 307 unauthenticated redirect
+/feedback 307 unauthenticated redirect
+/api/notifications 401 unauthenticated JSON guard
+in-app browser Playwright session closed during protected-route navigation; HTTP smoke used instead

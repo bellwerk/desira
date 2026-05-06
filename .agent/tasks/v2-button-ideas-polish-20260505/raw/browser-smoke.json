@@ -1,0 +1,25 @@
+{
+  "ideas": {
+    "url": "http://localhost:3001/ideas",
+    "hasExploreIdeas": true,
+    "cardCount": 8,
+    "buyIconCount": 8,
+    "buyButtonCount": 8
+  },
+  "list": {
+    "url": "http://localhost:3001/lists/ffa1d324-935b-443a-b9ee-f719b5eb2473",
+    "hasListPage": false,
+    "mostDesiredCount": 0,
+    "addWishCount": 0,
+    "addWishModalSmoke": null
+  },
+  "listWithItems": {
+    "url": "http://localhost:3001/lists/4414a5cf-0867-4580-98a1-0aef29f1a669",
+    "hasTestingList": true,
+    "mostDesiredCount": 16,
+    "addWishCount": 1,
+    "addWishModalSmoke": {
+      "nextButtonCount": 1
+    }
+  }
+}

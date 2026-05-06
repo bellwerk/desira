@@ -1,0 +1,38 @@
+{
+  "taskId": "v2-button-ideas-polish-20260505",
+  "result": "PASS",
+  "acceptanceCriteria": {
+    "AC1": {
+      "status": "PASS",
+      "evidence": "Removed ideas grid drop-shadow and static checks found no drop-shadow remnants."
+    },
+    "AC2": {
+      "status": "PASS",
+      "evidence": "Added public/arrow-icon.svg and rendered it in ideas Buy it Online buttons; browser found 8 icons for 8 buttons."
+    },
+    "AC3": {
+      "status": "PASS",
+      "evidence": "Submit buttons use 44px minimum height, 16px text, and 18px horizontal padding."
+    },
+    "AC4": {
+      "status": "PASS",
+      "evidence": "Action pills were already restrained and were left unchanged; nav/icon/destructive/compact controls were not globally resized."
+    },
+    "AC5": {
+      "status": "PASS",
+      "evidence": "Most Desired pill desktop and mobile sizing increased by about 20%."
+    },
+    "AC6": {
+      "status": "PASS",
+      "evidence": "lint, typecheck, build, unit tests, static checks, and browser smoke passed."
+    }
+  },
+  "commands": [
+    { "command": "npm run lint", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/lint.txt" },
+    { "command": "npm run typecheck", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/typecheck.txt" },
+    { "command": "npm run build", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/build.txt" },
+    { "command": "npm run test:unit", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/test-unit.txt" },
+    { "command": "static selector checks", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/static-checks.txt" },
+    { "command": "browser smoke", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/browser-smoke.json" }
+  ]
+}

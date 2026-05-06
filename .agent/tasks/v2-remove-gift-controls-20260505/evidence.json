@@ -1,0 +1,20 @@
+{
+  "taskId": "v2-remove-gift-controls-20260505",
+  "result": "PASS",
+  "acceptanceCriteria": {
+    "AC1": { "status": "PASS", "evidence": "List Settings no longer renders Gift Controls or checkbox toggles." },
+    "AC2": { "status": "PASS", "evidence": "Settings PATCH schema/route no longer accept or update gift-control flags." },
+    "AC3": { "status": "PASS", "evidence": "Create List no longer renders or submits gift-control fields." },
+    "AC4": { "status": "PASS", "evidence": "Stripe checkout no longer blocks on hidden allow_contributions." },
+    "AC5": { "status": "PASS", "evidence": "Database columns/defaults remain in migrations only for compatibility." },
+    "AC6": { "status": "PASS", "evidence": "lint, typecheck, build, and unit tests passed." }
+  },
+  "commands": [
+    { "command": "npm run lint", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/lint-final.txt" },
+    { "command": "npm run typecheck", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/typecheck-final.txt" },
+    { "command": "npm run build", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/build-final.txt" },
+    { "command": "npm run test:unit", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/test-unit-final.txt" },
+    { "command": "static gift-control reference check", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/static-checks-final.txt" },
+    { "command": "browser DOM check", "cwd": "desira-v2", "status": "PASS", "artifact": "raw/browser-dom-check.json" }
+  ]
+}
